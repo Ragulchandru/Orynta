@@ -4,21 +4,23 @@
 //
 // Startup sequence (ORDER MATTERS):
 //   1. WidgetsFlutterBinding.ensureInitialized()
-//      Required before any async operations that use Flutter channels
-//      (e.g., path_provider, Hive).
+//      Required before any async operations that use Flutter channels.
 //
 //   2. Hive.initFlutter()
-//      Tells Hive where to store data on this device (uses path_provider
-//      internally to get the documents directory).
+//      Tells Hive where to store data on this device.
 //
-//   3. Hive.openBox<String>(AppStrings.settingsBoxName)
-//      Opens the settings box BEFORE runApp() so that ThemeModeNotifier
-//      can read the theme preference SYNCHRONOUSLY in its build() method.
-//      (Phase 1+ will open additional boxes here as features are added.)
+//   3. Hive.registerAdapter(...)
+//      Register all TypeAdapters BEFORE opening any box.
+//      Hive reads the adapter when deserializing existing data from disk —
+//      if the adapter isn't registered, Hive throws HiveError at box open.
 //
-//   4. runApp(ProviderScope(child: InkFlowApp()))
-//      ProviderScope is required by Riverpod — it must wrap the entire
-//      widget tree. All providers live inside this scope.
+//   4. Hive.openBox(...)
+//      Open boxes needed at startup BEFORE runApp().
+//      The settings box must be open for ThemeModeNotifier (synchronous read).
+//      The notes box must be open for NotesProvider (Phase 1 onward).
+//
+//   5. runApp(ProviderScope(child: InkFlowApp()))
+//      ProviderScope is Riverpod's root container.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,20 +28,27 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import 'app.dart';
 import 'core/constants/app_strings.dart';
+import 'features/notes/data/models/note_model.dart';
+import 'features/notes/data/models/note_type_adapter.dart';
 
 Future<void> main() async {
-  // Step 1: Must be called before any async initialization.
+  // Step 1
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Step 2: Initialize Hive with the Flutter-specific path.
+  // Step 2
   await Hive.initFlutter();
 
-  // Step 3: Open Hive boxes needed at startup.
-  // The settings box stores theme mode and other app preferences.
-  // It must be open BEFORE ThemeModeNotifier.build() runs.
-  await Hive.openBox<String>(AppStrings.settingsBoxName);
+  // Step 3 — Register all TypeAdapters before opening any box.
+  // Add new adapters here as new features are implemented.
+  Hive.registerAdapter(NoteTypeAdapter());
 
-  // Step 4: Launch the app inside Riverpod's ProviderScope.
+  // Step 4 — Open Hive boxes needed at app startup.
+  await Future.wait([
+    Hive.openBox<String>(AppStrings.settingsBoxName),
+    Hive.openBox<NoteModel>(AppStrings.notesBoxName),
+  ]);
+
+  // Step 5 — Launch the app.
   runApp(
     const ProviderScope(
       child: InkFlowApp(),
