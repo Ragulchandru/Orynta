@@ -68,7 +68,9 @@ final activeNotesProvider = Provider<AsyncValue<List<NoteEntity>>>((ref) {
       });
     return active;
   });
-}, name: 'activeNotesProvider');
+},
+  name: 'activeNotesProvider',
+);
 
 /// Active notes further filtered by [noteFilterProvider].
 ///
@@ -94,7 +96,9 @@ final filteredActiveNotesProvider =
           NoteFilter.pinned   => notes.where((n) => n.isPinned).toList(),
         },
       );
-}, name: 'filteredActiveNotesProvider');
+},
+  name: 'filteredActiveNotesProvider',
+);
 
 /// All archived notes, sorted by most recently updated.
 ///
@@ -106,7 +110,9 @@ final archivedNotesProvider = Provider<AsyncValue<List<NoteEntity>>>((ref) {
         .toList()
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   });
-}, name: 'archivedNotesProvider');
+},
+  name: 'archivedNotesProvider',
+);
 
 /// All trashed notes, sorted by most recently trashed first.
 ///
@@ -123,7 +129,9 @@ final trashedNotesProvider = Provider<AsyncValue<List<NoteEntity>>>((ref) {
         return bTime.compareTo(aTime);
       });
   });
-}, name: 'trashedNotesProvider');
+},
+  name: 'trashedNotesProvider',
+);
 
 /// Favorited notes across active AND archived status (trashed excluded).
 ///
@@ -136,7 +144,9 @@ final favoriteNotesProvider = Provider<AsyncValue<List<NoteEntity>>>((ref) {
         .toList()
       ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   });
-}, name: 'favoriteNotesProvider');
+},
+  name: 'favoriteNotesProvider',
+);
 
 // ─── Search ───────────────────────────────────────────────────────────────────
 
@@ -174,4 +184,6 @@ final searchResultsProvider =
     (failure) => throw failure,
     (notes) => notes,
   );
-}, name: 'searchResultsProvider');
+},
+  name: 'searchResultsProvider',
+);

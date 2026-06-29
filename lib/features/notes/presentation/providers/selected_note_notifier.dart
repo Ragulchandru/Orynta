@@ -20,6 +20,8 @@
 //   changes made in the editor without a manual pull-to-refresh.
 //   One-way import — no circular dependency.
 
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
