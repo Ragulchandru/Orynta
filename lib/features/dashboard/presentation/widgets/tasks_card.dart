@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_sizes.dart';
+import '../../../calendar/presentation/providers/calendar_providers.dart';
 import '../../../planner/presentation/providers/tasks_notifier.dart';
 
 class TasksCard extends ConsumerWidget {
@@ -14,16 +15,26 @@ class TasksCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Watch today's tasks lists and metrics
-    final todaysTasks = ref.watch(todaysTasksProvider);
-    final completedCount = ref.watch(completedTodayTasksProvider).length;
-    final totalCount = todaysTasks.length;
+    // Watch selected date tasks for the calendar preview
+    final selectedDate = ref.watch(selectedDateProvider);
+    final selectedTasks = ref.watch(selectedDateTasksProvider);
+    final completedTasks = ref.watch(selectedDateCompletedTasksProvider);
+
+    final completedCount = completedTasks.length;
+    final totalCount = selectedTasks.length;
 
     // Watch overdue and upcoming items
     final overdueTasks = ref.watch(overdueTasksProvider);
     final nextUpcomingTask = ref.watch(nextUpcomingTaskProvider);
 
-    final displayedTasks = todaysTasks.take(5).toList();
+    final displayedTasks = selectedTasks.take(5).toList();
+
+    // Generate dynamic card header title based on calendar selected date
+    final now = DateTime.now();
+    final isToday = selectedDate.year == now.year &&
+        selectedDate.month == now.month &&
+        selectedDate.day == now.day;
+    final headerTitle = isToday ? "Today's Tasks" : "Tasks for ${DateFormat('MMM d').format(selectedDate)}";
 
     return Card(
       elevation: 0,
@@ -45,7 +56,7 @@ class TasksCard extends ConsumerWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  "Today's Tasks",
+                  headerTitle,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: colorScheme.onSurface,
@@ -67,7 +78,7 @@ class TasksCard extends ConsumerWidget {
             ),
             const SizedBox(height: AppSizes.xs),
 
-            // 1. Overdue warning banner
+            // 1. Overdue warning banner (always displays active overdue tasks count)
             if (overdueTasks.isNotEmpty) ...[
               InkWell(
                 onTap: () => context.go('/planner'),
@@ -101,9 +112,9 @@ class TasksCard extends ConsumerWidget {
               const SizedBox(height: AppSizes.md),
             ],
 
-            // 2. Checklist of Today's Tasks
+            // 2. Checklist of Selected Date's Tasks
             if (displayedTasks.isEmpty)
-              _buildEmptyState(theme)
+              _buildEmptyState(theme, isToday, selectedDate)
             else ...[
               ListView.separated(
                 shrinkWrap: true,
@@ -242,7 +253,8 @@ class TasksCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState(ThemeData theme) {
+  Widget _buildEmptyState(ThemeData theme, bool isToday, DateTime date) {
+    final dateStr = isToday ? 'today' : 'on ${DateFormat('MMMM d').format(date)}';
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: AppSizes.lg),
@@ -255,7 +267,7 @@ class TasksCard extends ConsumerWidget {
             ),
             const SizedBox(height: AppSizes.sm),
             Text(
-              'No tasks scheduled today',
+              'No tasks scheduled $dateStr',
               style: theme.textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurfaceVariant,

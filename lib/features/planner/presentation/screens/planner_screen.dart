@@ -5,11 +5,15 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/router/route_names.dart';
-import '../../domain/entities/task_entity.dart';
+import '../../../calendar/presentation/providers/calendar_providers.dart';
+import '../../../calendar/presentation/widgets/agenda_section.dart';
+import '../../../calendar/presentation/widgets/calendar_header.dart';
+import '../../../calendar/presentation/widgets/month_grid.dart';
+import '../../../calendar/presentation/widgets/week_strip.dart';
 import '../providers/tasks_notifier.dart';
-import '../widgets/task_card.dart';
 import '../widgets/task_multiselect_bar.dart';
-import '../widgets/timeline_section_header.dart';
+
+final showMonthlyCalendarProvider = StateProvider<bool>((ref) => false);
 
 class PlannerScreen extends ConsumerWidget {
   const PlannerScreen({super.key});
@@ -19,24 +23,18 @@ class PlannerScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final dateString = DateFormat('EEEE, MMMM d').format(DateTime.now());
+    final selectedDate = ref.watch(selectedDateProvider);
+    final formattedDate = DateFormat('MMMM d, yyyy').format(selectedDate);
 
-    // Watch query query states
+    // Watch query state variables
     final searchQuery = ref.watch(taskSearchQueryProvider);
     final activeFilter = ref.watch(taskFilterProvider);
     final activeSort = ref.watch(taskSortProvider);
 
-    // Watch tasks lists for each segment (computed lists already filtered/sorted)
-    final morningTasks = ref.watch(morningTasksProvider);
-    final afternoonTasks = ref.watch(afternoonTasksProvider);
-    final eveningTasks = ref.watch(eveningTasksProvider);
-    final nightTasks = ref.watch(nightTasksProvider);
-
-    // Watch multiselect parameters
+    // Watch selections and collapse states
     final selectedIds = ref.watch(selectedTasksProvider);
     final isSelectionMode = selectedIds.isNotEmpty;
-
-    final collapsedSections = ref.watch(collapsedSectionsProvider);
+    final showMonthlyCalendar = ref.watch(showMonthlyCalendarProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -45,7 +43,7 @@ class PlannerScreen extends ConsumerWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header Details
+                // Header details
                 Padding(
                   padding: const EdgeInsets.fromLTRB(AppSizes.lg, AppSizes.md, AppSizes.lg, AppSizes.xs),
                   child: Row(
@@ -55,7 +53,7 @@ class PlannerScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Daily Planner',
+                            'Planner',
                             style: theme.textTheme.headlineMedium?.copyWith(
                               fontWeight: FontWeight.w800,
                               fontFamily: 'Playfair Display',
@@ -65,96 +63,91 @@ class PlannerScreen extends ConsumerWidget {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.today_rounded, size: 14, color: colorScheme.primary),
+                              Icon(Icons.calendar_month_rounded, size: 14, color: colorScheme.primary),
                               const SizedBox(width: 4),
                               Text(
-                                dateString,
+                                formattedDate,
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
                         ],
                       ),
-                      if (isSelectionMode)
-                        TextButton(
-                          onPressed: () {
-                            ref.read(selectedTasksProvider.notifier).clearSelection();
-                          },
-                          child: const Text('Clear'),
-                        ),
+                      
+                      // Toggle month grid / clear selections
+                      Row(
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              showMonthlyCalendar ? Icons.calendar_view_week_rounded : Icons.calendar_view_month_rounded,
+                              color: colorScheme.primary,
+                            ),
+                            tooltip: showMonthlyCalendar ? 'Show Weekly View' : 'Show Monthly View',
+                            onPressed: () {
+                              ref.read(showMonthlyCalendarProvider.notifier).state = !showMonthlyCalendar;
+                            },
+                          ),
+                          if (isSelectionMode)
+                            TextButton(
+                              onPressed: () {
+                                ref.read(selectedTasksProvider.notifier).clearSelection();
+                              },
+                              child: const Text('Clear'),
+                            ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
                 const Divider(),
 
-                // Search & Filter & Sort Controls
-                _buildControls(context, ref, searchQuery, activeFilter, activeSort),
-                const SizedBox(height: AppSizes.xs),
+                // Calendar layouts (Collapsible MonthGrid or WeekStrip)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 250),
+                    curve: Curves.easeInOut,
+                    child: showMonthlyCalendar
+                        ? Column(
+                            children: [
+                              const CalendarHeader(),
+                              const MonthGrid(),
+                              const SizedBox(height: AppSizes.sm),
+                              TextButton.icon(
+                                onPressed: () {
+                                  ref.read(showMonthlyCalendarProvider.notifier).state = false;
+                                },
+                                icon: const Icon(Icons.expand_less_rounded),
+                                label: const Text('Show Weekly Bar'),
+                              ),
+                            ],
+                          )
+                        : const WeekStrip(),
+                  ),
+                ),
+                const SizedBox(height: AppSizes.sm),
 
-                // Scrollable Timeline
+                // Search, Filter, Sort Controls row
+                _buildControls(context, ref, searchQuery, activeFilter, activeSort),
+                const SizedBox(height: AppSizes.sm),
+
+                // Agenda Timeline sections lists
                 Expanded(
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(AppSizes.lg, 0, AppSizes.lg, AppSizes.xxxl * 2),
-                    children: [
-                      _buildCollapsibleSection(
-                        context: context,
-                        ref: ref,
-                        sectionIndex: 0,
-                        title: 'Morning',
-                        icon: Icons.wb_sunny_outlined,
-                        iconColor: Colors.amber,
-                        tasks: morningTasks,
-                        isCollapsed: collapsedSections.contains(0),
-                        selectedIds: selectedIds,
-                        isSelectionMode: isSelectionMode,
-                      ),
-                      _buildCollapsibleSection(
-                        context: context,
-                        ref: ref,
-                        sectionIndex: 1,
-                        title: 'Afternoon',
-                        icon: Icons.wb_cloudy_outlined,
-                        iconColor: Colors.orange,
-                        tasks: afternoonTasks,
-                        isCollapsed: collapsedSections.contains(1),
-                        selectedIds: selectedIds,
-                        isSelectionMode: isSelectionMode,
-                      ),
-                      _buildCollapsibleSection(
-                        context: context,
-                        ref: ref,
-                        sectionIndex: 2,
-                        title: 'Evening',
-                        icon: Icons.nights_stay_outlined,
-                        iconColor: Colors.indigo,
-                        tasks: eveningTasks,
-                        isCollapsed: collapsedSections.contains(2),
-                        selectedIds: selectedIds,
-                        isSelectionMode: isSelectionMode,
-                      ),
-                      _buildCollapsibleSection(
-                        context: context,
-                        ref: ref,
-                        sectionIndex: 3,
-                        title: 'Night',
-                        icon: Icons.bedtime_outlined,
-                        iconColor: Colors.blueGrey,
-                        tasks: nightTasks,
-                        isCollapsed: collapsedSections.contains(3),
-                        selectedIds: selectedIds,
-                        isSelectionMode: isSelectionMode,
-                      ),
+                    children: const [
+                      AgendaSection(),
                     ],
                   ),
                 ),
               ],
             ),
 
-            // Floating Bulk Actions Bar
+            // Floating multiselect action bar
             const Positioned(
               left: 0,
               right: 0,
@@ -197,7 +190,7 @@ class PlannerScreen extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Search Input row
+        // Search & Sort row
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
           child: Row(
@@ -209,7 +202,7 @@ class PlannerScreen extends ConsumerWidget {
                   },
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                    hintText: 'Search tasks...',
+                    hintText: 'Search selected date tasks...',
                     hintStyle: TextStyle(color: colorScheme.outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppSizes.sm),
@@ -243,7 +236,7 @@ class PlannerScreen extends ConsumerWidget {
         ),
         const SizedBox(height: AppSizes.sm),
 
-        // Scrollable filter chip row
+        // Filter chips list
         SizedBox(
           height: 36,
           child: ListView.separated(
@@ -273,120 +266,6 @@ class PlannerScreen extends ConsumerWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildCollapsibleSection({
-    required BuildContext context,
-    required WidgetRef ref,
-    required int sectionIndex,
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required List<TaskEntity> tasks,
-    required bool isCollapsed,
-    required Set<String> selectedIds,
-    required bool isSelectionMode,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSizes.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Collapsible Header
-          TimelineSectionHeader(
-            sectionIndex: sectionIndex,
-            title: title,
-            icon: icon,
-            iconColor: iconColor,
-            tasks: tasks,
-          ),
-          const SizedBox(height: AppSizes.xs),
-
-          // Collapsible body
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeInOut,
-            child: isCollapsed
-                ? const SizedBox.shrink()
-                : Container(
-                    decoration: BoxDecoration(
-                      border: Border(
-                        left: BorderSide(
-                          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    padding: const EdgeInsets.only(left: AppSizes.md, bottom: AppSizes.sm),
-                    margin: const EdgeInsets.only(left: 13),
-                    child: tasks.isEmpty
-                        ? _buildEmptyState(theme, ref.watch(taskFilterProvider))
-                        : ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: EdgeInsets.zero,
-                            itemCount: tasks.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: AppSizes.sm),
-                            itemBuilder: (context, index) {
-                              final task = tasks[index];
-                              return TaskCard(
-                                key: ValueKey(task.id),
-                                task: task,
-                                isSelected: selectedIds.contains(task.id),
-                                isSelectionMode: isSelectionMode,
-                                onTapSelection: () {
-                                  ref.read(selectedTasksProvider.notifier).toggleSelection(task.id);
-                                },
-                                onLongPress: () {
-                                  ref.read(selectedTasksProvider.notifier).toggleSelection(task.id);
-                                },
-                                onTapDetail: () {
-                                  context.push('/tasks/${task.id}');
-                                },
-                                onToggle: () {
-                                  ref.read(tasksProvider.notifier).toggleTaskCompletion(task.id);
-                                },
-                                onDelete: () {
-                                  ref.read(tasksProvider.notifier).deleteTask(task.id);
-                                },
-                              );
-                            },
-                          ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme, String activeFilter) {
-    final message = switch (activeFilter) {
-      'completed' => 'No completed tasks here',
-      'upcoming' => 'No upcoming tasks found',
-      'all' => 'No tasks scheduled',
-      _ => 'No matching tasks found',
-    };
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(AppSizes.sm),
-      ),
-      child: Center(
-        child: Text(
-          message,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.outline.withValues(alpha: 0.8),
-            fontStyle: FontStyle.italic,
-          ),
-        ),
-      ),
     );
   }
 }
