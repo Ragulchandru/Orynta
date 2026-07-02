@@ -275,8 +275,7 @@ class _HomeAppBar extends ConsumerWidget {
               case 'trash':
                 context.pushNamed(RouteNames.trash);
               case 'settings':
-                // Settings screen — Phase 3 Step 2.
-                break;
+                context.pushNamed(RouteNames.settings);
             }
           },
           itemBuilder: (_) => const [

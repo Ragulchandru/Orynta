@@ -41,7 +41,9 @@ import 'package:fpdart/fpdart.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/usecases/use_case.dart';
 import '../../di/notes_use_case_providers.dart';
+import '../../di/notes_data_providers.dart';
 import '../../domain/entities/note_entity.dart';
+import '../../domain/entities/note_status.dart';
 import '../../domain/usecases/create_note_use_case.dart';
 
 /// Single AsyncNotifier that owns the complete in-memory notes collection.
@@ -139,6 +141,24 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
   /// Toggles the favorite state of a note.
   Future<Either<Failure, NoteEntity>> toggleFavorite(String id) =>
       _mutate(() => ref.read(toggleFavoriteUseCaseProvider)(id));
+
+  /// Permanently deletes all notes currently in the trash from storage.
+  Future<void> emptyTrash() async {
+    final box = ref.read(notesBoxProvider);
+    final trashedKeys = box.values
+        .where((m) => m.statusIndex == NoteStatus.trashed.index)
+        .map((m) => m.id)
+        .toList();
+    await box.deleteAll(trashedKeys);
+    ref.invalidateSelf();
+  }
+
+  /// Permanently erases all notes from the local storage.
+  Future<void> clearAllNotes() async {
+    final box = ref.read(notesBoxProvider);
+    await box.clear();
+    ref.invalidateSelf();
+  }
 }
 
 /// The single source of truth for all notes.

@@ -23,6 +23,7 @@ import '../../features/home/presentation/screens/home_screen.dart';
 import '../../features/notes/presentation/screens/archive_screen.dart';
 import '../../features/notes/presentation/screens/note_editor_screen.dart';
 import '../../features/notes/presentation/screens/trash_screen.dart';
+import '../../features/settings/presentation/screens/settings_screen.dart';
 import 'route_names.dart';
 
 // This line tells build_runner to generate app_router.g.dart.
@@ -98,6 +99,18 @@ GoRouter appRouter(Ref ref) {
         name: RouteNames.trash,
         builder: (BuildContext context, GoRouterState state) {
           return const TrashScreen();
+        },
+      ),
+
+      // ── Settings Screen ──────────────────────────────────────────────────────
+      // Path: /settings
+      // Opened from the Home Screen's "More" popup menu.
+      // Displays configuration settings and app options.
+      GoRoute(
+        path: '/settings',
+        name: RouteNames.settings,
+        builder: (BuildContext context, GoRouterState state) {
+          return const SettingsScreen();
         },
       ),
     ],
