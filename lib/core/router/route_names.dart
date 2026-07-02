@@ -16,6 +16,12 @@ abstract final class RouteNames {
   /// Placeholder home screen (replaced by NotesScreen in Phase 1).
   static const String home = 'home';
 
+  // ─── Orynta 2.0 Tabs ──────────────────────────────────────────────────────
+  static const String dashboard = 'dashboard';
+  static const String planner = 'planner';
+  static const String insights = 'insights';
+  static const String createTask = 'create-task';
+
   // ─── Phase 1 (Notes) ──────────────────────────────────────────────────────
   /// Full list of notes (active).
   static const String notes = 'notes';

@@ -94,7 +94,12 @@ import '../../../notes/presentation/widgets/note_card.dart';
 /// Uses [ConsumerStatefulWidget] for local search-bar expand/collapse state
 /// while delegating all note data to Riverpod providers.
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.showFab = true,
+  });
+
+  final bool showFab;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -176,9 +181,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-
-      // ── Extended FAB ─────────────────────────────────────────────────────
-      floatingActionButton: _isSearching ? null : const _HomeFab(),
+      floatingActionButton: (widget.showFab && !_isSearching) ? const _HomeFab() : null,
     );
   }
 }
@@ -718,15 +721,11 @@ class _SearchResultsList extends ConsumerWidget {
     );
   }
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // _HomeFab
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// The Extended FAB for creating a new note.
-///
-/// Navigation to the editor screen will be wired in Step 9.
-/// The FAB is hidden when the search bar is open to avoid visual clutter.
 class _HomeFab extends StatelessWidget {
   const _HomeFab();
 

@@ -42,4 +42,8 @@ abstract final class HiveTypeIds {
   // ── Phase 3: Reminders ────────────────────────────────────────────────────
   /// TypeAdapter ID for [ReminderModel]. (reserved — not yet implemented)
   static const int reminder = 30;
+
+  // ── Orynta 2.0 Planner ────────────────────────────────────────────────────
+  /// TypeAdapter ID for [TaskModel].
+  static const int task = 50;
 }

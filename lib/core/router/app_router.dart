@@ -26,11 +26,18 @@ import '../../features/notes/presentation/screens/trash_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/auth/presentation/screens/lock_screen.dart';
 import '../../features/auth/presentation/providers/app_lock_provider.dart';
+import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
+import '../../features/planner/presentation/screens/planner_screen.dart';
+import '../../features/planner/presentation/screens/create_task_screen.dart';
+import '../../features/insights/presentation/screens/insights_screen.dart';
+import '../../shared/widgets/main_navigation_shell.dart';
 import 'route_names.dart';
 
 // This line tells build_runner to generate app_router.g.dart.
 // The generated file contains the appRouterProvider definition.
 part 'app_router.g.dart';
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
 
 /// A Riverpod provider that supplies the app's [GoRouter] instance.
 ///
@@ -39,6 +46,7 @@ part 'app_router.g.dart';
 @Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
   final router = GoRouter(
+    navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: true,
     initialLocation: '/',
 
@@ -75,34 +83,73 @@ GoRouter appRouter(Ref ref) {
         },
       ),
 
-      // ── Home Screen ─────────────────────────────────────────────────────────
-      GoRoute(
-        path: '/',
-        name: RouteNames.home,
-        builder: (BuildContext context, GoRouterState state) {
-          return const HomeScreen();
+      // ── Main Shell Route ────────────────────────────────────────────────────
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return MainNavigationShell(navigationShell: navigationShell);
         },
+        branches: [
+          // Branch 0: Today (Dashboard)
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/',
+                name: RouteNames.dashboard,
+                builder: (context, state) => const DashboardScreen(),
+              ),
+            ],
+          ),
+
+          // Branch 1: Notes
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/notes',
+                name: RouteNames.notes,
+                builder: (context, state) => const HomeScreen(showFab: false),
+              ),
+            ],
+          ),
+
+          // Branch 2: Planner
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/planner',
+                name: RouteNames.planner,
+                builder: (context, state) => const PlannerScreen(),
+              ),
+            ],
+          ),
+
+          // Branch 3: Insights
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/insights',
+                name: RouteNames.insights,
+                builder: (context, state) => const InsightsScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
 
       // ── Note Editor — Create mode ────────────────────────────────────────────
-      // Path: /notes/new
-      // Opened by the FAB on the Home Screen.
-      // No noteId → NoteEditorScreen runs in create mode.
       GoRoute(
         path: '/notes/new',
         name: RouteNames.noteEditor,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
           return const NoteEditorScreen();
         },
       ),
 
       // ── Note Editor — Edit mode ──────────────────────────────────────────────
-      // Path: /notes/:id
-      // Opened by tapping a NoteCard on the Home Screen.
-      // noteId param → NoteEditorScreen loads the note and runs in edit mode.
       GoRoute(
         path: '/notes/:id',
         name: RouteNames.noteDetail,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
           final noteId = state.pathParameters['id']!;
           return NoteEditorScreen(noteId: noteId);
@@ -110,36 +157,40 @@ GoRouter appRouter(Ref ref) {
       ),
 
       // ── Archive Screen ───────────────────────────────────────────────────────
-      // Path: /archive
-      // Opened from the Home Screen's "More" popup menu.
-      // Displays all archived notes; supports restore and move-to-trash actions.
       GoRoute(
         path: '/archive',
         name: RouteNames.archive,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
           return const ArchiveScreen();
         },
       ),
 
       // ── Trash Screen ─────────────────────────────────────────────────────────
-      // Path: /trash
-      // Opened from the Home Screen's "More" popup menu.
-      // Displays all trashed notes; supports restore action only (Phase 3 Step 1).
       GoRoute(
         path: '/trash',
         name: RouteNames.trash,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
           return const TrashScreen();
         },
       ),
 
+      // ── Create Task Screen ───────────────────────────────────────────────────
+      GoRoute(
+        path: '/tasks/new',
+        name: RouteNames.createTask,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          return const CreateTaskScreen();
+        },
+      ),
+
       // ── Settings Screen ──────────────────────────────────────────────────────
-      // Path: /settings
-      // Opened from the Home Screen's "More" popup menu.
-      // Displays configuration settings and app options.
       GoRoute(
         path: '/settings',
         name: RouteNames.settings,
+        parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
           return const SettingsScreen();
         },

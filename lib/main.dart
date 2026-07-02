@@ -30,6 +30,8 @@ import 'app.dart';
 import 'core/constants/app_strings.dart';
 import 'features/notes/data/models/note_model.dart';
 import 'features/notes/data/models/note_type_adapter.dart';
+import 'features/planner/data/models/task_model.dart';
+import 'features/planner/data/models/task_type_adapter.dart';
 
 Future<void> main() async {
   // Step 1
@@ -41,11 +43,13 @@ Future<void> main() async {
   // Step 3 — Register all TypeAdapters before opening any box.
   // Add new adapters here as new features are implemented.
   Hive.registerAdapter(NoteTypeAdapter());
+  Hive.registerAdapter(TaskTypeAdapter());
 
   // Step 4 — Open Hive boxes needed at app startup.
   await Future.wait([
     Hive.openBox<String>(AppStrings.settingsBoxName),
     Hive.openBox<NoteModel>(AppStrings.notesBoxName),
+    Hive.openBox<TaskModel>(AppStrings.tasksBoxName),
   ]);
 
   // Step 5 — Launch the app.

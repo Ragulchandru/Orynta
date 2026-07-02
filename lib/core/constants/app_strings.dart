@@ -22,6 +22,7 @@ abstract final class AppStrings {
   static const String tagsBoxName = 'tags_box';
   static const String remindersBoxName = 'reminders_box';
   static const String attachmentsBoxName = 'attachments_box';
+  static const String tasksBoxName = 'tasks_box';
 
   // ─── Settings Keys ────────────────────────────────────────────────────────
   // Keys for values stored in the settings_box.
