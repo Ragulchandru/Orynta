@@ -31,6 +31,8 @@ import '../../features/planner/presentation/screens/planner_screen.dart';
 import '../../features/planner/presentation/screens/create_task_screen.dart';
 import '../../features/planner/presentation/screens/task_detail_screen.dart';
 import '../../features/insights/presentation/screens/insights_screen.dart';
+import '../../features/habits/presentation/screens/habits_screen.dart';
+import '../../features/habits/presentation/screens/create_habit_screen.dart';
 import '../../shared/widgets/main_navigation_shell.dart';
 import 'route_names.dart';
 
@@ -206,6 +208,33 @@ GoRouter appRouter(Ref ref) {
         builder: (BuildContext context, GoRouterState state) {
           final id = state.pathParameters['id']!;
           return CreateTaskScreen(taskId: id);
+        },
+      ),
+
+      // ── Habits Screens ───────────────────────────────────────────────────────
+      GoRoute(
+        path: '/habits',
+        name: RouteNames.habits,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          return const HabitsScreen();
+        },
+      ),
+      GoRoute(
+        path: '/habits/new',
+        name: RouteNames.createHabit,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          return const CreateHabitScreen();
+        },
+      ),
+      GoRoute(
+        path: '/habits/:id/edit',
+        name: RouteNames.editHabit,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          final id = state.pathParameters['id']!;
+          return CreateHabitScreen(habitId: id);
         },
       ),
 

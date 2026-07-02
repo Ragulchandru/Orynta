@@ -11,6 +11,7 @@ import '../../../calendar/presentation/widgets/calendar_header.dart';
 import '../../../calendar/presentation/widgets/month_grid.dart';
 import '../../../calendar/presentation/widgets/week_strip.dart';
 import '../providers/tasks_notifier.dart';
+import '../../../habits/presentation/providers/habits_notifier.dart';
 import '../widgets/task_multiselect_bar.dart';
 
 final showMonthlyCalendarProvider = StateProvider<bool>((ref) => false);
@@ -139,8 +140,10 @@ class PlannerScreen extends ConsumerWidget {
                   child: ListView(
                     physics: const BouncingScrollPhysics(),
                     padding: const EdgeInsets.fromLTRB(AppSizes.lg, 0, AppSizes.lg, AppSizes.xxxl * 2),
-                    children: const [
-                      AgendaSection(),
+                    children: [
+                      _buildHabitsSection(context, ref),
+                      const SizedBox(height: AppSizes.md),
+                      const AgendaSection(),
                     ],
                   ),
                 ),
@@ -261,6 +264,133 @@ class PlannerScreen extends ConsumerWidget {
                 selectedColor: colorScheme.primary,
                 showCheckmark: false,
                 padding: EdgeInsets.zero,
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHabitsSection(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final selectedDate = ref.watch(selectedDateProvider);
+    final selectedDateHabits = ref.watch(habitsForSelectedDateProvider);
+
+    if (selectedDateHabits.isEmpty) return const SizedBox.shrink();
+
+    final completedCount = selectedDateHabits.where((h) => h.completedToday).length;
+    final totalCount = selectedDateHabits.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.spa_rounded, size: 18, color: colorScheme.primary),
+                const SizedBox(width: AppSizes.xs),
+                Text(
+                  'Daily Routines',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              '$completedCount/$totalCount',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.sm),
+        SizedBox(
+          height: 64,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: selectedDateHabits.length,
+            separatorBuilder: (_, __) => const SizedBox(width: AppSizes.sm),
+            itemBuilder: (context, index) {
+              final habit = selectedDateHabits[index];
+              final isDone = habit.completedToday;
+              final habitColor = Color(habit.color);
+
+              return Card(
+                elevation: 0,
+                margin: EdgeInsets.zero,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppSizes.md),
+                  side: BorderSide(
+                    color: isDone
+                        ? Colors.green.withValues(alpha: 0.5)
+                        : colorScheme.outlineVariant.withValues(alpha: 0.3),
+                    width: isDone ? 1.5 : 1,
+                  ),
+                ),
+                color: isDone
+                    ? Colors.green.withValues(alpha: 0.05)
+                    : colorScheme.surfaceContainerLow,
+                child: InkWell(
+                  onTap: () {
+                    if (isDone) {
+                      ref.read(habitsProvider.notifier).decrementHabit(habit.id, selectedDate);
+                    } else {
+                      ref.read(habitsProvider.notifier).incrementHabit(habit.id, selectedDate);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(AppSizes.md),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          isDone
+                              ? Icons.check_circle_rounded
+                              : Icons.radio_button_unchecked_rounded,
+                          color: isDone ? Colors.green : habitColor,
+                          size: 18,
+                        ),
+                        const SizedBox(width: AppSizes.sm),
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              habit.title,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  decoration: isDone ? TextDecoration.lineThrough : null,
+                                  color: isDone
+                                      ? colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
+                                      : colorScheme.onSurface,
+                                ),
+                            ),
+                            if (habit.targetCount > 1) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                '${habit.currentCount}/${habit.targetCount}',
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               );
             },
           ),

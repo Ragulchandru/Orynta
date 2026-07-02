@@ -1,0 +1,197 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import '../../../../core/constants/app_strings.dart';
+import '../../../calendar/presentation/providers/calendar_providers.dart';
+import '../../data/datasources/habit_local_data_source.dart';
+import '../../data/models/habit_model.dart';
+import '../../data/repositories/habit_repository_impl.dart';
+import '../../domain/entities/habit_entity.dart';
+import '../../domain/repositories/habit_repository.dart';
+
+final habitRepositoryProvider = Provider<HabitRepository>((ref) {
+  final Box<HabitModel> box = Hive.box<HabitModel>(AppStrings.habitsBoxName);
+  final dataSource = HabitLocalDataSourceImpl(box);
+  return HabitRepositoryImpl(dataSource);
+});
+
+// ─── Habits Notifier ─────────────────────────────────────────────────────────
+
+class HabitsNotifier extends StateNotifier<List<HabitEntity>> {
+  HabitsNotifier(this._repository) : super([]) {
+    loadHabits();
+  }
+
+  final HabitRepository _repository;
+
+  Future<void> loadHabits() async {
+    final habits = await _repository.getAllHabits();
+    state = habits;
+  }
+
+  Future<void> addHabit(HabitEntity habit) async {
+    await _repository.saveHabit(habit);
+    state = [...state, habit];
+  }
+
+  Future<void> editHabit(HabitEntity habit) async {
+    final updated = habit.copyWith(updatedAt: DateTime.now());
+    await _repository.updateHabit(updated);
+    state = [
+      for (final h in state)
+        if (h.id == habit.id) updated else h,
+    ];
+  }
+
+  Future<void> deleteHabit(String id) async {
+    await _repository.deleteHabit(id);
+    state = state.where((h) => h.id != id).toList();
+  }
+
+  Future<void> incrementHabit(String id, [DateTime? date]) async {
+    final index = state.indexWhere((h) => h.id == id);
+    if (index == -1) return;
+
+    final habit = state[index];
+    final targetDate = date ?? DateTime.now();
+    final dateKey = _formatKey(targetDate);
+    final newHistory = Map<String, int>.from(habit.completionHistory);
+    final currentVal = newHistory[dateKey] ?? 0;
+    newHistory[dateKey] = currentVal + 1;
+
+    final isToday = _formatKey(DateTime.now()) == dateKey;
+    final isCompleted = newHistory[dateKey]! >= habit.targetCount;
+    final currentStreak = _calculateStreak(newHistory, habit.targetCount);
+    final longestStreak = currentStreak > habit.longestStreak ? currentStreak : habit.longestStreak;
+
+    final updated = habit.copyWith(
+      currentCount: isToday ? newHistory[dateKey]! : habit.currentCount,
+      completedToday: isToday ? isCompleted : habit.completedToday,
+      completionHistory: newHistory,
+      currentStreak: currentStreak,
+      longestStreak: longestStreak,
+      updatedAt: DateTime.now(),
+    );
+
+    await _repository.updateHabit(updated);
+    state = [
+      for (final h in state)
+        if (h.id == id) updated else h,
+    ];
+  }
+
+  Future<void> decrementHabit(String id, [DateTime? date]) async {
+    final index = state.indexWhere((h) => h.id == id);
+    if (index == -1) return;
+
+    final habit = state[index];
+    final targetDate = date ?? DateTime.now();
+    final dateKey = _formatKey(targetDate);
+    final newHistory = Map<String, int>.from(habit.completionHistory);
+    final currentVal = newHistory[dateKey] ?? 0;
+    if (currentVal <= 0) return;
+    newHistory[dateKey] = currentVal - 1;
+
+    final isToday = _formatKey(DateTime.now()) == dateKey;
+    final isCompleted = newHistory[dateKey]! >= habit.targetCount;
+    final currentStreak = _calculateStreak(newHistory, habit.targetCount);
+
+    final updated = habit.copyWith(
+      currentCount: isToday ? newHistory[dateKey]! : habit.currentCount,
+      completedToday: isToday ? isCompleted : habit.completedToday,
+      completionHistory: newHistory,
+      currentStreak: currentStreak,
+      updatedAt: DateTime.now(),
+    );
+
+    await _repository.updateHabit(updated);
+    state = [
+      for (final h in state)
+        if (h.id == id) updated else h,
+    ];
+  }
+
+  String _formatKey(DateTime dt) {
+    final y = dt.year.toString();
+    final m = dt.month.toString().padLeft(2, '0');
+    final d = dt.day.toString().padLeft(2, '0');
+    return '$y-$m-$d';
+  }
+
+  int _calculateStreak(Map<String, int> history, int targetCount) {
+    int streak = 0;
+    DateTime checkDate = DateTime.now();
+
+    final todayKey = _formatKey(checkDate);
+    final yesterdayKey = _formatKey(checkDate.subtract(const Duration(days: 1)));
+
+    final todayCompleted = (history[todayKey] ?? 0) >= targetCount;
+    final yesterdayCompleted = (history[yesterdayKey] ?? 0) >= targetCount;
+
+    if (!todayCompleted && !yesterdayCompleted) {
+      return 0;
+    }
+
+    DateTime iterator = todayCompleted ? checkDate : checkDate.subtract(const Duration(days: 1));
+    while (true) {
+      final key = _formatKey(iterator);
+      if ((history[key] ?? 0) >= targetCount) {
+        streak++;
+        iterator = iterator.subtract(const Duration(days: 1));
+      } else {
+        break;
+      }
+    }
+    return streak;
+  }
+}
+
+final habitsProvider = StateNotifierProvider<HabitsNotifier, List<HabitEntity>>((ref) {
+  final repository = ref.watch(habitRepositoryProvider);
+  return HabitsNotifier(repository);
+});
+
+// ─── Computed Selectors ──────────────────────────────────────────────────────
+
+final todaysHabitsProvider = Provider<List<HabitEntity>>((ref) {
+  return ref.watch(habitsProvider);
+});
+
+final completedHabitsProvider = Provider<List<HabitEntity>>((ref) {
+  return ref.watch(todaysHabitsProvider).where((h) => h.completedToday).toList();
+});
+
+final activeStreakProvider = Provider<int>((ref) {
+  final habits = ref.watch(habitsProvider);
+  if (habits.isEmpty) return 0;
+  return habits.map((h) => h.currentStreak).reduce((a, b) => a > b ? a : b);
+});
+
+final longestStreakProvider = Provider<int>((ref) {
+  final habits = ref.watch(habitsProvider);
+  if (habits.isEmpty) return 0;
+  return habits.map((h) => h.longestStreak).reduce((a, b) => a > b ? a : b);
+});
+
+/// Displays overall today's completion rate
+final habitCompletionRateProvider = Provider<double>((ref) {
+  final habits = ref.watch(todaysHabitsProvider);
+  if (habits.isEmpty) return 0.0;
+  final completed = habits.where((h) => h.completedToday).length;
+  return completed / habits.length;
+});
+
+/// Adjusts list entities to reflect selected calendar date completions
+final habitsForSelectedDateProvider = Provider<List<HabitEntity>>((ref) {
+  final habits = ref.watch(habitsProvider);
+  final selectedDate = ref.watch(selectedDateProvider);
+  final dateKey = '${selectedDate.year}-${selectedDate.month.toString().padLeft(2, '0')}-${selectedDate.day.toString().padLeft(2, '0')}';
+
+  return habits.map((h) {
+    final countOnDate = h.completionHistory[dateKey] ?? 0;
+    return h.copyWith(
+      currentCount: countOnDate,
+      completedToday: countOnDate >= h.targetCount,
+    );
+  }).toList();
+});

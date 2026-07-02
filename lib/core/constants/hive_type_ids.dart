@@ -46,4 +46,8 @@ abstract final class HiveTypeIds {
   // ── Orynta 2.0 Planner ────────────────────────────────────────────────────
   /// TypeAdapter ID for [TaskModel].
   static const int task = 50;
+
+  // ── Orynta 2.0 Habits ─────────────────────────────────────────────────────
+  /// TypeAdapter ID for [HabitModel].
+  static const int habit = 60;
 }

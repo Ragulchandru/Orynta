@@ -24,7 +24,7 @@ class QuickActionsCard extends StatelessWidget {
         icon: Icons.add_task_rounded,
         label: 'New Task',
         color: colorScheme.secondary,
-        onTap: () => InkSnackBar.showInfo(context, 'Tasks are coming soon in Phase 3.'),
+        onTap: () => context.pushNamed(RouteNames.createTask),
       ),
       _ActionItem(
         icon: Icons.play_arrow_rounded,
@@ -36,7 +36,7 @@ class QuickActionsCard extends StatelessWidget {
         icon: Icons.loop_rounded,
         label: 'New Habit',
         color: Colors.orange,
-        onTap: () => InkSnackBar.showInfo(context, 'Habits are coming soon in Phase 6.'),
+        onTap: () => context.pushNamed(RouteNames.createHabit),
       ),
     ];
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_sizes.dart';
+import '../../../habits/presentation/providers/habits_notifier.dart';
 import '../../../planner/presentation/providers/tasks_notifier.dart';
 
 class ProgressCard extends ConsumerWidget {
@@ -12,19 +13,25 @@ class ProgressCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Watch real tasks scheduled for today and completion rates
+    // Watch real tasks scheduled for today
     final todaysTasks = ref.watch(todaysTasksProvider);
     final completedTasks = ref.watch(completedTodayTasksProvider);
     final tasksCompleted = completedTasks.length;
     final totalTasks = todaysTasks.length;
 
-    // Habits mock data for Phase 2/3/4 (since Habits is in a future phase)
-    const habitsCompleted = 3;
-    const totalHabits = 4;
+    // Watch real habits scheduled for today
+    final habits = ref.watch(todaysHabitsProvider);
+    final completedHabits = ref.watch(completedHabitsProvider);
+    final habitsCompleted = completedHabits.length;
+    final totalHabits = habits.length;
+
+    // Focus minutes (mocked until Phase 7)
     const focusMinutes = 45;
 
-    // Watch dynamic productivity percentage from computed provider
-    final productivityPercentage = ref.watch(completionRateProvider);
+    // Combined overall productivity percentage (tasks + habits)
+    final totalItems = totalTasks + totalHabits;
+    final completedItems = tasksCompleted + habitsCompleted;
+    final combinedPercentage = totalItems > 0 ? completedItems / totalItems : 0.0;
 
     return Card(
       elevation: 0,
@@ -40,7 +47,7 @@ class ProgressCard extends ConsumerWidget {
         padding: const EdgeInsets.all(AppSizes.lg),
         child: Row(
           children: [
-            // Left: Circular Progress Ring
+            // Left: Combined Circular Progress Ring
             Stack(
               alignment: Alignment.center,
               children: [
@@ -48,7 +55,7 @@ class ProgressCard extends ConsumerWidget {
                   width: 80,
                   height: 80,
                   child: CircularProgressIndicator(
-                    value: productivityPercentage,
+                    value: combinedPercentage,
                     strokeWidth: 8,
                     backgroundColor: colorScheme.outlineVariant.withValues(alpha: 0.2),
                     color: colorScheme.primary,
@@ -59,7 +66,7 @@ class ProgressCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${(productivityPercentage * 100).toInt()}%',
+                      '${(combinedPercentage * 100).toInt()}%',
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onSurface,
@@ -77,7 +84,7 @@ class ProgressCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(width: AppSizes.lg),
-            
+
             // Right: Detailed Stats
             Expanded(
               child: Column(
@@ -123,31 +130,25 @@ class ProgressCard extends ConsumerWidget {
     required String value,
   }) {
     final theme = Theme.of(context);
-    
+    final colorScheme = theme.colorScheme;
+
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.12),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, size: 14, color: iconColor),
-        ),
+        Icon(icon, size: 16, color: iconColor),
         const SizedBox(width: AppSizes.sm),
-        Text(
-          label,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
+        Expanded(
+          child: Text(
+            label,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
           ),
         ),
-        const Spacer(),
         Text(
           value,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
           ),
         ),
       ],

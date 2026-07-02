@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../habits/presentation/providers/habits_notifier.dart';
 import '../providers/calendar_providers.dart';
 import 'calendar_indicator.dart';
 
@@ -21,6 +22,7 @@ class DayTile extends ConsumerWidget {
 
     final selectedDate = ref.watch(selectedDateProvider);
     final taskMap = ref.watch(monthlyTaskMapProvider);
+    final habits = ref.watch(habitsProvider);
 
     final isSelected = selectedDate.year == date.year &&
         selectedDate.month == date.month &&
@@ -34,6 +36,12 @@ class DayTile extends ConsumerWidget {
     // Format date key: yyyy-MM-dd
     final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     final taskCount = taskMap[dateKey] ?? 0;
+
+    // Habits Completion Check for this date
+    final hasHabits = habits.isNotEmpty;
+    final completedHabitsCount = habits.where((h) => (h.completionHistory[dateKey] ?? 0) >= h.targetCount).length;
+    final anyHabitCompleted = habits.any((h) => (h.completionHistory[dateKey] ?? 0) > 0);
+    final allHabitsCompleted = hasHabits && completedHabitsCount == habits.length;
 
     // Colors & Styles
     Color? textColor;
@@ -60,7 +68,10 @@ class DayTile extends ConsumerWidget {
         const SizedBox(height: 2),
         CalendarIndicator(
           taskCount: taskCount,
-          isCompleted: false, // Default indicator to pending styling unless we compute full map
+          isCompleted: false,
+          hasHabits: hasHabits,
+          allHabitsCompleted: allHabitsCompleted,
+          anyHabitsCompleted: anyHabitCompleted,
         ),
       ],
     );
@@ -89,8 +100,8 @@ class DayTile extends ConsumerWidget {
             // Update selected date
             ref.read(selectedDateProvider.notifier).state = date;
           },
-          customBorder: const CircleBorder(),
-          child: Center(child: cellChild),
+          borderRadius: BorderRadius.circular(999),
+          child: cellChild,
         ),
       ),
     );
