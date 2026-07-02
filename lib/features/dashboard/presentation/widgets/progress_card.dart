@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../habits/presentation/providers/habits_notifier.dart';
 import '../../../planner/presentation/providers/tasks_notifier.dart';
+import '../../../focus/presentation/providers/focus_notifier.dart';
 
 class ProgressCard extends ConsumerWidget {
   const ProgressCard({super.key});
@@ -25,8 +26,12 @@ class ProgressCard extends ConsumerWidget {
     final habitsCompleted = completedHabits.length;
     final totalHabits = habits.length;
 
-    // Focus minutes (mocked until Phase 7)
-    const focusMinutes = 45;
+    // Watch real focus sessions scheduled for today
+    final todaysSessions = ref.watch(todaysFocusProvider);
+    final focusMinutes = todaysSessions
+        .where((s) => s.sessionType == 'focus' && s.completed)
+        .map((s) => s.actualDurationMinutes)
+        .fold(0, (a, b) => a + b);
 
     // Combined overall productivity percentage (tasks + habits)
     final totalItems = totalTasks + totalHabits;

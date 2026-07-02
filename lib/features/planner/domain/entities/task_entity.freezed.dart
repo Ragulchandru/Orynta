@@ -19,12 +19,14 @@ mixin _$TaskEntity {
   String get id => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   String get description => throw _privateConstructorUsedError;
-  String get priority => throw _privateConstructorUsedError;
+  String get priority =>
+      throw _privateConstructorUsedError; // "low", "medium", "high"
   DateTime? get dueDate => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
   bool get isCompleted => throw _privateConstructorUsedError;
-  int get timelineSection => throw _privateConstructorUsedError;
+  int get timelineSection =>
+      throw _privateConstructorUsedError; // 0 = Morning, 1 = Afternoon, 2 = Evening, 3 = Night
   int get estimatedMinutes => throw _privateConstructorUsedError;
   List<String> get tagIds => throw _privateConstructorUsedError;
   String? get linkedNoteId => throw _privateConstructorUsedError;
@@ -60,6 +62,7 @@ class _$TaskEntityCopyWithImpl<$Res, $Val extends TaskEntity>
     implements $TaskEntityCopyWith<$Res> {
   _$TaskEntityCopyWithImpl(this._value, this._then);
 
+  // ignore: unused_field
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
@@ -83,40 +86,52 @@ class _$TaskEntityCopyWithImpl<$Res, $Val extends TaskEntity>
     return _then(_value.copyWith(
       id: null == id
           ? _value.id
-          : id as String,
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
       title: null == title
           ? _value.title
-          : title as String,
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
       description: null == description
           ? _value.description
-          : description as String,
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
       priority: null == priority
           ? _value.priority
-          : priority as String,
+          : priority // ignore: cast_nullable_to_non_nullable
+              as String,
       dueDate: freezed == dueDate
           ? _value.dueDate
-          : dueDate as DateTime?,
+          : dueDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       createdAt: null == createdAt
           ? _value.createdAt
-          : createdAt as DateTime,
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
       updatedAt: null == updatedAt
           ? _value.updatedAt
-          : updatedAt as DateTime,
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
       isCompleted: null == isCompleted
           ? _value.isCompleted
-          : isCompleted as bool,
+          : isCompleted // ignore: cast_nullable_to_non_nullable
+              as bool,
       timelineSection: null == timelineSection
           ? _value.timelineSection
-          : timelineSection as int,
+          : timelineSection // ignore: cast_nullable_to_non_nullable
+              as int,
       estimatedMinutes: null == estimatedMinutes
           ? _value.estimatedMinutes
-          : estimatedMinutes as int,
+          : estimatedMinutes // ignore: cast_nullable_to_non_nullable
+              as int,
       tagIds: null == tagIds
           ? _value.tagIds
-          : tagIds as List<String>,
+          : tagIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       linkedNoteId: freezed == linkedNoteId
           ? _value.linkedNoteId
-          : linkedNoteId as String?,
+          : linkedNoteId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -125,7 +140,7 @@ class _$TaskEntityCopyWithImpl<$Res, $Val extends TaskEntity>
 abstract class _$$TaskEntityImplCopyWith<$Res>
     implements $TaskEntityCopyWith<$Res> {
   factory _$$TaskEntityImplCopyWith(
-          _$$TaskEntityImpl value, $Res Function(_$$TaskEntityImpl) then) =
+          _$TaskEntityImpl value, $Res Function(_$TaskEntityImpl) then) =
       __$$TaskEntityImplCopyWithImpl<$Res>;
   @override
   @useResult
@@ -146,10 +161,10 @@ abstract class _$$TaskEntityImplCopyWith<$Res>
 
 /// @nodoc
 class __$$TaskEntityImplCopyWithImpl<$Res>
-    extends _$TaskEntityCopyWithImpl<$Res, _$$TaskEntityImpl>
+    extends _$TaskEntityCopyWithImpl<$Res, _$TaskEntityImpl>
     implements _$$TaskEntityImplCopyWith<$Res> {
   __$$TaskEntityImplCopyWithImpl(
-      _$$TaskEntityImpl _value, $Res Function(_$$TaskEntityImpl) _then)
+      _$TaskEntityImpl _value, $Res Function(_$TaskEntityImpl) _then)
       : super(_value, _then);
 
   @pragma('vm:prefer-inline')
@@ -168,51 +183,63 @@ class __$$TaskEntityImplCopyWithImpl<$Res>
     Object? tagIds = null,
     Object? linkedNoteId = freezed,
   }) {
-    return _then(_$$TaskEntityImpl(
+    return _then(_$TaskEntityImpl(
       id: null == id
           ? _value.id
-          : id as String,
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
       title: null == title
           ? _value.title
-          : title as String,
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
       description: null == description
           ? _value.description
-          : description as String,
+          : description // ignore: cast_nullable_to_non_nullable
+              as String,
       priority: null == priority
           ? _value.priority
-          : priority as String,
+          : priority // ignore: cast_nullable_to_non_nullable
+              as String,
       dueDate: freezed == dueDate
           ? _value.dueDate
-          : dueDate as DateTime?,
+          : dueDate // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
       createdAt: null == createdAt
           ? _value.createdAt
-          : createdAt as DateTime,
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
       updatedAt: null == updatedAt
           ? _value.updatedAt
-          : updatedAt as DateTime,
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
       isCompleted: null == isCompleted
           ? _value.isCompleted
-          : isCompleted as bool,
+          : isCompleted // ignore: cast_nullable_to_non_nullable
+              as bool,
       timelineSection: null == timelineSection
           ? _value.timelineSection
-          : timelineSection as int,
+          : timelineSection // ignore: cast_nullable_to_non_nullable
+              as int,
       estimatedMinutes: null == estimatedMinutes
           ? _value.estimatedMinutes
-          : estimatedMinutes as int,
+          : estimatedMinutes // ignore: cast_nullable_to_non_nullable
+              as int,
       tagIds: null == tagIds
-          ? _value.tagIds
-          : tagIds as List<String>,
+          ? _value._tagIds
+          : tagIds // ignore: cast_nullable_to_non_nullable
+              as List<String>,
       linkedNoteId: freezed == linkedNoteId
           ? _value.linkedNoteId
-          : linkedNoteId as String?,
+          : linkedNoteId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
 
 /// @nodoc
 
-class _$$TaskEntityImpl implements _TaskEntity {
-  const _$$TaskEntityImpl(
+class _$TaskEntityImpl implements _TaskEntity {
+  const _$TaskEntityImpl(
       {required this.id,
       required this.title,
       required this.description,
@@ -223,8 +250,9 @@ class _$$TaskEntityImpl implements _TaskEntity {
       required this.isCompleted,
       required this.timelineSection,
       required this.estimatedMinutes,
-      required this.tagIds,
-      this.linkedNoteId});
+      required final List<String> tagIds,
+      this.linkedNoteId})
+      : _tagIds = tagIds;
 
   @override
   final String id;
@@ -234,6 +262,7 @@ class _$$TaskEntityImpl implements _TaskEntity {
   final String description;
   @override
   final String priority;
+// "low", "medium", "high"
   @override
   final DateTime? dueDate;
   @override
@@ -244,10 +273,17 @@ class _$$TaskEntityImpl implements _TaskEntity {
   final bool isCompleted;
   @override
   final int timelineSection;
+// 0 = Morning, 1 = Afternoon, 2 = Evening, 3 = Night
   @override
   final int estimatedMinutes;
+  final List<String> _tagIds;
   @override
-  final List<String> tagIds;
+  List<String> get tagIds {
+    if (_tagIds is EqualUnmodifiableListView) return _tagIds;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_tagIds);
+  }
+
   @override
   final String? linkedNoteId;
 
@@ -260,7 +296,7 @@ class _$$TaskEntityImpl implements _TaskEntity {
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$$TaskEntityImpl &&
+            other is _$TaskEntityImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.title, title) || other.title == title) &&
             (identical(other.description, description) ||
@@ -278,7 +314,7 @@ class _$$TaskEntityImpl implements _TaskEntity {
                 other.timelineSection == timelineSection) &&
             (identical(other.estimatedMinutes, estimatedMinutes) ||
                 other.estimatedMinutes == estimatedMinutes) &&
-            const DeepCollectionEquality().equals(other.tagIds, tagIds) &&
+            const DeepCollectionEquality().equals(other._tagIds, _tagIds) &&
             (identical(other.linkedNoteId, linkedNoteId) ||
                 other.linkedNoteId == linkedNoteId));
   }
@@ -296,14 +332,14 @@ class _$$TaskEntityImpl implements _TaskEntity {
       isCompleted,
       timelineSection,
       estimatedMinutes,
-      const DeepCollectionEquality().hash(tagIds),
+      const DeepCollectionEquality().hash(_tagIds),
       linkedNoteId);
 
   @JsonKey(ignore: true)
   @override
   @pragma('vm:prefer-inline')
-  _$$TaskEntityImplCopyWith<_$$TaskEntityImpl> get copyWith =>
-      __$$TaskEntityImplCopyWithImpl<_$$TaskEntityImpl>(this, _$identity);
+  _$$TaskEntityImplCopyWith<_$TaskEntityImpl> get copyWith =>
+      __$$TaskEntityImplCopyWithImpl<_$TaskEntityImpl>(this, _$identity);
 }
 
 abstract class _TaskEntity implements TaskEntity {
@@ -319,7 +355,7 @@ abstract class _TaskEntity implements TaskEntity {
       required final int timelineSection,
       required final int estimatedMinutes,
       required final List<String> tagIds,
-      final String? linkedNoteId}) = _$$TaskEntityImpl;
+      final String? linkedNoteId}) = _$TaskEntityImpl;
 
   @override
   String get id;
@@ -329,7 +365,7 @@ abstract class _TaskEntity implements TaskEntity {
   String get description;
   @override
   String get priority;
-  @override
+  @override // "low", "medium", "high"
   DateTime? get dueDate;
   @override
   DateTime get createdAt;
@@ -339,7 +375,7 @@ abstract class _TaskEntity implements TaskEntity {
   bool get isCompleted;
   @override
   int get timelineSection;
-  @override
+  @override // 0 = Morning, 1 = Afternoon, 2 = Evening, 3 = Night
   int get estimatedMinutes;
   @override
   List<String> get tagIds;
@@ -347,6 +383,6 @@ abstract class _TaskEntity implements TaskEntity {
   String? get linkedNoteId;
   @override
   @JsonKey(ignore: true)
-  _$$TaskEntityImplCopyWith<_$$TaskEntityImpl> get copyWith =>
+  _$$TaskEntityImplCopyWith<_$TaskEntityImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

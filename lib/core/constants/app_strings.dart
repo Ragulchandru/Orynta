@@ -24,6 +24,7 @@ abstract final class AppStrings {
   static const String attachmentsBoxName = 'attachments_box';
   static const String tasksBoxName = 'tasks_box';
   static const String habitsBoxName = 'habits_box';
+  static const String focusBoxName = 'focus_box';
 
   // ─── Settings Keys ────────────────────────────────────────────────────────
   // Keys for values stored in the settings_box.

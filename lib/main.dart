@@ -34,6 +34,8 @@ import 'features/planner/data/models/task_model.dart';
 import 'features/planner/data/models/task_type_adapter.dart';
 import 'features/habits/data/models/habit_model.dart';
 import 'features/habits/data/models/habit_type_adapter.dart';
+import 'features/focus/data/models/focus_session_model.dart';
+import 'features/focus/data/models/focus_type_adapter.dart';
 
 Future<void> main() async {
   // Step 1
@@ -47,6 +49,7 @@ Future<void> main() async {
   Hive.registerAdapter(NoteTypeAdapter());
   Hive.registerAdapter(TaskTypeAdapter());
   Hive.registerAdapter(HabitTypeAdapter());
+  Hive.registerAdapter(FocusTypeAdapter());
 
   // Step 4 — Open Hive boxes needed at app startup.
   await Future.wait([
@@ -54,6 +57,7 @@ Future<void> main() async {
     Hive.openBox<NoteModel>(AppStrings.notesBoxName),
     Hive.openBox<TaskModel>(AppStrings.tasksBoxName),
     Hive.openBox<HabitModel>(AppStrings.habitsBoxName),
+    Hive.openBox<FocusSessionModel>(AppStrings.focusBoxName),
   ]);
 
   // Step 5 — Launch the app.

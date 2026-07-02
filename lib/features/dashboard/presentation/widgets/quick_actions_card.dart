@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/router/route_names.dart';
-import '../../../../shared/widgets/ink_snack_bar.dart';
 
 class QuickActionsCard extends StatelessWidget {
   const QuickActionsCard({super.key});
@@ -30,7 +29,7 @@ class QuickActionsCard extends StatelessWidget {
         icon: Icons.play_arrow_rounded,
         label: 'Start Focus',
         color: Colors.red,
-        onTap: () => InkSnackBar.showInfo(context, 'Focus Mode is coming soon in Phase 7.'),
+        onTap: () => context.pushNamed(RouteNames.focus),
       ),
       _ActionItem(
         icon: Icons.loop_rounded,

@@ -13,6 +13,7 @@ import '../../../calendar/presentation/widgets/week_strip.dart';
 import '../providers/tasks_notifier.dart';
 import '../../../habits/presentation/providers/habits_notifier.dart';
 import '../widgets/task_multiselect_bar.dart';
+import '../../../focus/presentation/providers/focus_notifier.dart';
 
 final showMonthlyCalendarProvider = StateProvider<bool>((ref) => false);
 
@@ -144,6 +145,8 @@ class PlannerScreen extends ConsumerWidget {
                       _buildHabitsSection(context, ref),
                       const SizedBox(height: AppSizes.md),
                       const AgendaSection(),
+                      const SizedBox(height: AppSizes.md),
+                      _buildFocusSessionsSection(context, ref),
                     ],
                   ),
                 ),
@@ -394,6 +397,102 @@ class PlannerScreen extends ConsumerWidget {
               );
             },
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFocusSessionsSection(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    final selectedDate = ref.watch(selectedDateProvider);
+    final allSessions = ref.watch(focusNotifierProvider);
+
+    final selectedDateSessions = allSessions.where((s) {
+      return s.createdAt.year == selectedDate.year &&
+             s.createdAt.month == selectedDate.month &&
+             s.createdAt.day == selectedDate.day &&
+             s.completed;
+    }).toList();
+
+    if (selectedDateSessions.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.alarm_on_rounded, size: 18, color: colorScheme.primary),
+            const SizedBox(width: AppSizes.xs),
+            Text(
+              'Focus Log',
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.sm),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: selectedDateSessions.length,
+          separatorBuilder: (_, __) => const SizedBox(height: AppSizes.xs),
+          itemBuilder: (context, index) {
+            final session = selectedDateSessions[index];
+            final isBreak = session.sessionType != 'focus';
+            final timeStr = DateFormat('h:mm a').format(session.endTime);
+            final durationStr = '${session.actualDurationMinutes}m';
+
+            final icon = isBreak ? Icons.coffee_rounded : Icons.timer_outlined;
+            final iconColor = isBreak ? Colors.green : colorScheme.primary;
+            final label = isBreak
+                ? (session.sessionType == 'shortBreak' ? 'Short Break' : 'Long Break')
+                : 'Focus Session';
+
+            return Card(
+              elevation: 0,
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.md),
+                side: BorderSide(
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                ),
+              ),
+              color: colorScheme.surfaceContainerLow,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 0),
+                leading: CircleAvatar(
+                  backgroundColor: iconColor.withValues(alpha: 0.1),
+                  radius: 16,
+                  child: Icon(icon, color: iconColor, size: 16),
+                ),
+                title: Text(
+                  label,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                subtitle: Text(
+                  'Completed at $timeStr',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                trailing: Text(
+                  durationStr,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ],
     );

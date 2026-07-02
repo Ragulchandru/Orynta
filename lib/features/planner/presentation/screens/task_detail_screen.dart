@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_sizes.dart';
 import '../providers/tasks_notifier.dart';
+import '../../../focus/presentation/providers/timer_provider.dart';
 
 class TaskDetailScreen extends ConsumerWidget {
   const TaskDetailScreen({
@@ -172,6 +173,25 @@ class TaskDetailScreen extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right_rounded),
             ),
             const Divider(),
+            
+            if (!task.isCompleted) ...[
+              const SizedBox(height: AppSizes.sm),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.tonalIcon(
+                  onPressed: () {
+                    ref.read(timerProvider.notifier).selectTask(task.id);
+                    ref.read(timerProvider.notifier).selectHabit(null);
+                    context.push('/focus');
+                  },
+                  icon: const Icon(Icons.alarm_on_rounded),
+                  label: const Text('Start Focus Session'),
+                ),
+              ),
+              const SizedBox(height: AppSizes.sm),
+              const Divider(),
+            ],
+
             const SizedBox(height: AppSizes.md),
 
             // Auditing info (Created & Updated stamps)

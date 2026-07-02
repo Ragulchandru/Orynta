@@ -50,4 +50,8 @@ abstract final class HiveTypeIds {
   // ── Orynta 2.0 Habits ─────────────────────────────────────────────────────
   /// TypeAdapter ID for [HabitModel].
   static const int habit = 60;
+
+  // ── Orynta 2.0 Focus Mode ──────────────────────────────────────────────────
+  /// TypeAdapter ID for [FocusSessionModel].
+  static const int focusSession = 70;
 }

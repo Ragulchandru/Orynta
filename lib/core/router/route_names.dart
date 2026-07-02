@@ -29,6 +29,9 @@ abstract final class RouteNames {
   static const String createHabit = 'create-habit';
   static const String editHabit = 'edit-habit';
 
+  // ─── Focus Routes ─────────────────────────────────────────────────────────
+  static const String focus = 'focus';
+
   // ─── Phase 1 (Notes) ──────────────────────────────────────────────────────
   /// Full list of notes (active).
   static const String notes = 'notes';
