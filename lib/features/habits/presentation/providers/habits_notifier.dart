@@ -195,3 +195,26 @@ final habitsForSelectedDateProvider = Provider<List<HabitEntity>>((ref) {
     );
   }).toList();
 });
+
+final habitConsistencyProvider = Provider<double>((ref) {
+  final habits = ref.watch(habitsProvider);
+  if (habits.isEmpty) return 0.0;
+
+  double totalConsistency = 0.0;
+  final now = DateTime.now();
+
+  for (final habit in habits) {
+    int completedDays = 0;
+    for (int i = 0; i < 30; i++) {
+      final date = now.subtract(Duration(days: i));
+      final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      final completedCount = habit.completionHistory[dateKey] ?? 0;
+      if (completedCount >= habit.targetCount) {
+        completedDays++;
+      }
+    }
+    totalConsistency += (completedDays / 30.0);
+  }
+
+  return totalConsistency / habits.length;
+});

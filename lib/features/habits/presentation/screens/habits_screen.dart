@@ -23,6 +23,7 @@ class HabitsScreen extends ConsumerWidget {
     final completedHabits = ref.watch(completedHabitsProvider);
     final currentStreak = ref.watch(activeStreakProvider);
     final longestStreak = ref.watch(longestStreakProvider);
+    final consistency = ref.watch(habitConsistencyProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -135,7 +136,7 @@ class HabitsScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: AppSizes.sm),
                     HabitStatistics(
-                      totalHabits: habits.length,
+                      consistencyRate: consistency,
                       completedToday: completedHabits.length,
                       activeStreak: currentStreak,
                       longestStreak: longestStreak,

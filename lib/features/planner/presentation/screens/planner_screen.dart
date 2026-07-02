@@ -37,6 +37,27 @@ class PlannerScreen extends ConsumerWidget {
     final selectedIds = ref.watch(selectedTasksProvider);
     final isSelectionMode = selectedIds.isNotEmpty;
     final showMonthlyCalendar = ref.watch(showMonthlyCalendarProvider);
+    // Calculate daily completion rate
+    final dayTasks = ref.watch(selectedDateTasksProvider);
+    final dayCompleted = dayTasks.where((t) => t.isCompleted).length;
+    final dayPercent = dayTasks.isNotEmpty ? (dayCompleted / dayTasks.length * 100).toInt() : 100;
+
+    // Calculate weekly completion rate
+    final allTasks = ref.watch(tasksProvider);
+    final weekStart = selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
+    final weekEnd = weekStart.add(const Duration(days: 6));
+    final weekTasks = allTasks.where((t) {
+      if (t.dueDate == null) {
+        final now = DateTime.now();
+        final nowStart = now.subtract(Duration(days: now.weekday - 1));
+        return weekStart.isAtSameMomentAs(DateTime(nowStart.year, nowStart.month, nowStart.day));
+      }
+      final due = t.dueDate!;
+      return (due.isAfter(weekStart.subtract(const Duration(seconds: 1))) &&
+          due.isBefore(weekEnd.add(const Duration(seconds: 1))));
+    }).toList();
+    final weekCompleted = weekTasks.where((t) => t.isCompleted).length;
+    final weekPercent = weekTasks.isNotEmpty ? (weekCompleted / weekTasks.length * 100).toInt() : 100;
 
     return Scaffold(
       body: SafeArea(
@@ -72,6 +93,21 @@ class PlannerScreen extends ConsumerWidget {
                                 style: theme.textTheme.bodyMedium?.copyWith(
                                   color: colorScheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: AppSizes.md),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  'Daily: $dayPercent% • Weekly: $weekPercent%',
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ],

@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/constants/app_sizes.dart';
-import '../../../habits/presentation/providers/habits_notifier.dart';
-import '../../../planner/presentation/providers/tasks_notifier.dart';
-import '../../../focus/presentation/providers/focus_notifier.dart';
+import '../../../analytics/presentation/providers/analytics_provider.dart';
 
 class ProgressCard extends ConsumerWidget {
   const ProgressCard({super.key});
@@ -14,29 +12,28 @@ class ProgressCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Watch real tasks scheduled for today
-    final todaysTasks = ref.watch(todaysTasksProvider);
-    final completedTasks = ref.watch(completedTodayTasksProvider);
-    final tasksCompleted = completedTasks.length;
-    final totalTasks = todaysTasks.length;
+    // Watch today's stats and score
+    final score = ref.watch(productivityScoreProvider);
+    final stats = ref.watch(todayStatsProvider);
 
-    // Watch real habits scheduled for today
-    final habits = ref.watch(todaysHabitsProvider);
-    final completedHabits = ref.watch(completedHabitsProvider);
-    final habitsCompleted = completedHabits.length;
-    final totalHabits = habits.length;
+    // Watch achievements to find the latest progress
+    final achievements = ref.watch(achievementsProvider);
+    final latestAchievement = achievements.firstWhere(
+      (a) => a.isUnlocked,
+      orElse: () {
+        // Return the one with highest progress
+        final sorted = [...achievements]
+          ..sort((a, b) => b.progress.compareTo(a.progress));
+        return sorted.first;
+      },
+    );
 
-    // Watch real focus sessions scheduled for today
-    final todaysSessions = ref.watch(todaysFocusProvider);
-    final focusMinutes = todaysSessions
-        .where((s) => s.sessionType == 'focus' && s.completed)
-        .map((s) => s.actualDurationMinutes)
-        .fold(0, (a, b) => a + b);
-
-    // Combined overall productivity percentage (tasks + habits)
-    final totalItems = totalTasks + totalHabits;
-    final completedItems = tasksCompleted + habitsCompleted;
-    final combinedPercentage = totalItems > 0 ? completedItems / totalItems : 0.0;
+    // Watch weekly stats to get trend sums
+    final weekly = ref.watch(weeklyStatsProvider);
+    final weeklyFocusMins = weekly.map((s) => s.focusMinutes).fold(0, (a, b) => a + b);
+    final weeklyAvgScore = weekly.isEmpty
+        ? 0.0
+        : weekly.map((s) => s.productivityScore).reduce((a, b) => a + b) / weekly.length;
 
     return Card(
       elevation: 0,
@@ -52,18 +49,20 @@ class ProgressCard extends ConsumerWidget {
         padding: const EdgeInsets.all(AppSizes.lg),
         child: Row(
           children: [
-            // Left: Combined Circular Progress Ring
+            // Left: Combined Productivity Score Gauge Ring
             Stack(
               alignment: Alignment.center,
               children: [
                 SizedBox(
-                  width: 80,
-                  height: 80,
+                  width: 90,
+                  height: 90,
                   child: CircularProgressIndicator(
-                    value: combinedPercentage,
+                    value: score / 100.0,
                     strokeWidth: 8,
                     backgroundColor: colorScheme.outlineVariant.withValues(alpha: 0.2),
-                    color: colorScheme.primary,
+                    color: score >= 90.0
+                        ? Colors.amber
+                        : (score >= 60.0 ? colorScheme.primary : colorScheme.outline),
                     strokeCap: StrokeCap.round,
                   ),
                 ),
@@ -71,17 +70,19 @@ class ProgressCard extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${(combinedPercentage * 100).toInt()}%',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                      '${score.toInt()}',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
                         color: colorScheme.onSurface,
                       ),
                     ),
                     Text(
-                      'Progress',
+                      'SCORE',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
-                        fontSize: 9,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
                       ),
                     ),
                   ],
@@ -90,7 +91,7 @@ class ProgressCard extends ConsumerWidget {
             ),
             const SizedBox(width: AppSizes.lg),
 
-            // Right: Detailed Stats
+            // Right: Detailed Stats & Trends
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -98,25 +99,42 @@ class ProgressCard extends ConsumerWidget {
                   _buildStatRow(
                     context: context,
                     icon: Icons.checklist_rounded,
-                    iconColor: colorScheme.primary,
-                    label: 'Tasks',
-                    value: '$tasksCompleted / $totalTasks',
+                    iconColor: Colors.green,
+                    label: 'Tasks Today',
+                    value: '${stats.tasksCompleted} / ${stats.tasksCompleted + stats.tasksPending}',
                   ),
-                  const SizedBox(height: AppSizes.sm),
+                  const SizedBox(height: 6),
                   _buildStatRow(
                     context: context,
                     icon: Icons.loop_rounded,
-                    iconColor: Colors.orange,
-                    label: 'Habits',
-                    value: '$habitsCompleted / $totalHabits',
+                    iconColor: colorScheme.primary,
+                    label: 'Habits Today',
+                    value: '${stats.habitsCompleted} / ${stats.habitsTotal}',
                   ),
-                  const SizedBox(height: AppSizes.sm),
+                  const SizedBox(height: 6),
+                  _buildStatRow(
+                    context: context,
+                    icon: Icons.trending_up_rounded,
+                    iconColor: Colors.purple,
+                    label: 'Weekly Avg',
+                    value: '${weeklyAvgScore.toInt()} pts',
+                  ),
+                  const SizedBox(height: 6),
                   _buildStatRow(
                     context: context,
                     icon: Icons.timer_outlined,
-                    iconColor: Colors.red,
-                    label: 'Focus Time',
-                    value: '${focusMinutes}m',
+                    iconColor: Colors.orange,
+                    label: 'Focus Trend',
+                    value: '${weeklyFocusMins}m wkly',
+                  ),
+                  const SizedBox(height: 6),
+                  _buildStatRow(
+                    context: context,
+                    icon: latestAchievement.isUnlocked ? Icons.emoji_events_rounded : Icons.lock_outline_rounded,
+                    iconColor: latestAchievement.isUnlocked ? Colors.amber : colorScheme.outline,
+                    label: 'Latest Badge',
+                    value: latestAchievement.title,
+                    isTruncated: true,
                   ),
                 ],
               ),
@@ -133,27 +151,35 @@ class ProgressCard extends ConsumerWidget {
     required Color iconColor,
     required String label,
     required String value,
+    bool isTruncated = false,
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
     return Row(
       children: [
-        Icon(icon, size: 16, color: iconColor),
+        Icon(icon, size: 14, color: iconColor),
         const SizedBox(width: AppSizes.sm),
         Expanded(
           child: Text(
             label,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurfaceVariant,
+              fontSize: 12,
             ),
           ),
         ),
-        Text(
-          value,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colorScheme.onSurface,
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 90),
+          child: Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: colorScheme.onSurface,
+              fontSize: 12,
+            ),
           ),
         ),
       ],

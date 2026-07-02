@@ -30,7 +30,7 @@ import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/planner/presentation/screens/planner_screen.dart';
 import '../../features/planner/presentation/screens/create_task_screen.dart';
 import '../../features/planner/presentation/screens/task_detail_screen.dart';
-import '../../features/insights/presentation/screens/insights_screen.dart';
+import '../../features/analytics/presentation/screens/analytics_screen.dart';
 import '../../features/habits/presentation/screens/habits_screen.dart';
 import '../../features/habits/presentation/screens/create_habit_screen.dart';
 import '../../features/focus/presentation/screens/focus_screen.dart';
@@ -132,7 +132,7 @@ GoRouter appRouter(Ref ref) {
               GoRoute(
                 path: '/insights',
                 name: RouteNames.insights,
-                builder: (context, state) => const InsightsScreen(),
+                builder: (context, state) => const AnalyticsScreen(),
               ),
             ],
           ),

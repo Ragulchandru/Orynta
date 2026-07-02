@@ -5,13 +5,13 @@ import '../../../../core/constants/app_sizes.dart';
 class HabitStatistics extends StatelessWidget {
   const HabitStatistics({
     super.key,
-    required this.totalHabits,
+    required this.consistencyRate,
     required this.completedToday,
     required this.activeStreak,
     required this.longestStreak,
   });
 
-  final int totalHabits;
+  final double consistencyRate;
   final int completedToday;
   final int activeStreak;
   final int longestStreak;
@@ -28,9 +28,9 @@ class HabitStatistics extends StatelessWidget {
       children: [
         _buildStatTile(
           context: context,
-          label: 'Total Habits',
-          value: totalHabits.toString(),
-          icon: Icons.list_alt_rounded,
+          label: 'Consistency Rate',
+          value: '${(consistencyRate * 100).toInt()}%',
+          icon: Icons.analytics_rounded,
           iconColor: Colors.blue,
         ),
         _buildStatTile(
