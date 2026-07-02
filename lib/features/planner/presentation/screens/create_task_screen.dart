@@ -9,7 +9,12 @@ import '../../domain/entities/task_entity.dart';
 import '../providers/tasks_notifier.dart';
 
 class CreateTaskScreen extends ConsumerStatefulWidget {
-  const CreateTaskScreen({super.key});
+  const CreateTaskScreen({
+    super.key,
+    this.taskId,
+  });
+
+  final String? taskId;
 
   @override
   ConsumerState<CreateTaskScreen> createState() => _CreateTaskScreenState();
@@ -26,6 +31,31 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
   DateTime? _dueDate;
   TimeOfDay? _dueTime;
+
+  bool _isEditing = false;
+  TaskEntity? _existingTask;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.taskId != null) {
+      _isEditing = true;
+      final tasks = ref.read(tasksProvider);
+      final index = tasks.indexWhere((t) => t.id == widget.taskId);
+      if (index != -1) {
+        _existingTask = tasks[index];
+        _titleController.text = _existingTask!.title;
+        _descriptionController.text = _existingTask!.description;
+        _priority = _existingTask!.priority;
+        _timelineSection = _existingTask!.timelineSection;
+        _estimatedMinutes = _existingTask!.estimatedMinutes;
+        if (_existingTask!.dueDate != null) {
+          _dueDate = _existingTask!.dueDate;
+          _dueTime = TimeOfDay.fromDateTime(_existingTask!.dueDate!);
+        }
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -76,22 +106,35 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
       );
     }
 
-    final task = TaskEntity(
-      id: const Uuid().v4(),
-      title: _titleController.text.trim(),
-      description: _descriptionController.text.trim(),
-      priority: _priority,
-      dueDate: combinedDue,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      isCompleted: false,
-      timelineSection: _timelineSection,
-      estimatedMinutes: _estimatedMinutes,
-      tagIds: const [],
-      linkedNoteId: null, // Placeholder for linked note
-    );
+    if (_isEditing && _existingTask != null) {
+      final task = _existingTask!.copyWith(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        priority: _priority,
+        dueDate: combinedDue,
+        updatedAt: DateTime.now(),
+        timelineSection: _timelineSection,
+        estimatedMinutes: _estimatedMinutes,
+      );
+      ref.read(tasksProvider.notifier).updateTask(task);
+    } else {
+      final task = TaskEntity(
+        id: const Uuid().v4(),
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        priority: _priority,
+        dueDate: combinedDue,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isCompleted: false,
+        timelineSection: _timelineSection,
+        estimatedMinutes: _estimatedMinutes,
+        tagIds: const [],
+        linkedNoteId: null, // Placeholder for linked note
+      );
+      ref.read(tasksProvider.notifier).addTask(task);
+    }
 
-    ref.read(tasksProvider.notifier).addTask(task);
     context.pop();
   }
 
@@ -105,9 +148,9 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Create Task',
-          style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.bold),
+        title: Text(
+          _isEditing ? 'Edit Task' : 'Create Task',
+          style: const TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(

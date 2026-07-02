@@ -29,6 +29,7 @@ import '../../features/auth/presentation/providers/app_lock_provider.dart';
 import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/planner/presentation/screens/planner_screen.dart';
 import '../../features/planner/presentation/screens/create_task_screen.dart';
+import '../../features/planner/presentation/screens/task_detail_screen.dart';
 import '../../features/insights/presentation/screens/insights_screen.dart';
 import '../../shared/widgets/main_navigation_shell.dart';
 import 'route_names.dart';
@@ -183,6 +184,28 @@ GoRouter appRouter(Ref ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
           return const CreateTaskScreen();
+        },
+      ),
+
+      // ── Task Details Screen ──────────────────────────────────────────────────
+      GoRoute(
+        path: '/tasks/:id',
+        name: RouteNames.taskDetail,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          final id = state.pathParameters['id']!;
+          return TaskDetailScreen(taskId: id);
+        },
+      ),
+
+      // ── Edit Task Screen ─────────────────────────────────────────────────────
+      GoRoute(
+        path: '/tasks/:id/edit',
+        name: RouteNames.taskEdit,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          final id = state.pathParameters['id']!;
+          return CreateTaskScreen(taskId: id);
         },
       ),
 

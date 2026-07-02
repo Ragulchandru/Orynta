@@ -12,20 +12,19 @@ class ProgressCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Watch real tasks scheduled for today
+    // Watch real tasks scheduled for today and completion rates
     final todaysTasks = ref.watch(todaysTasksProvider);
-    final tasksCompleted = todaysTasks.where((t) => t.isCompleted).length;
+    final completedTasks = ref.watch(completedTodayTasksProvider);
+    final tasksCompleted = completedTasks.length;
     final totalTasks = todaysTasks.length;
 
-    // Habits mock data for Phase 2/3
+    // Habits mock data for Phase 2/3/4 (since Habits is in a future phase)
     const habitsCompleted = 3;
     const totalHabits = 4;
     const focusMinutes = 45;
 
-    // Calculate dynamic productivity percentage based on real tasks + mock habits
-    final completedCount = tasksCompleted + habitsCompleted;
-    final totalCount = totalTasks + totalHabits;
-    final productivityPercentage = totalCount > 0 ? completedCount / totalCount : 0.0;
+    // Watch dynamic productivity percentage from computed provider
+    final productivityPercentage = ref.watch(completionRateProvider);
 
     return Card(
       elevation: 0,

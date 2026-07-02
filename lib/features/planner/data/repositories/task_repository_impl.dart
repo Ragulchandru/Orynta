@@ -15,7 +15,18 @@ class TaskRepositoryImpl implements TaskRepository {
   }
 
   @override
+  Future<TaskEntity?> getTaskById(String id) async {
+    final model = _box.get(id);
+    return model?.toEntity();
+  }
+
+  @override
   Future<void> saveTask(TaskEntity task) async {
+    await _box.put(task.id, TaskModel.fromEntity(task));
+  }
+
+  @override
+  Future<void> updateTask(TaskEntity task) async {
     await _box.put(task.id, TaskModel.fromEntity(task));
   }
 

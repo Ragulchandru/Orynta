@@ -14,12 +14,16 @@ class TasksCard extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // Watch real tasks scheduled for today
+    // Watch today's tasks lists and metrics
     final todaysTasks = ref.watch(todaysTasksProvider);
-    final displayedTasks = todaysTasks.take(5).toList();
-
-    final completedCount = todaysTasks.where((t) => t.isCompleted).length;
+    final completedCount = ref.watch(completedTodayTasksProvider).length;
     final totalCount = todaysTasks.length;
+
+    // Watch overdue and upcoming items
+    final overdueTasks = ref.watch(overdueTasksProvider);
+    final nextUpcomingTask = ref.watch(nextUpcomingTaskProvider);
+
+    final displayedTasks = todaysTasks.take(5).toList();
 
     return Card(
       elevation: 0,
@@ -36,6 +40,7 @@ class TasksCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Header Title and Stats
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -48,7 +53,6 @@ class TasksCard extends ConsumerWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    // Go to Planner tab
                     context.go('/planner');
                   },
                   child: Text(
@@ -61,10 +65,46 @@ class TasksCard extends ConsumerWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppSizes.sm),
+            const SizedBox(height: AppSizes.xs),
+
+            // 1. Overdue warning banner
+            if (overdueTasks.isNotEmpty) ...[
+              InkWell(
+                onTap: () => context.go('/planner'),
+                borderRadius: BorderRadius.circular(AppSizes.sm),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 8.0),
+                  decoration: BoxDecoration(
+                    color: colorScheme.errorContainer.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(AppSizes.sm),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, size: 16, color: colorScheme.error),
+                      const SizedBox(width: AppSizes.sm),
+                      Expanded(
+                        child: Text(
+                          '${overdueTasks.length} task(s) overdue!',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.onErrorContainer,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 16, color: colorScheme.error),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSizes.md),
+            ],
+
+            // 2. Checklist of Today's Tasks
             if (displayedTasks.isEmpty)
               _buildEmptyState(theme)
-            else
+            else ...[
               ListView.separated(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -88,7 +128,6 @@ class TasksCard extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: AppSizes.xs),
                       child: Row(
                         children: [
-                          // Checkbox
                           Checkbox(
                             value: task.isCompleted,
                             onChanged: (_) {
@@ -99,8 +138,6 @@ class TasksCard extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(width: AppSizes.xs),
-                          
-                          // Priority Tag
                           Container(
                             width: 8,
                             height: 8,
@@ -110,8 +147,6 @@ class TasksCard extends ConsumerWidget {
                             ),
                           ),
                           const SizedBox(width: AppSizes.sm),
-
-                          // Title
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,6 +181,61 @@ class TasksCard extends ConsumerWidget {
                   );
                 },
               ),
+            ],
+
+            // 3. Next Up Banner
+            if (nextUpcomingTask != null) ...[
+              const SizedBox(height: AppSizes.md),
+              const Divider(),
+              const SizedBox(height: AppSizes.sm),
+              InkWell(
+                onTap: () => context.push('/tasks/${nextUpcomingTask.id}'),
+                borderRadius: BorderRadius.circular(AppSizes.sm),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(AppSizes.sm),
+                  decoration: BoxDecoration(
+                    color: colorScheme.primaryContainer.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(AppSizes.sm),
+                    border: Border.all(
+                      color: colorScheme.primary.withValues(alpha: 0.2),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.next_plan_outlined, size: 16, color: colorScheme.primary),
+                      const SizedBox(width: AppSizes.sm),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Next Up: ${nextUpcomingTask.title}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                                color: colorScheme.primary,
+                              ),
+                            ),
+                            if (nextUpcomingTask.dueDate != null)
+                              Text(
+                                DateFormat('MMM d, h:mm a').format(nextUpcomingTask.dueDate!),
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                                  fontSize: 10,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.chevron_right_rounded, size: 16, color: colorScheme.primary),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -21,6 +21,8 @@ abstract final class RouteNames {
   static const String planner = 'planner';
   static const String insights = 'insights';
   static const String createTask = 'create-task';
+  static const String taskDetail = 'task-detail';
+  static const String taskEdit = 'task-edit';
 
   // ─── Phase 1 (Notes) ──────────────────────────────────────────────────────
   /// Full list of notes (active).
