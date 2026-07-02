@@ -262,30 +262,10 @@ class _HomeAppBar extends ConsumerWidget {
           animate: true,
           animateKey: isDark,
         ),
-        PopupMenuButton<String>(
-          icon: Icon(
-            Icons.more_vert_rounded,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          tooltip: 'More options',
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          ),
-          onSelected: (value) {
-            switch (value) {
-              case 'archive':
-                context.pushNamed(RouteNames.archive);
-              case 'trash':
-                context.pushNamed(RouteNames.trash);
-              case 'settings':
-                context.pushNamed(RouteNames.settings);
-            }
-          },
-          itemBuilder: (_) => const [
-            PopupMenuItem(value: 'archive', child: Text('Archive')),
-            PopupMenuItem(value: 'trash', child: Text('Trash')),
-            PopupMenuItem(value: 'settings', child: Text('Settings')),
-          ],
+        _AppBarIconButton(
+          icon: Icons.settings_outlined,
+          tooltip: 'Settings',
+          onTap: () => context.pushNamed(RouteNames.settings),
         ),
         const SizedBox(width: AppSizes.xs),
       ],

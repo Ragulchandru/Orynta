@@ -8,6 +8,39 @@ import 'ink_snack_bar.dart';
 class QuickCreateSheet extends StatelessWidget {
   const QuickCreateSheet({super.key});
 
+  void _showProjectDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        icon: Icon(
+          Icons.folder_shared_rounded,
+          size: 40,
+          color: colorScheme.tertiary,
+        ),
+        title: const Text(
+          'Projects & Workspaces',
+          style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Project workspace management, sub-task grouping, and team milestone tracking will be available in an upcoming update.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: colorScheme.onSurfaceVariant,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -33,21 +66,21 @@ class QuickCreateSheet extends StatelessWidget {
         },
       ),
       _QuickActionItem(
-        icon: Icons.folder_shared_rounded,
-        label: 'New Project',
-        color: colorScheme.tertiary,
-        onTap: () {
-          Navigator.of(context).pop();
-          InkSnackBar.showInfo(context, 'Projects are coming soon in Phase 4.');
-        },
-      ),
-      _QuickActionItem(
         icon: Icons.loop_rounded,
         label: 'New Habit',
         color: Colors.orange,
         onTap: () {
           Navigator.of(context).pop();
-          InkSnackBar.showInfo(context, 'Habits are coming soon in Phase 6.');
+          context.pushNamed(RouteNames.createHabit);
+        },
+      ),
+      _QuickActionItem(
+        icon: Icons.folder_shared_rounded,
+        label: 'New Project',
+        color: colorScheme.tertiary,
+        onTap: () {
+          Navigator.of(context).pop();
+          _showProjectDialog(context);
         },
       ),
       _QuickActionItem(
@@ -57,15 +90,6 @@ class QuickCreateSheet extends StatelessWidget {
         onTap: () {
           Navigator.of(context).pop();
           InkSnackBar.showInfo(context, 'Voice Notes are coming soon in a future update.');
-        },
-      ),
-      _QuickActionItem(
-        icon: Icons.checklist_rounded,
-        label: 'Checklist',
-        color: Colors.teal,
-        onTap: () {
-          Navigator.of(context).pop();
-          InkSnackBar.showInfo(context, 'Checklists are coming soon in a future update.');
         },
       ),
     ];

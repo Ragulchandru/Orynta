@@ -13,6 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../../shared/providers/theme_provider.dart';
 import '../../../../shared/widgets/ink_confirm_dialog.dart';
 import '../../../../shared/widgets/ink_snack_bar.dart';
@@ -53,6 +54,11 @@ class SettingsScreen extends ConsumerWidget {
                 // 1. Appearance Section
                 const _SectionHeader(title: 'Appearance'),
                 const _ThemeSelectorCard(),
+                const SizedBox(height: AppSizes.md),
+
+                // Quick Navigation Section
+                const _SectionHeader(title: 'Quick Navigation'),
+                const _QuickNavigationCard(),
                 const SizedBox(height: AppSizes.md),
 
                 // 2. Storage Section
@@ -688,6 +694,44 @@ class _AboutCard extends StatelessWidget {
             '',
             Icons.privacy_tip_outlined,
             onTap: () => InkSnackBar.showInfo(context, 'Privacy policy placeholder'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QuickNavigationCard extends StatelessWidget {
+  const _QuickNavigationCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
+      color: theme.colorScheme.surfaceContainerLow,
+      child: Column(
+        children: [
+          ListTile(
+            leading: Icon(Icons.archive_outlined, color: theme.colorScheme.primary),
+            title: const Text('Archived Notes'),
+            subtitle: const Text('View notes stored in your archive'),
+            trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: theme.colorScheme.outline),
+            onTap: () => context.pushNamed(RouteNames.archive),
+          ),
+          Divider(height: 1, indent: 56, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+          ListTile(
+            leading: Icon(Icons.delete_outline_rounded, color: theme.colorScheme.primary),
+            title: const Text('Trash & Recycling'),
+            subtitle: const Text('View deleted notes before permanent removal'),
+            trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: theme.colorScheme.outline),
+            onTap: () => context.pushNamed(RouteNames.trash),
           ),
         ],
       ),

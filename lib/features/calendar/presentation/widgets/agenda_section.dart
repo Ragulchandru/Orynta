@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/router/route_names.dart';
+import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../planner/domain/entities/task_entity.dart';
 import '../../../planner/presentation/providers/tasks_notifier.dart';
 import '../../../planner/presentation/widgets/task_card.dart';
@@ -14,8 +16,6 @@ class AgendaSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-
     // Watch tasks for the selected date across each timeline section
     final morningTasks = ref.watch(selectedDateMorningTasksProvider);
     final afternoonTasks = ref.watch(selectedDateAfternoonTasksProvider);
@@ -31,7 +31,14 @@ class AgendaSection extends ConsumerWidget {
     final totalTasksCount = morningTasks.length + afternoonTasks.length + eveningTasks.length + nightTasks.length;
 
     if (totalTasksCount == 0) {
-      return _buildEmptyState(theme);
+      return EmptyStateWidget(
+        icon: Icons.wb_sunny_rounded,
+        iconColor: Colors.amber,
+        title: "You're free today.",
+        description: "Enjoy your day or tap + to schedule a task.",
+        actionLabel: "Create Task",
+        onAction: () => context.pushNamed(RouteNames.createTask),
+      );
     }
 
     return Column(
@@ -191,39 +198,6 @@ class AgendaSection extends ConsumerWidget {
             color: theme.colorScheme.outline.withValues(alpha: 0.8),
             fontStyle: FontStyle.italic,
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(ThemeData theme) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSizes.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.calendar_today_rounded,
-              size: 48,
-              color: theme.colorScheme.outline,
-            ),
-            const SizedBox(height: AppSizes.md),
-            Text(
-              'No tasks scheduled for this day',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Tap the FAB to schedule a task.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.outline,
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -35,6 +35,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   bool _isEditing = false;
   TaskEntity? _existingTask;
 
+  static const List<int> _durationPresets = [15, 30, 45, 60, 90, 120];
+
   @override
   void initState() {
     super.initState();
@@ -130,7 +132,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
         timelineSection: _timelineSection,
         estimatedMinutes: _estimatedMinutes,
         tagIds: const [],
-        linkedNoteId: null, // Placeholder for linked note
+        linkedNoteId: null,
       );
       ref.read(tasksProvider.notifier).addTask(task);
     }
@@ -146,18 +148,43 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     final dateText = _dueDate == null ? 'Set Due Date' : DateFormat('yMMMd').format(_dueDate!);
     final timeText = _dueTime == null ? 'Set Time' : _dueTime!.format(context);
 
+    final timelineOptions = [
+      {'value': 0, 'label': 'Morning', 'icon': Icons.wb_sunny_outlined, 'color': Colors.amber},
+      {'value': 1, 'label': 'Afternoon', 'icon': Icons.wb_cloudy_outlined, 'color': Colors.orange},
+      {'value': 2, 'label': 'Evening', 'icon': Icons.nights_stay_outlined, 'color': Colors.indigo},
+      {'value': 3, 'label': 'Night', 'icon': Icons.bedtime_outlined, 'color': Colors.blueGrey},
+    ];
+
+    final priorityOptions = [
+      {'value': 'low', 'label': 'Low', 'color': Colors.grey},
+      {'value': 'medium', 'label': 'Medium', 'color': colorScheme.primary},
+      {'value': 'high', 'label': 'High', 'color': Colors.red},
+    ];
+
     return Scaffold(
       appBar: AppBar(
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        backgroundColor: colorScheme.surface,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_rounded, color: colorScheme.onSurface),
+          onPressed: () => context.pop(),
+        ),
         title: Text(
           _isEditing ? 'Edit Task' : 'Create Task',
-          style: const TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.bold),
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontFamily: 'Playfair Display',
+            fontWeight: FontWeight.bold,
+            color: colorScheme.onSurface,
+          ),
         ),
         actions: [
           IconButton(
             onPressed: _saveTask,
-            icon: const Icon(Icons.check_rounded),
+            icon: Icon(Icons.check_rounded, color: colorScheme.primary, size: 24),
             tooltip: 'Save Task',
           ),
+          const SizedBox(width: AppSizes.xs),
         ],
       ),
       body: SafeArea(
@@ -169,7 +196,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               // Title Field
               TextFormField(
                 controller: _titleController,
-                style: theme.textTheme.titleLarge?.copyWith(
+                style: theme.textTheme.headlineSmall?.copyWith(
                   color: colorScheme.onSurface,
                   fontWeight: FontWeight.bold,
                 ),
@@ -193,144 +220,262 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
               // Description
               TextFormField(
                 controller: _descriptionController,
-                maxLines: 3,
+                minLines: 3,
+                maxLines: 5,
                 style: theme.textTheme.bodyMedium,
                 decoration: InputDecoration(
-                  hintText: 'Description',
+                  hintText: 'Add description or notes...',
                   hintStyle: TextStyle(
                     color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                   ),
-                  border: InputBorder.none,
-                  icon: Icon(Icons.description_outlined, color: colorScheme.primary),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.sm),
+                    borderSide: BorderSide(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.all(AppSizes.md),
+                  prefixIcon: Padding(
+                    padding: const EdgeInsets.only(bottom: 40),
+                    child: Icon(Icons.description_outlined, color: colorScheme.primary),
+                  ),
                 ),
               ),
-              const SizedBox(height: AppSizes.lg),
+              const SizedBox(height: AppSizes.xl),
 
-              // Timeline Section
+              // Timeline Section Header
               Text(
-                'Timeline',
-                style: theme.textTheme.titleSmall?.copyWith(
+                'TIMELINE SECTION',
+                style: theme.textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurfaceVariant,
+                  letterSpacing: 1.2,
+                  color: colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: AppSizes.xs),
-              SegmentedButton<int>(
-                segments: const [
-                  ButtonSegment(value: 0, label: Text('Morning'), icon: Icon(Icons.wb_sunny_outlined, size: 14)),
-                  ButtonSegment(value: 1, label: Text('After'), icon: Icon(Icons.wb_cloudy_outlined, size: 14)),
-                  ButtonSegment(value: 2, label: Text('Evening'), icon: Icon(Icons.nights_stay_outlined, size: 14)),
-                  ButtonSegment(value: 3, label: Text('Night'), icon: Icon(Icons.bedtime_outlined, size: 14)),
-                ],
-                selected: {_timelineSection},
-                onSelectionChanged: (selection) {
-                  setState(() {
-                    _timelineSection = selection.first;
-                  });
-                },
+              const SizedBox(height: AppSizes.sm),
+
+              // Responsive Choice Chips for Timeline Section
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: timelineOptions.map((opt) {
+                    final isSelected = _timelineSection == opt['value'];
+                    final color = opt['color'] as Color;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: AppSizes.sm),
+                      child: FilterChip(
+                        selected: isSelected,
+                        showCheckmark: false,
+                        avatar: Icon(
+                          opt['icon'] as IconData,
+                          size: 16,
+                          color: isSelected ? colorScheme.onPrimary : color,
+                        ),
+                        label: Text(opt['label'] as String),
+                        selectedColor: colorScheme.primary,
+                        labelStyle: TextStyle(
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected ? colorScheme.onPrimary : colorScheme.onSurface,
+                        ),
+                        onSelected: (_) {
+                          setState(() {
+                            _timelineSection = opt['value'] as int;
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
-              const SizedBox(height: AppSizes.lg),
+              const SizedBox(height: AppSizes.xl),
 
               // Priority Selector
               Text(
-                'Priority',
-                style: theme.textTheme.titleSmall?.copyWith(
+                'PRIORITY LEVEL',
+                style: theme.textTheme.labelSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurfaceVariant,
+                  letterSpacing: 1.2,
+                  color: colorScheme.primary,
                 ),
               ),
-              const SizedBox(height: AppSizes.xs),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'low', label: Text('Low')),
-                  ButtonSegment(value: 'medium', label: Text('Medium')),
-                  ButtonSegment(value: 'high', label: Text('High')),
-                ],
-                selected: {_priority},
-                onSelectionChanged: (selection) {
-                  setState(() {
-                    _priority = selection.first;
-                  });
-                },
+              const SizedBox(height: AppSizes.sm),
+              Row(
+                children: priorityOptions.map((opt) {
+                  final isSelected = _priority == opt['value'];
+                  final color = opt['color'] as Color;
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: ChoiceChip(
+                        label: Center(
+                          child: Text(
+                            opt['label'] as String,
+                            style: TextStyle(
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              color: isSelected ? Colors.white : colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        selected: isSelected,
+                        selectedColor: color,
+                        onSelected: (_) {
+                          setState(() {
+                            _priority = opt['value'] as String;
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-              const SizedBox(height: AppSizes.lg),
+              const SizedBox(height: AppSizes.xl),
 
-              // Date and Time picker row
+              // Date and Time Pickers Row
+              Text(
+                'DUE DATE & TIME',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: AppSizes.sm),
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSizes.sm),
+                        ),
+                      ),
                       onPressed: _selectDate,
-                      icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                      icon: const Icon(Icons.calendar_today_rounded, size: 18),
                       label: Text(dateText),
                     ),
                   ),
                   const SizedBox(width: AppSizes.md),
                   Expanded(
                     child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppSizes.sm),
+                        ),
+                      ),
                       onPressed: _selectTime,
-                      icon: const Icon(Icons.access_time_rounded, size: 16),
+                      icon: const Icon(Icons.access_time_rounded, size: 18),
                       label: Text(timeText),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSizes.lg),
+              const SizedBox(height: AppSizes.xl),
 
-              // Estimated time
-              Text(
-                'Estimated Minutes',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: AppSizes.xs),
+              // Estimated Duration with Presets
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Slider(
-                      min: 0,
-                      max: 180,
-                      divisions: 12,
-                      value: _estimatedMinutes.toDouble(),
-                      onChanged: (val) {
-                        setState(() {
-                          _estimatedMinutes = val.toInt();
-                        });
-                      },
+                  Text(
+                    'ESTIMATED DURATION',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: colorScheme.primary,
                     ),
                   ),
-                  Text(
-                    '${_estimatedMinutes}m',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.primary,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${_estimatedMinutes}m',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onPrimaryContainer,
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSizes.lg),
-
-              // Linked Note Selector (Placeholder)
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.link_rounded, color: colorScheme.outline),
-                title: Text(
-                  'Link Note',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.outline,
-                  ),
-                ),
-                subtitle: Text(
-                  'Coming soon in a future phase',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.outline.withValues(alpha: 0.6),
-                  ),
-                ),
-                trailing: const Icon(Icons.chevron_right_rounded),
-                onTap: null, // Disabled selector for Phase 3
+              const SizedBox(height: AppSizes.xs),
+              Slider(
+                min: 0,
+                max: 180,
+                divisions: 12,
+                value: _estimatedMinutes.toDouble(),
+                onChanged: (val) {
+                  setState(() {
+                    _estimatedMinutes = val.toInt();
+                  });
+                },
               ),
+              const SizedBox(height: AppSizes.xs),
+
+              // Presets row
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _durationPresets.map((preset) {
+                    final isSelected = _estimatedMinutes == preset;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: AppSizes.xs),
+                      child: ActionChip(
+                        label: Text('${preset}m'),
+                        backgroundColor: isSelected
+                            ? colorScheme.primaryContainer
+                            : colorScheme.surfaceContainerLow,
+                        labelStyle: TextStyle(
+                          fontSize: 12,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? colorScheme.onPrimaryContainer
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _estimatedMinutes = preset;
+                          });
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: AppSizes.xl),
+
+              // Linked Note Selector (Disabled placeholder)
+              Container(
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerLow.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(AppSizes.sm),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+                child: ListTile(
+                  leading: Icon(Icons.link_rounded, color: colorScheme.outline),
+                  title: Text(
+                    'Link Note',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.outline,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Available in a future update',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.outline.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  trailing: Icon(Icons.lock_outline_rounded, size: 18, color: colorScheme.outline),
+                  onTap: null,
+                ),
+              ),
+              const SizedBox(height: AppSizes.xxl),
             ],
           ),
         ),

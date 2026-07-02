@@ -63,14 +63,16 @@ class WeeklyChart extends StatelessWidget {
                       ? colorScheme.primary
                       : colorScheme.primary.withValues(alpha: 0.4);
 
+                  final barHeight = 120 * heightRatio;
+
                   return Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Tooltip(
                           message: 'Score: ${score.toInt()}',
-                          child: FractionallySizedBox(
-                            heightFactor: heightRatio,
+                          child: SizedBox(
+                            height: barHeight,
                             child: Container(
                               margin: const EdgeInsets.symmetric(horizontal: 4.0),
                               decoration: BoxDecoration(

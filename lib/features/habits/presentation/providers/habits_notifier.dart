@@ -164,13 +164,13 @@ final completedHabitsProvider = Provider<List<HabitEntity>>((ref) {
 final activeStreakProvider = Provider<int>((ref) {
   final habits = ref.watch(habitsProvider);
   if (habits.isEmpty) return 0;
-  return habits.map((h) => h.currentStreak).reduce((a, b) => a > b ? a : b);
+  return habits.map((h) => h.currentStreak).fold(0, (a, b) => a > b ? a : b);
 });
 
 final longestStreakProvider = Provider<int>((ref) {
   final habits = ref.watch(habitsProvider);
   if (habits.isEmpty) return 0;
-  return habits.map((h) => h.longestStreak).reduce((a, b) => a > b ? a : b);
+  return habits.map((h) => h.longestStreak).fold(0, (a, b) => a > b ? a : b);
 });
 
 /// Displays overall today's completion rate

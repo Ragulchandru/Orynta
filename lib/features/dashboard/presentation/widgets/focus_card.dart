@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../focus/presentation/providers/focus_notifier.dart';
 import '../../../focus/presentation/providers/timer_provider.dart';
 
@@ -49,7 +50,7 @@ class FocusCard extends ConsumerWidget {
       ),
       color: colorScheme.surfaceContainerLow,
       child: InkWell(
-        onTap: () => context.push('/focus'),
+        onTap: () => context.pushNamed(RouteNames.focus),
         borderRadius: BorderRadius.circular(AppSizes.lg),
         child: Padding(
           padding: const EdgeInsets.all(AppSizes.lg),
@@ -139,7 +140,7 @@ class FocusCard extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.tonalIcon(
-                  onPressed: () => context.push('/focus'),
+                  onPressed: () => context.pushNamed(RouteNames.focus),
                   icon: Icon(isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 18),
                   label: Text(isRunning ? 'Resume Timer' : 'Start Focus Session'),
                 ),

@@ -19,7 +19,7 @@ class MonthlyChart extends StatelessWidget {
 
     final double avgScore = monthlyStats.isEmpty
         ? 0.0
-        : monthlyStats.map((s) => s.productivityScore).reduce((a, b) => a + b) /
+        : monthlyStats.map((s) => s.productivityScore).fold(0.0, (a, b) => a + b) /
             monthlyStats.length;
 
     return Card(
@@ -91,7 +91,7 @@ class MonthlyChart extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  DateFormat('MMM d').format(monthlyStats.first.date),
+                  monthlyStats.isNotEmpty ? DateFormat('MMM d').format(monthlyStats.first.date) : '',
                   style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
                 ),
                 Text(
@@ -154,7 +154,7 @@ class _LineChartPainter extends CustomPainter {
     }
 
     final points = <Offset>[];
-    final stepX = size.width / (stats.length - 1);
+    final stepX = stats.length > 1 ? size.width / (stats.length - 1) : 0.0;
 
     for (int i = 0; i < stats.length; i++) {
       final score = stats[i].productivityScore;

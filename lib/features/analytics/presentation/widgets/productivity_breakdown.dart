@@ -21,8 +21,8 @@ class ProductivityBreakdown extends StatelessWidget {
     final hasHabits = stats.habitsTotal > 0;
 
     final taskVal =
-        hasTasks ? stats.tasksCompleted / (stats.tasksCompleted + stats.tasksPending) : 1.0;
-    final habitVal = hasHabits ? stats.habitsCompleted / stats.habitsTotal : 1.0;
+        hasTasks ? stats.tasksCompleted / (stats.tasksCompleted + stats.tasksPending) : 0.0;
+    final habitVal = hasHabits ? stats.habitsCompleted / stats.habitsTotal : 0.0;
     final focusVal = (stats.focusMinutes / 50.0).clamp(0.0, 1.0);
     final noteVal = ((stats.notesCreated + stats.notesEdited) / 3.0).clamp(0.0, 1.0);
 

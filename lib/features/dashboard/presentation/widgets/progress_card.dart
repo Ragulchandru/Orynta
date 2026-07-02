@@ -18,22 +18,31 @@ class ProgressCard extends ConsumerWidget {
 
     // Watch achievements to find the latest progress
     final achievements = ref.watch(achievementsProvider);
-    final latestAchievement = achievements.firstWhere(
-      (a) => a.isUnlocked,
-      orElse: () {
-        // Return the one with highest progress
-        final sorted = [...achievements]
-          ..sort((a, b) => b.progress.compareTo(a.progress));
-        return sorted.first;
-      },
-    );
+    final latestAchievement = achievements.isEmpty
+        ? const AchievementEntity(
+            id: 'locked',
+            title: 'No Badges Yet',
+            description: 'Start completing activities.',
+            icon: Icons.lock_outline_rounded,
+            isUnlocked: false,
+            progress: 0.0,
+            progressLabel: '0/0',
+          )
+        : achievements.firstWhere(
+            (a) => a.isUnlocked,
+            orElse: () {
+              final sorted = [...achievements]
+                ..sort((a, b) => b.progress.compareTo(a.progress));
+              return sorted.first;
+            },
+          );
 
     // Watch weekly stats to get trend sums
     final weekly = ref.watch(weeklyStatsProvider);
     final weeklyFocusMins = weekly.map((s) => s.focusMinutes).fold(0, (a, b) => a + b);
     final weeklyAvgScore = weekly.isEmpty
         ? 0.0
-        : weekly.map((s) => s.productivityScore).reduce((a, b) => a + b) / weekly.length;
+        : weekly.map((s) => s.productivityScore).fold(0.0, (a, b) => a + b) / weekly.length;
 
     return Card(
       elevation: 0,

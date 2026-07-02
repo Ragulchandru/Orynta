@@ -72,8 +72,8 @@ double _calculateScoreForDay({
   final hasTasks = (tasksCompleted + tasksPending) > 0;
   final hasHabits = habitsTotal > 0;
 
-  final taskScore = hasTasks ? tasksCompleted / (tasksCompleted + tasksPending) : 1.0;
-  final habitScore = hasHabits ? habitsCompleted / habitsTotal : 1.0;
+  final taskScore = hasTasks ? tasksCompleted / (tasksCompleted + tasksPending) : 0.0;
+  final habitScore = hasHabits ? habitsCompleted / habitsTotal : 0.0;
   final focusScore = (focusMinutes / 50.0).clamp(0.0, 1.0);
   final noteScore = ((notesCreated + notesEdited) / 3.0).clamp(0.0, 1.0);
 
@@ -88,18 +88,23 @@ double _calculateScoreForDay({
     weightedSum += habitScore * 0.3;
     totalWeight += 0.3;
   }
-  weightedSum += focusScore * 0.3;
-  totalWeight += 0.3;
-
-  weightedSum += noteScore * 0.1;
-  totalWeight += 0.1;
+  if (focusMinutes > 0) {
+    weightedSum += focusScore * 0.3;
+    totalWeight += 0.3;
+  }
+  if ((notesCreated + notesEdited) > 0) {
+    weightedSum += noteScore * 0.1;
+    totalWeight += 0.1;
+  }
 
   return totalWeight > 0 ? (weightedSum / totalWeight) * 100 : 0.0;
 }
 
 // ─── Analytics Engine Computed Providers ────────────────────────────────────
 
-final dailyStatsProvider = Provider.family<DailyStats, DateTime>((ref, date) {
+final dailyStatsProvider = Provider.family<DailyStats, DateTime>((ref, rawDate) {
+  final date = DateTime(rawDate.year, rawDate.month, rawDate.day);
+
   // Tasks completed vs pending
   final tasks = ref.watch(tasksProvider);
   final dayTasks = tasks.where((t) => _isSameDay(t.dueDate ?? t.createdAt, date)).toList();
@@ -112,7 +117,6 @@ final dailyStatsProvider = Provider.family<DailyStats, DateTime>((ref, date) {
   int habitsTotal = 0;
   final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   for (final habit in habits) {
-    // Check if habit is active / scheduled for this weekday
     habitsTotal++;
     final count = habit.completionHistory[dateKey] ?? 0;
     if (count >= habit.targetCount) {
@@ -161,7 +165,8 @@ final dailyStatsProvider = Provider.family<DailyStats, DateTime>((ref, date) {
 // ─── Today's stats & productivity score ─────────────────────────────────────
 
 final todayStatsProvider = Provider<DailyStats>((ref) {
-  return ref.watch(dailyStatsProvider(DateTime.now()));
+  final now = DateTime.now();
+  return ref.watch(dailyStatsProvider(DateTime(now.year, now.month, now.day)));
 });
 
 final productivityScoreProvider = Provider<double>((ref) {
@@ -172,20 +177,22 @@ final productivityScoreProvider = Provider<double>((ref) {
 
 final weeklyStatsProvider = Provider<List<DailyStats>>((ref) {
   final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
   return List.generate(7, (i) {
-    final date = now.subtract(Duration(days: 6 - i));
+    final date = today.subtract(Duration(days: 6 - i));
     return ref.watch(dailyStatsProvider(date));
-  },);
+  });
 });
 
 // ─── Past 30 Days statistics trend ──────────────────────────────────────────
 
 final monthlyStatsProvider = Provider<List<DailyStats>>((ref) {
   final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
   return List.generate(30, (i) {
-    final date = now.subtract(Duration(days: 29 - i));
+    final date = today.subtract(Duration(days: 29 - i));
     return ref.watch(dailyStatsProvider(date));
-  },);
+  });
 });
 
 // ─── Achievements Unlock provider ───────────────────────────────────────────
@@ -309,7 +316,7 @@ final productivityInsightsProvider = Provider<List<String>>((ref) {
       insights.add('Your productivity increased by $pct% this week compared to last week.');
     } else if (recentAvg < pastAvg) {
       insights.add('Your productivity trended slightly downwards. Take regular breaks to avoid fatigue.');
-    } else {
+    } else if (recentAvg > 0) {
       insights.add('Your productivity remains consistent and stable this week.');
     }
   }
@@ -318,19 +325,25 @@ final productivityInsightsProvider = Provider<List<String>>((ref) {
   if (monthly.isNotEmpty) {
     final Map<int, List<double>> weekdayScores = {};
     for (final s in monthly) {
-      weekdayScores.putIfAbsent(s.date.weekday, () => []).add(s.productivityScore);
-    }
-    int bestDay = 1;
-    double maxAvg = 0.0;
-    weekdayScores.forEach((day, scores) {
-      final avg = scores.reduce((a, b) => a + b) / scores.length;
-      if (avg > maxAvg) {
-        maxAvg = avg;
-        bestDay = day;
+      if (s.productivityScore > 0) {
+        weekdayScores.putIfAbsent(s.date.weekday, () => []).add(s.productivityScore);
       }
-    });
-    final weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    insights.add('${weekdayNames[bestDay - 1]} was your most productive day over the past month.');
+    }
+    if (weekdayScores.isNotEmpty) {
+      int bestDay = 1;
+      double maxAvg = 0.0;
+      weekdayScores.forEach((day, scores) {
+        final avg = scores.isEmpty
+            ? 0.0
+            : scores.fold(0.0, (a, b) => a + b) / scores.length;
+        if (avg > maxAvg) {
+          maxAvg = avg;
+          bestDay = day;
+        }
+      });
+      final weekdayNames = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      insights.add('${weekdayNames[bestDay - 1]} was your most productive day over the past month.');
+    }
   }
 
   // 3. Best Focus Period
@@ -353,14 +366,17 @@ final productivityInsightsProvider = Provider<List<String>>((ref) {
       }
     }
 
-    if (morningMins >= afternoonMins && morningMins >= eveningMins && morningMins >= nightMins) {
-      insights.add('Morning sessions are your strongest focus period.');
-    } else if (afternoonMins >= morningMins && afternoonMins >= eveningMins && afternoonMins >= nightMins) {
-      insights.add('Afternoon sessions are your strongest focus period.');
-    } else if (eveningMins >= morningMins && eveningMins >= afternoonMins && eveningMins >= nightMins) {
-      insights.add('Evening sessions are your strongest focus period.');
-    } else {
-      insights.add('Night sessions are your strongest focus period.');
+    final totalMins = morningMins + afternoonMins + eveningMins + nightMins;
+    if (totalMins > 0) {
+      if (morningMins >= afternoonMins && morningMins >= eveningMins && morningMins >= nightMins) {
+        insights.add('Morning sessions are your strongest focus period.');
+      } else if (afternoonMins >= morningMins && afternoonMins >= eveningMins && afternoonMins >= nightMins) {
+        insights.add('Afternoon sessions are your strongest focus period.');
+      } else if (eveningMins >= morningMins && eveningMins >= afternoonMins && eveningMins >= nightMins) {
+        insights.add('Evening sessions are your strongest focus period.');
+      } else {
+        insights.add('Night sessions are your strongest focus period.');
+      }
     }
   }
 
@@ -368,16 +384,16 @@ final productivityInsightsProvider = Provider<List<String>>((ref) {
   if (weekly.length >= 7) {
     final recentMins = weekly.take(3).map((s) => s.focusMinutes).fold(0, (a, b) => a + b);
     final pastMins = weekly.skip(4).take(3).map((s) => s.focusMinutes).fold(0, (a, b) => a + b);
-    if (recentMins > pastMins) {
+    if (recentMins > pastMins && pastMins > 0) {
       insights.add('Your weekly focus time is increasing. Keep maintaining this focus flow!');
-    } else if (recentMins < pastMins) {
+    } else if (recentMins < pastMins && recentMins > 0) {
       insights.add('Your focus time is decreasing. Try scheduling distraction-free sessions.');
     }
   }
 
-  // Fallback defaults
+  // Fallback defaults when empty
   if (insights.isEmpty) {
-    insights.add('Plan more tasks and complete routines to build up your productivity insights.');
+    insights.add('Start using Orynta to unlock productivity insights.');
     insights.add('Consistency is key! Complete at least one study habit or task today.');
   }
 

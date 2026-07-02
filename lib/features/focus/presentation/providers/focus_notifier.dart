@@ -85,7 +85,7 @@ final averageFocusTimeProvider = Provider<double>((ref) {
       .toList();
   if (sessions.isEmpty) return 0.0;
   final total =
-      sessions.map((s) => s.actualDurationMinutes).reduce((a, b) => a + b);
+      sessions.map((s) => s.actualDurationMinutes).fold(0, (a, b) => a + b);
   return total / sessions.length;
 });
 

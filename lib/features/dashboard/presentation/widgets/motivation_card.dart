@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../../../core/constants/app_sizes.dart';
@@ -11,8 +10,8 @@ class MotivationCard extends StatefulWidget {
 }
 
 class _MotivationCardState extends State<MotivationCard> {
-  // A curated list of premium motivational quotes
-  final List<_Quote> _quotes = const [
+  // Curated collection of inspirational quotes
+  static const List<_Quote> _quotes = [
     _Quote(
       text: 'The only way to do great work is to love what you do.',
       author: 'Steve Jobs',
@@ -33,60 +32,119 @@ class _MotivationCardState extends State<MotivationCard> {
       text: 'Start where you are. Use what you have. Do what you can.',
       author: 'Arthur Ashe',
     ),
+    _Quote(
+      text: 'Amateurs sit and wait for inspiration, the rest of us just get up and go to work.',
+      author: 'Stephen King',
+    ),
+    _Quote(
+      text: 'It is not that I am so smart, it is just that I stay with problems longer.',
+      author: 'Albert Einstein',
+    ),
+    _Quote(
+      text: 'Action is the foundational key to all success.',
+      author: 'Pablo Picasso',
+    ),
+    _Quote(
+      text: 'Small daily improvements over time lead to stunning results.',
+      author: 'Robin Sharma',
+    ),
+    _Quote(
+      text: 'You don\'t have to be great to start, but you have to start to be great.',
+      author: 'Zig Ziglar',
+    ),
+    _Quote(
+      text: 'Done is better than perfect.',
+      author: 'Sheryl Sandberg',
+    ),
+    _Quote(
+      text: 'The secret of getting ahead is getting started.',
+      author: 'Mark Twain',
+    ),
   ];
 
-  late _Quote _selectedQuote;
+  late int _currentIndex;
 
   @override
   void initState() {
     super.initState();
-    // Select a random quote for this session
-    final randomIndex = Random().nextInt(_quotes.length);
-    _selectedQuote = _quotes[randomIndex];
+    // Deterministic quote of the day based on day of year
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
+    _currentIndex = dayOfYear % _quotes.length;
+  }
+
+  void _nextQuote() {
+    setState(() {
+      _currentIndex = (_currentIndex + 1) % _quotes.length;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final quote = _quotes[_currentIndex];
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.lg),
+        side: BorderSide(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
       ),
-      // Use a subtle primary-themed gradient backdrop
-      color: colorScheme.primaryContainer.withValues(alpha: 0.2),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg, vertical: AppSizes.xl),
-        child: Column(
-          children: [
-            Icon(
-              Icons.format_quote_rounded,
-              color: colorScheme.primary.withValues(alpha: 0.6),
-              size: 32,
-            ),
-            const SizedBox(height: AppSizes.xs),
-            Text(
-              '"${_selectedQuote.text}"',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontStyle: FontStyle.italic,
-                color: colorScheme.onSurface,
-                height: 1.4,
+      color: colorScheme.primaryContainer.withValues(alpha: 0.15),
+      child: InkWell(
+        onTap: _nextQuote,
+        borderRadius: BorderRadius.circular(AppSizes.lg),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSizes.lg,
+            vertical: AppSizes.xl,
+          ),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.format_quote_rounded,
+                    color: colorScheme.primary.withValues(alpha: 0.7),
+                    size: 28,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'DAILY QUOTE',
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: AppSizes.sm),
-            Text(
-              '— ${_selectedQuote.author}',
-              style: theme.textTheme.labelMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.primary,
-                letterSpacing: 0.5,
+              const SizedBox(height: AppSizes.sm),
+              Text(
+                '"${quote.text}"',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontStyle: FontStyle.italic,
+                  color: colorScheme.onSurface,
+                  height: 1.4,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: AppSizes.sm),
+              Text(
+                '— ${quote.author}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colorScheme.primary,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,75 +1,4 @@
 // lib/features/notes/presentation/screens/note_editor_screen.dart
-//
-// NoteEditorScreen — Premium note editor for Orynta.
-//
-// Design inspiration: Apple Notes · Craft · Notion · Material You
-//
-// ─────────────────────────────────────────────────────────────────────────────
-// DESIGN PHILOSOPHY
-// ─────────────────────────────────────────────────────────────────────────────
-//
-//   The editor is a blank canvas. Every pixel that doesn't carry meaning
-//   is removed. The user's words are the only thing that matters.
-//
-//   Decisions made for premium feel:
-//     1. CustomScrollView + SliverAppBar (pinned, transparent backdrop).
-//        The title and save action stay visible while the user scrolls.
-//        The app bar gains a subtle shadow only after scrolling begins.
-//
-//     2. Completely borderless TextField for title and body.
-//        No outlined, filled, or underlined decoration — pure canvas.
-//
-//     3. Title uses headlineMedium (~28sp). Noticeably larger than the body.
-//        This creates a clear hierarchy (title feels like a heading, not a form).
-//
-//     4. Body uses bodyLarge (16sp) with line height 1.7 — comfortable for
-//        sustained reading and writing (matches Apple Notes body text feel).
-//
-//     5. Note color tints the entire scaffold background (not just the card).
-//        When editing a colored note, the entire screen takes that hue —
-//        immersive, like a physical colored paper.
-//
-//     6. Bottom metadata bar:
-//        "Last modified · N words · N chars" — subtle, single line.
-//        Updates reactively as the user types.
-//
-//     7. Staggered fade animation on editor content appearance.
-//
-// ─────────────────────────────────────────────────────────────────────────────
-// WIDGET TREE
-// ─────────────────────────────────────────────────────────────────────────────
-//
-//   NoteEditorScreen (ConsumerStatefulWidget)
-//     └── PopScope (unsaved changes guard)
-//           └── Scaffold (backgroundColor = note tint)
-//                 └── CustomScrollView
-//                       ├── SliverAppBar (pinned, transparent→frosted on scroll)
-//                       │     ├── Back icon
-//                       │     ├── Save (✓) / CircularProgress
-//                       │     └── [edit] Pin · Favorite · More (overflow)
-//                       └── SliverFillRemaining
-//                             ├── [loading] InkLoading
-//                             ├── [error]   InkErrorView
-//                             └── [data]    _EditorCanvas
-//                                   ├── Title TextField (headlineMedium, 3 lines max)
-//                                   ├── _MetaRow (timestamp + word/char count)
-//                                   ├── Divider
-//                                   └── Body TextField (bodyLarge, unbounded)
-//
-// ─────────────────────────────────────────────────────────────────────────────
-// MODES
-// ─────────────────────────────────────────────────────────────────────────────
-//
-//   Create mode (noteId == null):
-//     Empty controllers. Auto-focuses title. Save → createNote().
-//
-//   Edit mode (noteId != null):
-//     loadNote() called in initState. Controllers populated on AsyncData.
-//     Save → updateNote().
-//
-// ─────────────────────────────────────────────────────────────────────────────
-// PROVIDER FLOW — same as original; see notes_notifier.dart for details.
-// ─────────────────────────────────────────────────────────────────────────────
 
 import 'dart:ui';
 
@@ -88,10 +17,6 @@ import '../../domain/entities/note_entity.dart';
 import '../../domain/usecases/create_note_use_case.dart';
 import '../providers/notes_notifier.dart';
 import '../providers/selected_note_notifier.dart';
-
-// ─────────────────────────────────────────────────────────────────────────────
-// NoteEditorScreen
-// ─────────────────────────────────────────────────────────────────────────────
 
 /// Premium note creation and editing screen.
 ///
@@ -113,6 +38,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _bodyController = TextEditingController();
   final FocusNode _titleFocus = FocusNode();
+  final FocusNode _bodyFocus = FocusNode();
   final ScrollController _scrollController = ScrollController();
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -158,9 +84,8 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     _titleController.dispose();
     _bodyController.dispose();
     _titleFocus.dispose();
+    _bodyFocus.dispose();
     _scrollController.dispose();
-    // Do NOT call ref.read() here — ref is invalid after disposal.
-    // clear() is called on every successful exit path while still mounted.
     super.dispose();
   }
 
@@ -182,101 +107,75 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
       return _titleController.text.trim().isNotEmpty ||
           _bodyController.text.trim().isNotEmpty;
     }
-    if (_originalNote == null) return false;
-    return _titleController.text.trim() != _originalNote!.title.trim() ||
-        _bodyController.text.trim() != _originalNote!.body.trim();
+    final note = _originalNote;
+    if (note == null) return false;
+    return _titleController.text != note.title ||
+        _bodyController.text != note.body;
   }
 
-  // ── Populate ───────────────────────────────────────────────────────────────
-
-  void _populateFromNote(NoteEntity note) {
-    if (_originalNote != null) return; // only once
-    _originalNote = note;
-    _titleController.text = note.title;
-    _bodyController.text = note.body;
-    // Seed word count.
-    final text = note.body.trim();
-    _wordCount = text.isEmpty ? 0 : text.split(RegExp(r'\s+')).length;
-  }
-
-  // ── Background color ───────────────────────────────────────────────────────
-
-  /// Returns the scaffold background tint — the entire screen adopts the
-  /// note's color for an immersive editing experience.
-  Color _scaffoldBackground(BuildContext context) {
-    final theme = Theme.of(context);
-    final raw = _originalNote?.color;
-    if (raw == null || raw == AppColors.noteColorDefault) {
-      return theme.colorScheme.surface;
-    }
-    final isDark = theme.brightness == Brightness.dark;
-    final base = Color(raw);
-    return isDark
-        ? Color.alphaBlend(Colors.black.withValues(alpha: 0.55), base)
-        : Color.alphaBlend(Colors.white.withValues(alpha: 0.35), base);
-  }
-
-  // ── Save ──────────────────────────────────────────────────────────────────
+  // ── Save Logic ─────────────────────────────────────────────────────────────
 
   Future<void> _save() async {
-    if (_isSaving) return;
     final title = _titleController.text.trim();
     final body = _bodyController.text.trim();
 
     if (title.isEmpty && body.isEmpty) {
-      if (!mounted) return;
-      InkSnackBar.showError(
-        context,
-        const NoteValidationFailure('A note must have a title or body.'),
-      );
+      if (mounted) {
+        ref.read(selectedNoteProvider.notifier).clear();
+        Navigator.of(context).pop();
+      }
       return;
     }
 
     setState(() => _isSaving = true);
-    try {
-      if (_isCreateMode) {
-        await _saveCreate(title, body);
-      } else {
-        await _saveUpdate(title, body);
+
+    if (_isCreateMode) {
+      final params = CreateNoteParams(
+        title: title.isEmpty ? 'Untitled' : title,
+        body: body,
+      );
+      final result =
+          await ref.read(notesProvider.notifier).createNote(params);
+      if (!mounted) return;
+      result.fold(
+        (failure) {
+          setState(() => _isSaving = false);
+          InkSnackBar.showError(context, failure);
+        },
+        (created) {
+          ref.read(selectedNoteProvider.notifier).clear();
+          Navigator.of(context).pop();
+        },
+      );
+    } else {
+      final note = _originalNote;
+      if (note == null) {
+        setState(() => _isSaving = false);
+        return;
       }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
+      final updated = note.copyWith(
+        title: title.isEmpty ? 'Untitled' : title,
+        body: body,
+        updatedAt: DateTime.now(),
+      );
+      final result =
+          await ref.read(selectedNoteProvider.notifier).updateNote(updated);
+      if (!mounted) return;
+      result.fold(
+        (failure) {
+          setState(() => _isSaving = false);
+          InkSnackBar.showError(context, failure);
+        },
+        (saved) {
+          setState(() {
+            _isSaving = false;
+            _originalNote = saved;
+          });
+          InkSnackBar.showSuccess(context, 'Note saved.');
+        },
+      );
     }
   }
-
-  Future<void> _saveCreate(String title, String body) async {
-    final result = await ref
-        .read(notesProvider.notifier)
-        .createNote(CreateNoteParams(title: title, body: body));
-    if (!mounted) return;
-    result.fold(
-      (f) => InkSnackBar.showError(context, f),
-      (_) {
-        // Clear provider state while ref is still valid (widget is mounted).
-        ref.read(selectedNoteProvider.notifier).clear();
-        Navigator.of(context).pop();
-      },
-    );
-  }
-
-  Future<void> _saveUpdate(String title, String body) async {
-    final current = _originalNote;
-    if (current == null) return;
-    final updated = current.copyWith(
-      title: title,
-      body: body,
-      updatedAt: DateTime.now(),
-    );
-    final result =
-        await ref.read(notesProvider.notifier).updateNote(updated);
-    if (!mounted) return;
-    result.fold(
-      (f) => InkSnackBar.showError(context, f),
-      (saved) => setState(() => _originalNote = saved),
-    );
-  }
-
-  // ── Back ──────────────────────────────────────────────────────────────────
 
   Future<void> _handlePop(bool didPop, Object? result) async {
     if (didPop) return;
@@ -351,9 +250,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     result.fold(
       (f) => InkSnackBar.showError(context, f),
       (_) {
-        // Clear provider state while ref is still valid (widget is mounted).
         ref.read(selectedNoteProvider.notifier).clear();
         Navigator.of(context).pop();
+        InkSnackBar.showSuccess(context, 'Note archived.');
       },
     );
   }
@@ -364,7 +263,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     final confirmed = await InkConfirmDialog.show(
       context,
       title: 'Move to trash?',
-      message: 'This note will be moved to the trash.',
+      message: 'This note will be moved to trash.',
       confirmLabel: 'Move to trash',
       isDestructive: true,
     );
@@ -375,9 +274,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     result.fold(
       (f) => InkSnackBar.showError(context, f),
       (_) {
-        // Clear provider state while ref is still valid (widget is mounted).
         ref.read(selectedNoteProvider.notifier).clear();
         Navigator.of(context).pop();
+        InkSnackBar.showSuccess(context, 'Moved to trash.');
       },
     );
   }
@@ -386,17 +285,30 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final noteAsync = ref.watch(selectedNoteProvider);
-    if (!_isCreateMode) {
-      noteAsync.whenData((note) {
-        if (note != null) _populateFromNote(note);
+    final theme = Theme.of(context);
+    final noteAsync =
+        _isCreateMode ? null : ref.watch(selectedNoteProvider);
+
+    if (!_isCreateMode && noteAsync != null) {
+      ref.listen<AsyncValue<NoteEntity?>>(selectedNoteProvider, (_, next) {
+        next.whenData((note) {
+          if (note != null && _originalNote == null) {
+            _originalNote = note;
+            _titleController.text = note.title;
+            _bodyController.text = note.body;
+            _onBodyChanged();
+          }
+        });
       });
     }
 
-    final theme = Theme.of(context);
-    final bgColor = _scaffoldBackground(context);
     final isPinned = _originalNote?.isPinned ?? false;
     final isFavorite = _originalNote?.isFavorite ?? false;
+
+    final bgColor = _originalNote?.color != null &&
+            _originalNote!.color != AppColors.noteColorDefault
+        ? Color(_originalNote!.color!)
+        : theme.colorScheme.surface;
 
     return PopScope(
       canPop: false,
@@ -407,36 +319,25 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           controller: _scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // ── Frosted SliverAppBar ───────────────────────────────────────
+            // ── Pinned frosted SliverAppBar ──────────────────────────────────
             SliverAppBar(
               pinned: true,
-              automaticallyImplyLeading: false,
-              backgroundColor: Colors.transparent,
-              surfaceTintColor: Colors.transparent,
+              floating: false,
               elevation: 0,
               scrolledUnderElevation: 0,
-              flexibleSpace: AnimatedContainer(
-                duration: AppSizes.durationFast,
-                decoration: BoxDecoration(
-                  // Frosted glass effect once the user scrolls past the title.
-                  color: _isScrolled
-                      ? bgColor.withValues(alpha: 0.85)
-                      : Colors.transparent,
-                  border: _isScrolled
-                      ? Border(
-                          bottom: BorderSide(
-                            color: theme.colorScheme.outlineVariant
-                                .withValues(alpha: 0.3),
-                          ),
+              backgroundColor: _isScrolled
+                  ? theme.colorScheme.surface.withValues(alpha: 0.85)
+                  : Colors.transparent,
+              surfaceTintColor: Colors.transparent,
+              flexibleSpace: FlexibleSpaceBar(
+                background: ClipRect(
+                  child: _isScrolled
+                      ? BackdropFilter(
+                          filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                          child: const SizedBox.expand(),
                         )
-                      : null,
+                      : const SizedBox.expand(),
                 ),
-                child: _isScrolled
-                    ? BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-                        child: const SizedBox.expand(),
-                      )
-                    : const SizedBox.expand(),
               ),
               title: _isScrolled
                   ? Text(
@@ -444,8 +345,9 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                           ? (_isCreateMode ? 'New Note' : 'Edit Note')
                           : _titleController.text,
                       style: theme.textTheme.titleMedium?.copyWith(
+                        fontFamily: 'Playfair Display',
                         color: theme.colorScheme.onSurface,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.bold,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -471,6 +373,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                       titleController: _titleController,
                       bodyController: _bodyController,
                       titleFocus: _titleFocus,
+                      bodyFocus: _bodyFocus,
                       wordCount: _wordCount,
                       note: _originalNote,
                       onTitleChanged: () => setState(() {}),
@@ -478,7 +381,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                         duration: const Duration(milliseconds: 250),
                         curve: Curves.easeOut,
                       )
-                  : _buildEditModeBody(noteAsync),
+                  : _buildEditModeBody(noteAsync!),
             ),
           ],
         ),
@@ -560,43 +463,40 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
           ],
         ),
       ],
-
       const SizedBox(width: AppSizes.xs),
     ];
   }
 
   Widget _buildEditModeBody(AsyncValue<NoteEntity?> noteAsync) {
-    return switch (noteAsync) {
-      AsyncLoading() => const InkLoading(label: 'Loading note...'),
-      AsyncError(:final error) => InkErrorView(
-          failure: error is Failure
-              ? error
-              : UnexpectedFailure(error.toString()),
+    return noteAsync.when(
+      loading: () => const Center(child: InkLoading(label: 'Opening note...')),
+      error: (failure, _) => Center(
+        child: InkErrorView(
+          failure: failure as Failure,
           onRetry: () => ref
               .read(selectedNoteProvider.notifier)
               .loadNote(widget.noteId!),
         ),
-      AsyncData() => _EditorCanvas(
+      ),
+      data: (note) {
+        if (note == null) {
+          return const Center(child: InkLoading(label: 'Loading note...'));
+        }
+
+        return _EditorCanvas(
           titleController: _titleController,
           bodyController: _bodyController,
           titleFocus: _titleFocus,
+          bodyFocus: _bodyFocus,
           wordCount: _wordCount,
-          note: _originalNote,
+          note: note,
           onTitleChanged: () => setState(() {}),
-        )
-            .animate()
-            .fadeIn(
+        ).animate().fadeIn(
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeOut,
-            )
-            .slideY(
-              begin: 0.04,
-              end: 0,
-              duration: const Duration(milliseconds: 280),
-              curve: Curves.easeOutCubic,
-            ),
-      _ => const InkLoading(),
-    };
+            );
+      },
+    );
   }
 }
 
@@ -605,15 +505,12 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// The full-screen writing canvas.
-///
-/// Deliberately borderless — the background is the affordance.
-/// Title is large (headlineMedium) and body is comfortable (bodyLarge, 1.7 lh).
-/// A subtle metadata row between them shows word count and last-modified time.
 class _EditorCanvas extends StatelessWidget {
   const _EditorCanvas({
     required this.titleController,
     required this.bodyController,
     required this.titleFocus,
+    required this.bodyFocus,
     required this.wordCount,
     required this.onTitleChanged,
     this.note,
@@ -622,6 +519,7 @@ class _EditorCanvas extends StatelessWidget {
   final TextEditingController titleController;
   final TextEditingController bodyController;
   final FocusNode titleFocus;
+  final FocusNode bodyFocus;
   final int wordCount;
   final VoidCallback onTitleChanged;
   final NoteEntity? note;
@@ -646,7 +544,6 @@ class _EditorCanvas extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    // If the note has a custom color, derive text colors for contrast.
     final hasColor = note?.color != null &&
         note!.color != AppColors.noteColorDefault;
     final primaryText = hasColor
@@ -660,10 +557,6 @@ class _EditorCanvas extends StatelessWidget {
             : Colors.black.withValues(alpha: 0.50))
         : theme.colorScheme.onSurfaceVariant;
 
-    // SliverFillRemaining(hasScrollBody: false) gives this widget a finite
-    // height equal to the remaining viewport. The Column uses that bounded
-    // height; the body TextField is wrapped in Expanded so it fills whatever
-    // vertical space is left after the title, metadata row, and divider.
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppSizes.lg,
@@ -748,11 +641,10 @@ class _EditorCanvas extends StatelessWidget {
           const SizedBox(height: AppSizes.md),
 
           // ── Body ───────────────────────────────────────────────────────
-          // Expanded gives the TextField a finite height (the leftover space
-          // inside the bounded Column) so Flutter never sees infinite height.
           Expanded(
             child: TextField(
               controller: bodyController,
+              focusNode: bodyFocus,
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: primaryText.withValues(alpha: 0.88),
                 height: 1.7,
@@ -791,7 +683,6 @@ class _EditorCanvas extends StatelessWidget {
 
 enum _EditorOverflow { archive, delete }
 
-/// A single row in the popup overflow menu.
 class _OverflowItem extends StatelessWidget {
   const _OverflowItem({
     required this.icon,
@@ -805,17 +696,21 @@ class _OverflowItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolved = color ?? Theme.of(context).colorScheme.onSurface;
+    final theme = Theme.of(context);
+
     return Row(
       children: [
-        Icon(icon, size: AppSizes.iconMd, color: resolved),
-        const SizedBox(width: AppSizes.sm),
+        Icon(
+          icon,
+          size: 18,
+          color: color ?? theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: AppSizes.md),
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: resolved,
-                fontWeight: FontWeight.w500,
-              ),
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: color ?? theme.colorScheme.onSurface,
+          ),
         ),
       ],
     );

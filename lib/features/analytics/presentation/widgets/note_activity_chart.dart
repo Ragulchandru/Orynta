@@ -94,14 +94,16 @@ class NoteActivityChart extends StatelessWidget {
                   final ratio = total / maxActivity.toDouble();
                   final heightRatio = ratio.clamp(0.05, 1.0);
 
+                  final barHeight = 90 * heightRatio;
+
                   return Expanded(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Tooltip(
                           message: 'Created: $created, Edited: $edited',
-                          child: FractionallySizedBox(
-                            heightFactor: heightRatio,
+                          child: SizedBox(
+                            height: barHeight,
                             child: Container(
                               margin: const EdgeInsets.symmetric(horizontal: 6.0),
                               decoration: BoxDecoration(
