@@ -18,6 +18,8 @@ import '../../../../shared/widgets/ink_confirm_dialog.dart';
 import '../../../../shared/widgets/ink_snack_bar.dart';
 import '../../../notes/presentation/providers/notes_notifier.dart';
 import '../../../notes/presentation/providers/notes_providers.dart';
+import '../../../auth/presentation/screens/lock_screen.dart';
+import '../../../auth/presentation/providers/app_lock_provider.dart';
 
 /// Orynta Settings Screen.
 ///
@@ -58,7 +60,12 @@ class SettingsScreen extends ConsumerWidget {
                 const _StorageStatsCard(),
                 const SizedBox(height: AppSizes.md),
 
-                // 3. Coming Soon Section
+                // 3. Security Section
+                const _SectionHeader(title: 'Security'),
+                const _SecuritySettingsCard(),
+                const SizedBox(height: AppSizes.md),
+
+                // 4. Coming Soon Section
                 const _SectionHeader(title: 'Premium Features'),
                 const _ComingSoonCard(),
                 const SizedBox(height: AppSizes.md),
@@ -350,13 +357,167 @@ class _ComingSoonCard extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerLow,
       child: Column(
         children: [
-          buildComingSoonTile('App Lock (PIN / Biometrics)', Icons.lock_outline_rounded),
-          Divider(height: 1, indent: 56, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
           buildComingSoonTile('Backup & Restore', Icons.cloud_upload_outlined),
           Divider(height: 1, indent: 56, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
           buildComingSoonTile('Export Notes (PDF / MD)', Icons.picture_as_pdf_outlined),
           Divider(height: 1, indent: 56, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
           buildComingSoonTile('AI Features (Summarize / Tag)', Icons.auto_awesome_outlined),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// _SecuritySettingsCard
+// ─────────────────────────────────────────────────────────────────────────────
+
+class _SecuritySettingsCard extends ConsumerWidget {
+  const _SecuritySettingsCard();
+
+  void _setupAppLock(BuildContext context, WidgetRef ref) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LockScreen(
+          mode: LockScreenMode.setup,
+          onVerified: (pin) async {
+            await ref.read(appLockStateProvider.notifier).enableAppLock(pin);
+            if (context.mounted) {
+              InkSnackBar.showSuccess(context, 'App Lock enabled.');
+              Navigator.of(context).pop(); // Dismiss setup
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  void _disableAppLock(BuildContext context, WidgetRef ref) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LockScreen(
+          mode: LockScreenMode.verifyCurrent,
+          onVerified: (_) async {
+            await ref.read(appLockStateProvider.notifier).disableAppLock();
+            if (context.mounted) {
+              InkSnackBar.showSuccess(context, 'App Lock disabled.');
+              Navigator.of(context).pop(); // Dismiss verify screen
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  void _changePin(BuildContext context, WidgetRef ref) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => LockScreen(
+          mode: LockScreenMode.verifyCurrent,
+          onVerified: (_) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (_) => LockScreen(
+                  mode: LockScreenMode.setup,
+                  onVerified: (newPin) async {
+                    await ref.read(appLockStateProvider.notifier).enableAppLock(newPin);
+                    if (context.mounted) {
+                      InkSnackBar.showSuccess(context, 'PIN changed successfully.');
+                      Navigator.of(context).pop(); // Dismiss setup screen
+                    }
+                  },
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final lockState = ref.watch(appLockStateProvider);
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+        side: BorderSide(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      color: theme.colorScheme.surfaceContainerLow,
+      child: Column(
+        children: [
+          // 1. Enable App Lock Switch
+          SwitchListTile(
+            secondary: Icon(
+              Icons.security_rounded,
+              color: lockState.isEnabled ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+            ),
+            title: const Text('Enable App Lock'),
+            subtitle: const Text('Require PIN or biometrics to open Orynta'),
+            value: lockState.isEnabled,
+            onChanged: (value) {
+              if (value) {
+                _setupAppLock(context, ref);
+              } else {
+                _disableAppLock(context, ref);
+              }
+            },
+          ),
+          Divider(height: 1, indent: 56, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+
+          // 2. Use Biometrics Switch
+          SwitchListTile(
+            secondary: Icon(
+              Icons.fingerprint_rounded,
+              color: lockState.isBiometricsEnabled ? theme.colorScheme.primary : theme.colorScheme.onSurfaceVariant,
+            ),
+            title: const Text('Use Biometrics'),
+            subtitle: const Text('Unlock using fingerprint or face recognition'),
+            value: lockState.isBiometricsEnabled,
+            onChanged: lockState.isEnabled && lockState.isBiometricsSupported
+                ? (value) => ref.read(appLockStateProvider.notifier).setBiometricsEnabled(value)
+                : null,
+          ),
+          Divider(height: 1, indent: 56, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+
+          // 3. Auto Lock Timeout Dropdown
+          ListTile(
+            leading: Icon(Icons.timer_outlined, color: theme.colorScheme.onSurfaceVariant),
+            title: const Text('Auto Lock'),
+            subtitle: const Text('Locks app after background inactivity'),
+            trailing: DropdownButton<int>(
+              value: lockState.autoLockDuration,
+              underline: const SizedBox(),
+              onChanged: lockState.isEnabled
+                  ? (value) {
+                      if (value != null) {
+                        ref.read(appLockStateProvider.notifier).setAutoLockDuration(value);
+                      }
+                    }
+                  : null,
+              items: const [
+                DropdownMenuItem(value: 0, child: Text('Immediately')),
+                DropdownMenuItem(value: 30, child: Text('After 30s')),
+                DropdownMenuItem(value: 60, child: Text('After 1m')),
+                DropdownMenuItem(value: 300, child: Text('After 5m')),
+              ],
+            ),
+          ),
+          Divider(height: 1, indent: 56, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+
+          // 4. Change PIN Button
+          ListTile(
+            leading: Icon(Icons.password_rounded, color: theme.colorScheme.onSurfaceVariant),
+            title: const Text('Change PIN'),
+            trailing: Icon(Icons.arrow_forward_ios_rounded, size: 14, color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.5)),
+            onTap: lockState.isEnabled ? () => _changePin(context, ref) : null,
+            enabled: lockState.isEnabled,
+          ),
         ],
       ),
     );

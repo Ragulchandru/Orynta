@@ -24,6 +24,8 @@ import '../../features/notes/presentation/screens/archive_screen.dart';
 import '../../features/notes/presentation/screens/note_editor_screen.dart';
 import '../../features/notes/presentation/screens/trash_screen.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
+import '../../features/auth/presentation/screens/lock_screen.dart';
+import '../../features/auth/presentation/providers/app_lock_provider.dart';
 import 'route_names.dart';
 
 // This line tells build_runner to generate app_router.g.dart.
@@ -36,14 +38,43 @@ part 'app_router.g.dart';
 /// as long as the ProviderScope exists.
 @Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
-  return GoRouter(
-    // Print route transitions to the debug console — useful during development.
+  final router = GoRouter(
     debugLogDiagnostics: true,
-
-    // The route the app opens on.
     initialLocation: '/',
 
+    redirect: (BuildContext context, GoRouterState state) {
+      final lockState = ref.read(appLockStateProvider);
+      final isLocked = lockState.isLocked;
+      final isLockingRoute = state.uri.path == '/lock';
+
+      if (isLocked) {
+        if (isLockingRoute) return null;
+        final target = state.uri.toString();
+        return '/lock?redirect=${Uri.encodeComponent(target)}';
+      }
+
+      if (isLockingRoute) {
+        final redirectTarget = state.uri.queryParameters['redirect'];
+        return redirectTarget ?? '/';
+      }
+
+      return null;
+    },
+
     routes: [
+      // ── Lock Screen ──────────────────────────────────────────────────────────
+      GoRoute(
+        path: '/lock',
+        name: RouteNames.lock,
+        builder: (BuildContext context, GoRouterState state) {
+          final redirect = state.uri.queryParameters['redirect'] ?? '/';
+          return LockScreen(
+            mode: LockScreenMode.unlock,
+            redirectUri: redirect,
+          );
+        },
+      ),
+
       // ── Home Screen ─────────────────────────────────────────────────────────
       GoRoute(
         path: '/',
@@ -128,4 +159,12 @@ GoRouter appRouter(Ref ref) {
       );
     },
   );
+
+  ref.listen(appLockStateProvider, (previous, next) {
+    if (previous?.isLocked != next.isLocked) {
+      router.refresh();
+    }
+  });
+
+  return router;
 }

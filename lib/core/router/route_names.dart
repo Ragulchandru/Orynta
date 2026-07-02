@@ -49,6 +49,9 @@ abstract final class RouteNames {
   /// App settings screen.
   static const String settings = 'settings';
 
+  /// App lock screen.
+  static const String lock = 'lock';
+
   /// User profile screen (Phase 6 — Firebase).
   static const String profile = 'profile';
 
