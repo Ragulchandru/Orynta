@@ -71,22 +71,49 @@ class TodaySection extends ConsumerWidget {
           ),
         ),
 
-        // Responsive Equal-Height Grid
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 20.0,
-            mainAxisSpacing: 20.0,
-            childAspectRatio: screenWidth < 400 ? 1.05 : 1.25,
-          ),
-          itemCount: cards.length,
-          itemBuilder: (context, index) {
-            return cards[index];
-          },
-        ),
+        // Responsive Equal-Height Grid using IntrinsicHeight Rows
+        _buildResponsiveGrid(cards, crossAxisCount),
       ],
+    );
+  }
+
+  Widget _buildResponsiveGrid(List<Widget> cards, int crossAxisCount) {
+    final List<Widget> rows = [];
+    for (int i = 0; i < cards.length; i += crossAxisCount) {
+      final chunk = cards.sublist(
+        i,
+        (i + crossAxisCount) > cards.length ? cards.length : i + crossAxisCount,
+      );
+
+      final rowChildren = <Widget>[];
+      for (int j = 0; j < crossAxisCount; j++) {
+        if (j < chunk.length) {
+          rowChildren.add(Expanded(child: chunk[j]));
+        } else {
+          rowChildren.add(const Expanded(child: SizedBox.shrink()));
+        }
+        if (j < crossAxisCount - 1) {
+          rowChildren.add(const SizedBox(width: 20));
+        }
+      }
+
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: rowChildren,
+          ),
+        ),
+      );
+
+      if (i + crossAxisCount < cards.length) {
+        rows.add(const SizedBox(height: 20));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: rows,
     );
   }
 }

@@ -20,8 +20,8 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/notes/presentation/screens/archive_screen.dart';
-import '../../features/notes/presentation/screens/note_editor_screen.dart';
 import '../../features/notes/presentation/screens/trash_screen.dart';
+import '../../features/notes/presentation/pages/note_editor_page.dart';
 import '../../features/notes/presentation/pages/notes_page.dart';
 import '../../features/settings/presentation/screens/settings_screen.dart';
 import '../../features/auth/presentation/screens/lock_screen.dart';
@@ -189,7 +189,7 @@ GoRouter appRouter(Ref ref) {
         name: RouteNames.noteEditor,
         parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
-          return const NoteEditorScreen();
+          return const NoteEditorPage();
         },
       ),
 
@@ -200,7 +200,7 @@ GoRouter appRouter(Ref ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
           final noteId = state.pathParameters['id']!;
-          return NoteEditorScreen(noteId: noteId);
+          return NoteEditorPage(noteId: noteId);
         },
       ),
 

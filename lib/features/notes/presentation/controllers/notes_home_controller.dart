@@ -10,13 +10,15 @@ import '../../domain/repositories/notes_home_repository.dart';
 class NotesHomeController extends StateNotifier<NotesHomeState> {
   NotesHomeController(
     this._repository,
-  ) : super(const NotesHomeState(
-          notes: [],
-          filteredNotes: [],
-          selectedFilter: NotesFilter.all,
-          searchQuery: '',
-          loading: true,
-        )) {
+  ) : super(
+          const NotesHomeState(
+            notes: [],
+            filteredNotes: [],
+            selectedFilter: NotesFilter.all,
+            searchQuery: '',
+            loading: true,
+          ),
+        ) {
     loadNotes();
   }
 

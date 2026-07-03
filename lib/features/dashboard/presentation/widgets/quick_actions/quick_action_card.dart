@@ -61,7 +61,6 @@ class _QuickActionCardState extends State<QuickActionCard> {
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     // Top Row: Icon + Badge
                     Row(
@@ -80,48 +79,56 @@ class _QuickActionCardState extends State<QuickActionCard> {
                           ),
                         ),
                         if (widget.action.badge != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: context.colors.primary.withValues(alpha: 0.1),
-                              borderRadius: context.radius.borderRadiusSm,
-                            ),
-                            child: Text(
-                              widget.action.badge!,
-                              style: context.typography.labelSmall.copyWith(
-                                color: context.colors.primary,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10,
+                          Flexible(
+                            child: Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: context.colors.primary.withValues(alpha: 0.1),
+                                borderRadius: context.radius.borderRadiusSm,
+                              ),
+                              child: Text(
+                                widget.action.badge!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: context.typography.labelSmall.copyWith(
+                                  color: context.colors.primary,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10,
+                                ),
                               ),
                             ),
                           ),
                       ],
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
-                    // Title & Subtitle
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.action.title,
-                          style: context.typography.titleMedium.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: isEnabled ? context.colors.textPrimary : context.colors.textSecondary,
+                    // Title
+                    Text(
+                      widget.action.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.typography.titleMedium.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: isEnabled ? context.colors.textPrimary : context.colors.textSecondary,
+                      ),
+                    ),
+
+                    const SizedBox(height: 4),
+
+                    // Subtitle / Content (Flexible)
+                    if (widget.action.subtitle != null && widget.action.subtitle!.isNotEmpty)
+                      Expanded(
+                        child: Text(
+                          widget.action.subtitle!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: context.typography.bodySmall.copyWith(
+                            color: context.colors.textSecondary,
                           ),
                         ),
-                        if (widget.action.subtitle != null && widget.action.subtitle!.isNotEmpty) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            widget.action.subtitle!,
-                            style: context.typography.bodySmall.copyWith(
-                              color: context.colors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+                      ),
                   ],
                 ),
               ),
