@@ -17,8 +17,12 @@ import '../widgets/dashboard_error_view.dart';
 import '../widgets/dashboard_loading_view.dart';
 import '../widgets/dashboard_module_card.dart';
 import '../widgets/dashboard_section.dart';
+import '../widgets/habits/habits_section.dart';
 import '../widgets/hero/hero_section.dart';
+import '../widgets/planner_snapshot/planner_snapshot_section.dart';
 import '../widgets/quick_actions/quick_actions_section.dart';
+import '../widgets/recent_notes/recent_notes_section.dart';
+import '../widgets/smart_suggestions/smart_suggestions_section.dart';
 import '../widgets/today/today_section.dart';
 
 class DashboardPage extends ConsumerWidget {
@@ -142,6 +146,18 @@ class _DashboardModuleRenderer extends StatelessWidget {
     }
     if (module.type == DashboardModuleType.quickActions) {
       return const QuickActionsSection();
+    }
+    if (module.type == DashboardModuleType.recentNotes) {
+      return const RecentNotesSection();
+    }
+    if (module.type == DashboardModuleType.planner) {
+      return const PlannerSnapshotSection();
+    }
+    if (module.type == DashboardModuleType.suggestions) {
+      return const SmartSuggestionsSection();
+    }
+    if (module.type == DashboardModuleType.habits) {
+      return const HabitsSection();
     }
 
     return DashboardSection(
