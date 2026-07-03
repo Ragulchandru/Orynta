@@ -18,6 +18,7 @@ import '../widgets/dashboard_loading_view.dart';
 import '../widgets/dashboard_module_card.dart';
 import '../widgets/dashboard_section.dart';
 import '../widgets/hero/hero_section.dart';
+import '../widgets/quick_actions/quick_actions_section.dart';
 import '../widgets/today/today_section.dart';
 
 class DashboardPage extends ConsumerWidget {
@@ -138,6 +139,9 @@ class _DashboardModuleRenderer extends StatelessWidget {
     }
     if (module.type == DashboardModuleType.today) {
       return const TodaySection();
+    }
+    if (module.type == DashboardModuleType.quickActions) {
+      return const QuickActionsSection();
     }
 
     return DashboardSection(
