@@ -18,6 +18,7 @@ import '../widgets/dashboard_loading_view.dart';
 import '../widgets/dashboard_module_card.dart';
 import '../widgets/dashboard_section.dart';
 import '../widgets/hero/hero_section.dart';
+import '../widgets/today/today_section.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -134,6 +135,9 @@ class _DashboardModuleRenderer extends StatelessWidget {
   Widget build(BuildContext context) {
     if (module.type == DashboardModuleType.hero) {
       return const HeroSection();
+    }
+    if (module.type == DashboardModuleType.today) {
+      return const TodaySection();
     }
 
     return DashboardSection(
