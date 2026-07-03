@@ -10,12 +10,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/dashboard_module.dart';
+import '../../domain/models/dashboard_module_type.dart';
 import '../providers/dashboard_providers.dart';
 import '../widgets/dashboard_empty_view.dart';
 import '../widgets/dashboard_error_view.dart';
 import '../widgets/dashboard_loading_view.dart';
 import '../widgets/dashboard_module_card.dart';
 import '../widgets/dashboard_section.dart';
+import '../widgets/hero/hero_section.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -130,6 +132,10 @@ class _DashboardModuleRenderer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (module.type == DashboardModuleType.hero) {
+      return const HeroSection();
+    }
+
     return DashboardSection(
       title: module.title,
       subtitle: module.subtitle,
