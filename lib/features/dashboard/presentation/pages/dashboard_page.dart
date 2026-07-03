@@ -17,6 +17,7 @@ import '../widgets/dashboard_error_view.dart';
 import '../widgets/dashboard_loading_view.dart';
 import '../widgets/dashboard_module_card.dart';
 import '../widgets/dashboard_section.dart';
+import '../widgets/analytics/analytics_snapshot_section.dart';
 import '../widgets/habits/habits_section.dart';
 import '../widgets/hero/hero_section.dart';
 import '../widgets/planner_snapshot/planner_snapshot_section.dart';
@@ -158,6 +159,9 @@ class _DashboardModuleRenderer extends StatelessWidget {
     }
     if (module.type == DashboardModuleType.habits) {
       return const HabitsSection();
+    }
+    if (module.type == DashboardModuleType.analytics) {
+      return const AnalyticsSnapshotSection();
     }
 
     return DashboardSection(
