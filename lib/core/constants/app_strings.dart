@@ -11,6 +11,7 @@ abstract final class AppStrings {
   // ─── App Identity ────────────────────────────────────────────────────────────────────────
   static const String appName = 'Orynta';
   static const String appTagline = 'Capture Ideas. Organize Life.';
+  static const String splashTagline = 'Organize beautifully.\nFocus effortlessly.';
 
   // ─── Hive Box Names ───────────────────────────────────────────────────────
   // These are the keys used to open Hive boxes.
@@ -29,6 +30,11 @@ abstract final class AppStrings {
   // ─── Settings Keys ────────────────────────────────────────────────────────
   // Keys for values stored in the settings_box.
   static const String themeModeSetting = 'theme_mode';
+  static const String onboardingCompletedSetting = 'is_onboarding_completed';
+  static const String userDisplayNameSetting = 'user_display_name';
+  static const String defaultHomeScreenSetting = 'default_home_screen';
+  static const String defaultNotesLayoutSetting = 'default_notes_layout';
+  static const String preferredThemeSetting = 'preferred_theme';
 
   // ─── Empty State Messages ─────────────────────────────────────────────────
   static const String emptyNotesTitle = 'No notes yet';

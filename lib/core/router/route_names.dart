@@ -12,6 +12,10 @@
 
 /// Named route identifiers for Orynta's navigation graph.
 abstract final class RouteNames {
+  // ─── Splash & Onboarding ──────────────────────────────────────────────────
+  static const String splash = 'splash';
+  static const String onboarding = 'onboarding';
+
   // ─── Phase 0 ──────────────────────────────────────────────────────────────
   /// Placeholder home screen (replaced by NotesScreen in Phase 1).
   static const String home = 'home';

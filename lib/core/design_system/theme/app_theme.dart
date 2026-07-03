@@ -167,7 +167,7 @@ abstract final class AppTheme {
       // ── Filled Button ───────────────────────────────────────────────────
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize:  Size(0, AppDimensions.buttonHeight),
+          minimumSize: const Size(0, AppDimensions.buttonHeight),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.sm,
@@ -183,7 +183,7 @@ abstract final class AppTheme {
       // ── Outlined Button ─────────────────────────────────────────────────
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: Size(0, AppDimensions.buttonHeight),
+          minimumSize: const Size(0, AppDimensions.buttonHeight),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.sm,
@@ -214,7 +214,7 @@ abstract final class AppTheme {
       // ── Elevated Button ─────────────────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          minimumSize: Size(0, AppDimensions.buttonHeight),
+          minimumSize: const Size(0, AppDimensions.buttonHeight),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.lg,
             vertical: AppSpacing.sm,
@@ -230,7 +230,7 @@ abstract final class AppTheme {
       // ── Icon Button ─────────────────────────────────────────────────────
       iconButtonTheme: IconButtonThemeData(
         style: IconButton.styleFrom(
-          minimumSize: Size.square(AppDimensions.iconButtonSize),
+          minimumSize: const Size.square(AppDimensions.iconButtonSize),
           padding:     EdgeInsets.zero,
           shape: const RoundedRectangleBorder(
             borderRadius: AppRadius.borderRadiusSm,

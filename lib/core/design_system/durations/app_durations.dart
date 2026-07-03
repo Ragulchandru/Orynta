@@ -96,4 +96,39 @@ abstract final class AppDurations {
 
   /// Tooltip show delay
   static const Duration tooltipDelay = Duration(milliseconds: 500);
+
+  // ─── Splash Screen Timeline Tokens ────────────────────────────────────────
+
+  /// Total splash duration before navigation (2800ms)
+  static const Duration splashTotal = Duration(milliseconds: 2800);
+
+  /// Splash background fade duration (0ms -> 250ms)
+  static const Duration splashBackgroundFade = Duration(milliseconds: 250);
+
+  /// Splash radial glow fade start delay (150ms)
+  static const Duration splashGlowFadeDelay = Duration(milliseconds: 150);
+
+  /// Splash logo fade start delay (250ms)
+  static const Duration splashLogoFadeDelay = Duration(milliseconds: 250);
+
+  /// Splash logo scale start delay (700ms)
+  static const Duration splashLogoScaleDelay = Duration(milliseconds: 700);
+
+  /// Splash app title fade start delay (800ms)
+  static const Duration splashTitleFadeDelay = Duration(milliseconds: 800);
+
+  /// Splash tagline fade start delay (1200ms)
+  static const Duration splashTaglineFadeDelay = Duration(milliseconds: 1200);
+
+  /// Splash loading indicator fade start delay (1500ms)
+  static const Duration splashLoadingFadeDelay = Duration(milliseconds: 1500);
+
+  /// Splash content upward shift start delay (2400ms)
+  static const Duration splashUpwardShiftDelay = Duration(milliseconds: 2400);
+
+  /// Splash loading indicator loop cycle duration (1600ms - slow & smooth)
+  static const Duration splashLoadingLoop = Duration(milliseconds: 1600);
+
+  /// Total splash duration when Reduced Motion is enabled (1500ms)
+  static const Duration splashReducedMotionTotal = Duration(milliseconds: 1500);
 }

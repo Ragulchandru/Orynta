@@ -34,6 +34,8 @@ import '../../features/analytics/presentation/screens/analytics_screen.dart';
 import '../../features/habits/presentation/screens/habits_screen.dart';
 import '../../features/habits/presentation/screens/create_habit_screen.dart';
 import '../../features/focus/presentation/screens/focus_screen.dart';
+import '../../features/onboarding/presentation/pages/onboarding_page.dart';
+import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../shared/widgets/main_navigation_shell.dart';
 import 'route_names.dart';
 
@@ -52,12 +54,16 @@ GoRouter appRouter(Ref ref) {
   final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     debugLogDiagnostics: true,
-    initialLocation: '/',
+    initialLocation: '/splash',
 
     redirect: (BuildContext context, GoRouterState state) {
       final lockState = ref.read(appLockStateProvider);
       final isLocked = lockState.isLocked;
       final isLockingRoute = state.uri.path == '/lock';
+      final isSplashRoute = state.uri.path == '/splash';
+      final isOnboardingRoute = state.uri.path == '/onboarding';
+
+      if (isSplashRoute || isOnboardingRoute) return null;
 
       if (isLocked) {
         if (isLockingRoute) return null;
@@ -74,6 +80,44 @@ GoRouter appRouter(Ref ref) {
     },
 
     routes: [
+      // ── Splash Screen ────────────────────────────────────────────────────────
+      GoRoute(
+        path: '/splash',
+        name: RouteNames.splash,
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          return CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: const SplashPage(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: CurveTween(curve: Curves.easeInOutCubic).animate(animation),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 350),
+          );
+        },
+      ),
+
+      // ── Onboarding Screen ────────────────────────────────────────────────────
+      GoRoute(
+        path: '/onboarding',
+        name: RouteNames.onboarding,
+        pageBuilder: (BuildContext context, GoRouterState state) {
+          return CustomTransitionPage<void>(
+            key: state.pageKey,
+            child: const OnboardingPage(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: CurveTween(curve: Curves.easeInOutCubic).animate(animation),
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 350),
+          );
+        },
+      ),
+
       // ── Lock Screen ──────────────────────────────────────────────────────────
       GoRoute(
         path: '/lock',
