@@ -23,7 +23,10 @@ class PremiumFAB extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = context.appTheme;
     final bg = backgroundColor ?? theme.primary;
-    final fg = theme.isDark ? const Color(0xFF0F0F17) : const Color(0xFFFFFFFF);
+    
+    // Dynamically compute high contrast foreground color based on background luminance
+    final isLightBg = bg.computeLuminance() > 0.5;
+    final fg = isLightBg ? const Color(0xFF11111C) : const Color(0xFFFFFFFF);
 
     return ScaleOnPress(
       onTap: onPressed,
@@ -35,9 +38,9 @@ class PremiumFAB extends StatelessWidget {
           borderRadius: BorderRadius.circular(16.0),
           boxShadow: [
             BoxShadow(
-              color: bg.withValues(alpha: 0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
+              color: bg.withValues(alpha: theme.isDark ? 0.4 : 0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -45,10 +48,8 @@ class PremiumFAB extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Theme(
-              data: Theme.of(context).copyWith(
-                iconTheme: IconThemeData(color: fg),
-              ),
+            IconTheme(
+              data: IconThemeData(color: fg, size: 24),
               child: icon,
             ),
             if (label != null) ...[
@@ -57,7 +58,8 @@ class PremiumFAB extends StatelessWidget {
                 label!,
                 style: context.typography.labelLarge.copyWith(
                   color: fg,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 0.2,
                 ),
               ),
             ],

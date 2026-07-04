@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/design_system/design_system.dart';
 import '../../domain/entities/habit_entity.dart';
 import '../providers/habits_notifier.dart';
 import '../widgets/habit_card.dart';
@@ -146,9 +147,9 @@ class HabitsScreen extends ConsumerWidget {
                 ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: PremiumFAB(
         onPressed: () => context.push('/habits/new'),
-        child: const Icon(Icons.add_rounded),
+        icon: const Icon(Icons.add_rounded),
       ),
     );
   }

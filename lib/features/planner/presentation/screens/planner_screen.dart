@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/router/route_names.dart';
+import '../../../../core/design_system/design_system.dart';
+import '../../../workspace/presentation/widgets/workspace_avatar.dart';
 import '../../../calendar/presentation/providers/calendar_providers.dart';
 import '../../../calendar/presentation/widgets/agenda_section.dart';
 import '../../../calendar/presentation/widgets/calendar_header.dart';
@@ -42,22 +44,7 @@ class PlannerScreen extends ConsumerWidget {
     final dayCompleted = dayTasks.where((t) => t.isCompleted).length;
     final dayPercent = dayTasks.isNotEmpty ? (dayCompleted / dayTasks.length * 100).toInt() : 100;
 
-    // Calculate weekly completion rate
-    final allTasks = ref.watch(tasksProvider);
-    final weekStart = selectedDate.subtract(Duration(days: selectedDate.weekday - 1));
-    final weekEnd = weekStart.add(const Duration(days: 6));
-    final weekTasks = allTasks.where((t) {
-      if (t.dueDate == null) {
-        final now = DateTime.now();
-        final nowStart = now.subtract(Duration(days: now.weekday - 1));
-        return weekStart.isAtSameMomentAs(DateTime(nowStart.year, nowStart.month, nowStart.day));
-      }
-      final due = t.dueDate!;
-      return (due.isAfter(weekStart.subtract(const Duration(seconds: 1))) &&
-          due.isBefore(weekEnd.add(const Duration(seconds: 1))));
-    }).toList();
-    final weekCompleted = weekTasks.where((t) => t.isCompleted).length;
-    final weekPercent = weekTasks.isNotEmpty ? (weekCompleted / weekTasks.length * 100).toInt() : 100;
+
 
     return Scaffold(
       body: SafeArea(
@@ -99,13 +86,13 @@ class PlannerScreen extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: colorScheme.primary.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(100),
                                 ),
                                 child: Text(
-                                  'Daily: $dayPercent% • Weekly: $weekPercent%',
+                                  '$dayPercent% Done',
                                   style: theme.textTheme.labelSmall?.copyWith(
-                                    color: Colors.green,
+                                    color: colorScheme.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -114,8 +101,7 @@ class PlannerScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
-                      
-                      // Toggle month grid / clear selections
+                      // Toggle month grid / clear selections / avatar actions
                       Row(
                         children: [
                           IconButton(
@@ -135,6 +121,8 @@ class PlannerScreen extends ConsumerWidget {
                               },
                               child: const Text('Clear'),
                             ),
+                          const SizedBox(width: 8),
+                          const WorkspaceAvatar(),
                         ],
                       ),
                     ],
@@ -201,9 +189,9 @@ class PlannerScreen extends ConsumerWidget {
       ),
       floatingActionButton: isSelectionMode
           ? null
-          : FloatingActionButton(
+          : PremiumFAB(
               onPressed: () => context.pushNamed(RouteNames.createTask),
-              child: const Icon(Icons.add_rounded),
+              icon: const Icon(Icons.add_rounded),
             ),
     );
   }

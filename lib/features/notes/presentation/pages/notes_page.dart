@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/note_summary.dart';
+import '../../../workspace/presentation/widgets/workspace_avatar.dart';
 import '../providers/note_selection_provider.dart';
 import '../providers/notes_home_providers.dart';
 import '../widgets/notes_empty_state.dart';
@@ -130,23 +131,33 @@ class _NotesPageState extends ConsumerState<NotesPage> {
                                 top: 32.0,
                                 bottom: 20.0,
                               ),
-                              child: Column(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    'Notes',
-                                    style: context.typography.headlineLarge.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      color: context.colors.textPrimary,
-                                      letterSpacing: -1.0,
-                                    ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Notes',
+                                        style: context.typography.headlineLarge.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                          color: context.colors.textPrimary,
+                                          letterSpacing: -1.0,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Capture ideas and stay organized',
+                                        style: context.typography.bodySmall.copyWith(
+                                          color: context.colors.textSecondary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Capture ideas and stay organized',
-                                    style: context.typography.bodySmall.copyWith(
-                                      color: context.colors.textSecondary,
-                                    ),
+                                  const Padding(
+                                    padding: EdgeInsets.only(top: 4.0),
+                                    child: WorkspaceAvatar(),
                                   ),
                                 ],
                               ),
@@ -232,15 +243,9 @@ class _NotesPageState extends ConsumerState<NotesPage> {
         ),
         floatingActionButton: inSelectionMode
             ? null
-            : FloatingActionButton.extended(
+            : PremiumFAB(
                 onPressed: () => _navigateToCreateNote(context),
                 icon: const Icon(Icons.add_rounded),
-                label: const Text('Create Note'),
-                backgroundColor: context.colors.primary,
-                foregroundColor: context.colors.onPrimary,
-                shape: RoundedRectangleBorder(
-                  borderRadius: context.radius.borderRadiusLg,
-                ),
               ),
       ),
     );

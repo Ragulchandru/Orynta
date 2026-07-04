@@ -1,6 +1,6 @@
 // lib/core/design_system/theme/app_theme.dart
 //
-// Orynta 2.0 — Premium Theme Builder and Theme Extensions
+// Orynta 2.0 — Premium Theme Builder, Theme Extensions, and Settings Modifiers
 
 import 'package:flutter/material.dart';
 import '../design_system.dart';
@@ -32,8 +32,18 @@ extension OryThemeExtensionContext on BuildContext {
 }
 
 abstract final class AppTheme {
-  static ThemeData buildTheme(AppThemeType type) {
+  static ThemeData buildTheme(
+    AppThemeType type, {
+    bool amoledMode = false,
+    double cornerRadius = 16.0,
+  }) {
     final t = AppThemeFactory.getTheme(type);
+    final isDark = t.brightness == Brightness.dark;
+
+    final surfaceColor = (amoledMode && isDark) ? const Color(0xFF000000) : t.surface;
+    final bgDim = (amoledMode && isDark) ? const Color(0xFF000000) : t.surfaceDim;
+    final cardBgColor = (amoledMode && isDark) ? const Color(0xFF050508) : t.notes.card;
+    final chipBgColor = (amoledMode && isDark) ? const Color(0xFF08080D) : t.surfaceContainer;
 
     final colorScheme = ColorScheme(
       brightness: t.brightness,
@@ -44,10 +54,10 @@ abstract final class AppTheme {
       secondary: t.secondary,
       onSecondary: t.brightness == Brightness.dark ? const Color(0xFF0F0F17) : const Color(0xFFFFFFFF),
       tertiary: t.tertiary,
-      surface: t.surface,
+      surface: surfaceColor,
       onSurface: t.brightness == Brightness.dark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
-      surfaceContainer: t.surfaceContainer,
-      surfaceContainerLow: t.surfaceDim,
+      surfaceContainer: (amoledMode && isDark) ? const Color(0xFF0C0C12) : t.surfaceContainer,
+      surfaceContainerLow: bgDim,
       surfaceContainerHigh: t.surfaceBright,
       onSurfaceVariant: t.brightness == Brightness.dark ? const Color(0xFFC5C5D3) : const Color(0xFF4E4E68),
       outline: t.outline,
@@ -60,39 +70,39 @@ abstract final class AppTheme {
       useMaterial3: true,
       brightness: t.brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: t.surfaceDim,
+      scaffoldBackgroundColor: bgDim,
       dividerColor: t.outlineVariant,
       extensions: [
         OryThemeExtension(themeData: t),
       ],
       cardTheme: CardThemeData(
-        color: t.notes.card,
+        color: cardBgColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.0),
+          borderRadius: BorderRadius.circular(cornerRadius),
           side: BorderSide(color: t.notes.cardBorder, width: 1.0),
         ),
       ),
       dialogTheme: DialogThemeData(
-        backgroundColor: t.surface,
+        backgroundColor: surfaceColor,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24.0),
+          borderRadius: BorderRadius.circular(cornerRadius + 8.0),
           side: BorderSide(color: t.outlineVariant, width: 1.0),
         ),
       ),
       bottomSheetTheme: BottomSheetThemeData(
-        backgroundColor: t.surface,
+        backgroundColor: surfaceColor,
         elevation: 0,
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(24.0),
-            topRight: Radius.circular(24.0),
+            topLeft: Radius.circular(cornerRadius + 8.0),
+            topRight: Radius.circular(cornerRadius + 8.0),
           ),
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: t.surfaceContainer,
+        backgroundColor: chipBgColor,
         disabledColor: t.surfaceDim,
         selectedColor: t.primary,
         secondarySelectedColor: t.secondary,
@@ -100,7 +110,7 @@ abstract final class AppTheme {
           color: t.brightness == Brightness.dark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
         ),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular((cornerRadius - 4.0).clamp(4.0, 24.0)),
           side: BorderSide(color: t.outlineVariant, width: 1.0),
         ),
       ),
@@ -109,7 +119,7 @@ abstract final class AppTheme {
         foregroundColor: t.brightness == Brightness.dark ? const Color(0xFF0F0F17) : const Color(0xFFFFFFFF),
         elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16.0),
+          borderRadius: BorderRadius.circular(cornerRadius),
         ),
       ),
     );

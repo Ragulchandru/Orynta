@@ -34,10 +34,6 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
       return Scaffold(
         backgroundColor: theme.surfaceDim,
         body: body,
-        floatingActionButton: PremiumFAB(
-          onPressed: () => _showQuickCreate(context),
-          icon: const Icon(Icons.add_rounded),
-        ),
         bottomNavigationBar: SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../focus/presentation/providers/focus_notifier.dart';
 import '../providers/analytics_provider.dart';
+import '../../../workspace/presentation/widgets/workspace_avatar.dart';
 import '../widgets/achievements_card.dart';
 import '../widgets/focus_chart.dart';
 import '../widgets/habit_heatmap.dart';
@@ -45,6 +46,10 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: const [
+          WorkspaceAvatar(),
+          SizedBox(width: 16),
+        ],
       ),
       body: SafeArea(
         child: ListView(

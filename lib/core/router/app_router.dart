@@ -31,6 +31,7 @@ import '../../features/planner/presentation/screens/planner_screen.dart';
 import '../../features/planner/presentation/screens/create_task_screen.dart';
 import '../../features/planner/presentation/screens/task_detail_screen.dart';
 import '../../features/analytics/presentation/screens/analytics_screen.dart';
+import '../../features/settings/presentation/screens/appearance_screen.dart';
 import '../../features/habits/presentation/screens/habits_screen.dart';
 import '../../features/habits/presentation/screens/create_habit_screen.dart';
 import '../../features/focus/presentation/screens/focus_screen.dart';
@@ -300,6 +301,16 @@ GoRouter appRouter(Ref ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
           return const SettingsScreen();
+        },
+      ),
+
+      // ── Appearance Screen ───────────────────────────────────────────────────
+      GoRoute(
+        path: '/appearance',
+        name: RouteNames.appearance,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          return const AppearanceScreen();
         },
       ),
     ],

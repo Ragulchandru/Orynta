@@ -24,6 +24,7 @@ abstract final class RouteNames {
   static const String dashboard = 'dashboard';
   static const String planner = 'planner';
   static const String insights = 'insights';
+  static const String appearance = 'appearance';
   static const String createTask = 'create-task';
   static const String taskDetail = 'task-detail';
   static const String taskEdit = 'task-edit';

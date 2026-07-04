@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../workspace/presentation/widgets/workspace_avatar.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/dashboard_module.dart';
 import '../../domain/models/dashboard_module_type.dart';
@@ -61,6 +62,8 @@ class DashboardPage extends ConsumerWidget {
                         icon: const Icon(Icons.tune_rounded),
                         tooltip: 'Customize Layout',
                       ),
+                      const SizedBox(width: 8),
+                      const WorkspaceAvatar(),
                     ],
                   ),
                 ),
