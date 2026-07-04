@@ -40,8 +40,12 @@ class NoteEditorRepositoryImpl implements NoteEditorRepository {
   Future<Either<Failure, NoteEntity>> save(
     String id,
     String title,
-    String content,
-  ) async {
+    String content, {
+    int? color,
+    bool? isPinned,
+    bool? isFavorite,
+    bool? isArchived,
+  }) async {
     // Check if the note already exists
     final existingResult = await _noteRepository.getNoteById(id);
     return existingResult.fold(
@@ -52,18 +56,26 @@ class NoteEditorRepositoryImpl implements NoteEditorRepository {
           id: id,
           title: title.trim(),
           body: content.trim(),
-          isPinned: false,
-          status: NoteStatus.active,
+          isPinned: isPinned ?? false,
+          isFavorite: isFavorite ?? false,
+          status: (isArchived ?? false) ? NoteStatus.archived : NoteStatus.active,
+          color: color,
           createdAt: now,
           updatedAt: now,
         );
         return _noteRepository.createNote(newNote);
       },
       (existing) async {
-        // If exists, update title/body
+        // If exists, update properties
         final updatedNote = existing.copyWith(
           title: title.trim(),
           body: content.trim(),
+          isPinned: isPinned ?? existing.isPinned,
+          isFavorite: isFavorite ?? existing.isFavorite,
+          status: isArchived != null
+              ? (isArchived ? NoteStatus.archived : NoteStatus.active)
+              : existing.status,
+          color: color,
           updatedAt: DateTime.now(),
         );
         return _noteRepository.updateNote(updatedNote);

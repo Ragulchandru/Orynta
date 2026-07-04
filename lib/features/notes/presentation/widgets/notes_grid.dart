@@ -1,6 +1,6 @@
 // lib/features/notes/presentation/widgets/notes_grid.dart
 //
-// Orynta 2.0 — Notes Grid Component
+// Orynta 2.0 — Notes Grid Component (Responsive natural sizing)
 
 import 'package:flutter/material.dart';
 import '../../domain/models/note_summary.dart';
@@ -27,24 +27,51 @@ class NotesGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final crossAxisCount = _calculateCrossAxisCount(constraints.maxWidth);
+        final List<Widget> rows = [];
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            crossAxisSpacing: 20.0,
-            mainAxisSpacing: 20.0,
-            childAspectRatio: constraints.maxWidth < 600 ? 1.0 : 1.25,
-          ),
-          itemCount: notes.length,
-          itemBuilder: (context, index) {
-            final note = notes[index];
-            return NotePreviewCard(
-              note: note,
-              onTap: () => onNoteTap(note),
-            );
-          },
+        for (int i = 0; i < notes.length; i += crossAxisCount) {
+          final chunk = notes.sublist(
+            i,
+            (i + crossAxisCount) > notes.length ? notes.length : i + crossAxisCount,
+          );
+
+          final rowChildren = <Widget>[];
+          for (int j = 0; j < crossAxisCount; j++) {
+            if (j < chunk.length) {
+              final note = chunk[j];
+              rowChildren.add(
+                Expanded(
+                  child: NotePreviewCard(
+                    note: note,
+                    onTap: () => onNoteTap(note),
+                  ),
+                ),
+              );
+            } else {
+              rowChildren.add(const Expanded(child: SizedBox.shrink()));
+            }
+            if (j < crossAxisCount - 1) {
+              rowChildren.add(const SizedBox(width: 20));
+            }
+          }
+
+          rows.add(
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: rowChildren,
+              ),
+            ),
+          );
+
+          if (i + crossAxisCount < notes.length) {
+            rows.add(const SizedBox(height: 20));
+          }
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: rows,
         );
       },
     );

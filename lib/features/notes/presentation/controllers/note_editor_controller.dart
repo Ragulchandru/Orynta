@@ -4,18 +4,23 @@
 
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../domain/entities/note_status.dart';
+import '../../domain/models/note_color.dart';
 import '../../domain/models/note_editor_state.dart';
 import '../../domain/repositories/note_editor_repository.dart';
+import '../providers/notes_home_providers.dart';
 
 class NoteEditorController extends StateNotifier<NoteEditorState> {
   NoteEditorController(
-    this._repository, {
+    this._repository,
+    this._ref, {
     this.noteId,
   }) : super(const NoteEditorState()) {
     initialize();
   }
 
   final NoteEditorRepository _repository;
+  final Ref _ref;
   final String? noteId;
   Timer? _debounceTimer;
 
@@ -32,6 +37,10 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
             title: '',
             content: '',
             isNewNote: true,
+            isPinned: false,
+            isFavorite: false,
+            isArchived: false,
+            color: NoteColor.defaultColor,
           );
         },
       );
@@ -47,6 +56,10 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
             content: note.body,
             isNewNote: false,
             saved: true,
+            isPinned: note.isPinned,
+            isFavorite: note.isFavorite,
+            isArchived: note.status == NoteStatus.archived,
+            color: NoteColor.fromArgb(note.color),
           );
         },
       );
@@ -65,6 +78,30 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
     _triggerAutosave();
   }
 
+  void togglePin(bool pinned) {
+    if (state.isPinned == pinned) return;
+    state = state.copyWith(isPinned: pinned, dirty: true, saved: false);
+    _triggerAutosave();
+  }
+
+  void toggleFavorite(bool favorite) {
+    if (state.isFavorite == favorite) return;
+    state = state.copyWith(isFavorite: favorite, dirty: true, saved: false);
+    _triggerAutosave();
+  }
+
+  void toggleArchive(bool archived) {
+    if (state.isArchived == archived) return;
+    state = state.copyWith(isArchived: archived, dirty: true, saved: false);
+    _triggerAutosave();
+  }
+
+  void updateColor(NoteColor color) {
+    if (state.color == color) return;
+    state = state.copyWith(color: color, dirty: true, saved: false);
+    _triggerAutosave();
+  }
+
   void _triggerAutosave() {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 800), () {
@@ -77,13 +114,22 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
     if (currentId == null || !state.dirty) return;
 
     state = state.copyWith(saving: true);
-    final result = await _repository.save(currentId, state.title, state.content);
+    final result = await _repository.save(
+      currentId,
+      state.title,
+      state.content,
+      color: state.color.argbValue,
+      isPinned: state.isPinned,
+      isFavorite: state.isFavorite,
+      isArchived: state.isArchived,
+    );
     result.fold(
       (failure) {
         state = state.copyWith(saving: false, saved: false);
       },
       (note) {
         state = state.copyWith(saving: false, saved: true, dirty: false);
+        _ref.read(notesHomeControllerProvider.notifier).loadNotes();
       },
     );
   }
@@ -92,6 +138,7 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
     final currentId = state.noteId;
     if (currentId != null && state.isEmpty) {
       await _repository.deleteDraft(currentId);
+      _ref.read(notesHomeControllerProvider.notifier).loadNotes();
     }
   }
 

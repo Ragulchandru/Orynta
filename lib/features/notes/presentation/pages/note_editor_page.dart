@@ -1,17 +1,19 @@
 // lib/features/notes/presentation/pages/note_editor_page.dart
 //
-// Orynta 2.0 — Note Editor Page (Markdown Rich Editor)
+// Orynta 2.0 — Note Editor Page (Markdown Rich Editor with Metadata Options)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_tokens.dart';
+import '../../domain/models/note_color.dart';
 import '../controllers/rich_text_editing_controller.dart';
 import '../providers/note_editor_providers.dart';
 import '../widgets/editor_app_bar.dart';
 import '../widgets/editor_status_bar.dart';
 import '../widgets/editor_toolbar.dart';
+import '../widgets/note_metadata_sheet.dart';
 import '../widgets/rich_editor_area.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
@@ -68,6 +70,33 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     }
   }
 
+  void _showMetadataSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, child) {
+            final liveState = ref.watch(noteEditorControllerProvider(widget.noteId));
+            final liveController = ref.read(noteEditorControllerProvider(widget.noteId).notifier);
+
+            return NoteMetadataSheet(
+              isPinned: liveState.isPinned,
+              isFavorite: liveState.isFavorite,
+              isArchived: liveState.isArchived,
+              selectedColor: liveState.color,
+              onPinChanged: liveController.togglePin,
+              onFavoriteChanged: liveController.toggleFavorite,
+              onArchiveChanged: liveController.toggleArchive,
+              onColorChanged: liveController.updateColor,
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(noteEditorControllerProvider(widget.noteId));
@@ -78,6 +107,11 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       _isInitialized = true;
     }
 
+    final hasCustomColor = state.color != NoteColor.defaultColor && state.color.argbValue != null;
+    final backgroundColor = hasCustomColor
+        ? Color(state.color.argbValue!).withValues(alpha: 0.12)
+        : context.colors.background;
+
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
@@ -85,11 +119,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         await _handlePop();
       },
       child: Scaffold(
-        backgroundColor: context.colors.background,
+        backgroundColor: backgroundColor,
         appBar: EditorAppBar(
           onBack: _handlePop,
-          isPinned: false,
-          isFavorite: false,
+          onShowOptions: () => _showMetadataSheet(context),
         ),
         body: SafeArea(
           child: Column(

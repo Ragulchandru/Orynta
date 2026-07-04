@@ -63,7 +63,7 @@ class EditorToolbar extends StatelessWidget {
                   icon: Icons.format_underlined_rounded,
                   tooltip: 'Underline',
                   onPressed: () => _applyFormat(() {
-                    EditorFormatController.toggleInlineStyle(controller, '<u>');
+                    EditorFormatController.toggleUnderlineStyle(controller);
                   }),
                 ),
                 EditorToolbarButton(

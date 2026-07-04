@@ -3,6 +3,7 @@
 // Orynta 2.0 — Note Editor State
 
 import 'package:flutter/foundation.dart';
+import 'note_color.dart';
 
 @immutable
 class NoteEditorState {
@@ -14,6 +15,10 @@ class NoteEditorState {
     this.saved = false,
     this.dirty = false,
     this.isNewNote = false,
+    this.isPinned = false,
+    this.isFavorite = false,
+    this.isArchived = false,
+    this.color = NoteColor.defaultColor,
   });
 
   final String? noteId;
@@ -23,6 +28,10 @@ class NoteEditorState {
   final bool saved;
   final bool dirty;
   final bool isNewNote;
+  final bool isPinned;
+  final bool isFavorite;
+  final bool isArchived;
+  final NoteColor color;
 
   bool get isEmpty => title.trim().isEmpty && content.trim().isEmpty;
 
@@ -34,6 +43,10 @@ class NoteEditorState {
     bool? saved,
     bool? dirty,
     bool? isNewNote,
+    bool? isPinned,
+    bool? isFavorite,
+    bool? isArchived,
+    NoteColor? color,
   }) {
     return NoteEditorState(
       noteId: noteId ?? this.noteId,
@@ -43,6 +56,10 @@ class NoteEditorState {
       saved: saved ?? this.saved,
       dirty: dirty ?? this.dirty,
       isNewNote: isNewNote ?? this.isNewNote,
+      isPinned: isPinned ?? this.isPinned,
+      isFavorite: isFavorite ?? this.isFavorite,
+      isArchived: isArchived ?? this.isArchived,
+      color: color ?? this.color,
     );
   }
 }

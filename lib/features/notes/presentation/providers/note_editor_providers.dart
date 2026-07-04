@@ -17,5 +17,5 @@ final noteEditorRepositoryProvider = Provider<NoteEditorRepository>((ref) {
 final noteEditorControllerProvider = StateNotifierProvider.autoDispose
     .family<NoteEditorController, NoteEditorState, String?>((ref, noteId) {
   final repository = ref.watch(noteEditorRepositoryProvider);
-  return NoteEditorController(repository, noteId: noteId);
+  return NoteEditorController(repository, ref, noteId: noteId);
 });

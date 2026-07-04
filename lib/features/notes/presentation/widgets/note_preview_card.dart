@@ -26,8 +26,11 @@ class _NotePreviewCardState extends State<NotePreviewCard> {
   Color? _parseColor(String? hexString, BuildContext context) {
     if (hexString == null) return null;
     try {
-      final hex = hexString.replaceAll('#', '');
-      return Color(int.parse('FF$hex', radix: 16));
+      var hex = hexString.replaceAll('#', '');
+      if (hex.length == 6) {
+        hex = 'FF$hex';
+      }
+      return Color(int.parse(hex, radix: 16));
     } catch (_) {
       return null;
     }

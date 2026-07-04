@@ -22,11 +22,20 @@ class NotesHomeRepositoryImpl implements NotesHomeRepository {
   Future<Either<Failure, List<NoteSummary>>> loadNotes() async {
     final result = await _noteRepository.getAllNotes();
     return result.map((entities) {
-      return entities
+      final summaries = entities
           // Exclude trashed notes from Notes Home screen
           .where((e) => e.status != NoteStatus.trashed)
           .map(_mapToSummary)
           .toList();
+
+      // Sort: Pinned notes first, then by updatedAt descending
+      summaries.sort((a, b) {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.updatedAt.compareTo(a.updatedAt);
+      });
+
+      return summaries;
     });
   }
 
@@ -37,10 +46,19 @@ class NotesHomeRepositoryImpl implements NotesHomeRepository {
     }
     final result = await _noteRepository.searchNotes(query);
     return result.map((entities) {
-      return entities
+      final summaries = entities
           .where((e) => e.status != NoteStatus.trashed)
           .map(_mapToSummary)
           .toList();
+
+      // Sort: Pinned notes first, then by updatedAt descending
+      summaries.sort((a, b) {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.updatedAt.compareTo(a.updatedAt);
+      });
+
+      return summaries;
     });
   }
 
@@ -53,13 +71,25 @@ class NotesHomeRepositoryImpl implements NotesHomeRepository {
 
     switch (filter) {
       case NotesFilter.all:
-        filtered.addAll(notes.where((n) => !n.isArchived));
+        final list = notes.where((n) => !n.isArchived).toList();
+        list.sort((a, b) {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return b.updatedAt.compareTo(a.updatedAt);
+        });
+        filtered.addAll(list);
       case NotesFilter.recent:
         final list = notes.where((n) => !n.isArchived).toList()
           ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
         filtered.addAll(list);
       case NotesFilter.favorites:
-        filtered.addAll(notes.where((n) => n.isFavorite && !n.isArchived));
+        final list = notes.where((n) => n.isFavorite && !n.isArchived).toList();
+        list.sort((a, b) {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return b.updatedAt.compareTo(a.updatedAt);
+        });
+        filtered.addAll(list);
       case NotesFilter.pinned:
         filtered.addAll(notes.where((n) => n.isPinned && !n.isArchived));
       case NotesFilter.archived:

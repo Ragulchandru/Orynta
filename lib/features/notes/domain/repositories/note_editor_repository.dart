@@ -14,8 +14,12 @@ abstract interface class NoteEditorRepository {
   Future<Either<Failure, NoteEntity>> save(
     String id,
     String title,
-    String content,
-  );
+    String content, {
+    int? color,
+    bool? isPinned,
+    bool? isFavorite,
+    bool? isArchived,
+  });
 
   /// Deletes the note draft if discarded.
   Future<Either<Failure, void>> deleteDraft(String id);

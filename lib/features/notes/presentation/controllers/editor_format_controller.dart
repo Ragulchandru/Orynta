@@ -55,6 +55,103 @@ class EditorFormatController {
     }
   }
 
+  static void toggleUnderlineStyle(TextEditingController controller) {
+    final text = controller.text;
+    final selection = controller.selection;
+
+    if (!selection.isValid) return;
+
+    final start = selection.start;
+    final end = selection.end;
+    final isCollapsed = selection.isCollapsed;
+
+    const openMarker = '<u>';
+    const closeMarker = '</u>';
+
+    if (isCollapsed) {
+      final startText = text.substring(0, start);
+      final endText = text.substring(start);
+      final newText = '$startText$openMarker$closeMarker$endText';
+      controller.value = TextEditingValue(
+        text: newText,
+        selection: TextSelection.collapsed(offset: start + openMarker.length),
+      );
+    } else {
+      final selectedText = text.substring(start, end);
+      final hasMarkers = selectedText.startsWith(openMarker) && selectedText.endsWith(closeMarker);
+
+      if (hasMarkers) {
+        final stripped = selectedText.substring(openMarker.length, selectedText.length - closeMarker.length);
+        final startText = text.substring(0, start);
+        final endText = text.substring(end);
+        final newText = '$startText$stripped$endText';
+        controller.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection(
+            baseOffset: start,
+            extentOffset: start + stripped.length,
+          ),
+        );
+      } else {
+        final wrapped = '$openMarker$selectedText$closeMarker';
+        final startText = text.substring(0, start);
+        final endText = text.substring(end);
+        final newText = '$startText$wrapped$endText';
+        controller.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection(
+            baseOffset: start,
+            extentOffset: start + wrapped.length,
+          ),
+        );
+      }
+    }
+  }
+
+  static String _stripLinePrefix(String line) {
+    if (line.startsWith('### ')) {
+      return line.substring(4);
+    } else if (line.startsWith('## ')) {
+      return line.substring(3);
+    } else if (line.startsWith('# ')) {
+      return line.substring(2);
+    } else if (line.startsWith('- [ ] ')) {
+      return line.substring(6);
+    } else if (line.startsWith('- [x] ')) {
+      return line.substring(6);
+    } else if (line.startsWith('- ')) {
+      return line.substring(2);
+    } else if (line.startsWith('> ')) {
+      return line.substring(2);
+    } else {
+      final match = RegExp(r'^\d+\. ').firstMatch(line);
+      if (match != null) {
+        return line.substring(match.end);
+      }
+    }
+    return line;
+  }
+
+  static bool _hasPrefix(String line, String prefix) {
+    if (prefix == '1. ') {
+      return RegExp(r'^\d+\. ').hasMatch(line);
+    }
+    return line.startsWith(prefix);
+  }
+
+  static String _stripSpecificPrefix(String line, String prefix) {
+    if (prefix == '1. ') {
+      final match = RegExp(r'^\d+\. ').firstMatch(line);
+      if (match != null) {
+        return line.substring(match.end);
+      }
+    }
+    if (line.startsWith(prefix)) {
+      return line.substring(prefix.length);
+    }
+    return line;
+  }
+
   static void toggleBlockStyle(TextEditingController controller, String prefix) {
     final text = controller.text;
     final selection = controller.selection;
@@ -78,30 +175,22 @@ class EditorFormatController {
     final lines = selectedLines.split('\n');
     final updatedLines = <String>[];
 
-    final allHavePrefix = lines.every((line) => line.startsWith(prefix));
+    final allHavePrefix = prefix.isNotEmpty && lines.every((line) => _hasPrefix(line, prefix));
 
+    int itemNum = 1;
     for (var line in lines) {
-      if (allHavePrefix) {
-        updatedLines.add(line.substring(prefix.length));
+      if (prefix.isEmpty) {
+        updatedLines.add(_stripLinePrefix(line));
+      } else if (allHavePrefix) {
+        updatedLines.add(_stripSpecificPrefix(line, prefix));
       } else {
-        var cleanLine = line;
-        if (line.startsWith('### ')) {
-          cleanLine = line.substring(4);
-        } else if (line.startsWith('## ')) {
-          cleanLine = line.substring(3);
-        } else if (line.startsWith('# ')) {
-          cleanLine = line.substring(2);
-        } else if (line.startsWith('- [ ] ')) {
-          cleanLine = line.substring(6);
-        } else if (line.startsWith('- ')) {
-          cleanLine = line.substring(2);
-        } else if (line.startsWith('> ')) {
-          cleanLine = line.substring(2);
-        } else if (line.startsWith('1. ')) {
-          cleanLine = line.substring(3);
+        final cleanLine = _stripLinePrefix(line);
+        if (prefix == '1. ') {
+          updatedLines.add('$itemNum. $cleanLine');
+          itemNum++;
+        } else {
+          updatedLines.add('$prefix$cleanLine');
         }
-
-        updatedLines.add('$prefix$cleanLine');
       }
     }
 
@@ -156,14 +245,52 @@ class EditorFormatController {
       );
     } else {
       final selectedText = text.substring(start, end);
-      final wrapped = '\n```text\n$selectedText\n```\n';
-      final startText = text.substring(0, start);
-      final endText = text.substring(end);
-      final newText = '$startText$wrapped$endText';
-      controller.value = TextEditingValue(
-        text: newText,
-        selection: TextSelection.collapsed(offset: start + wrapped.length),
-      );
+      final isWrapped = (selectedText.startsWith('```') && selectedText.endsWith('```')) ||
+          (selectedText.startsWith('\n```') && selectedText.endsWith('```\n'));
+
+      if (isWrapped) {
+        var stripped = selectedText;
+        if (stripped.startsWith('\n```')) {
+          stripped = stripped.substring(1);
+        }
+        if (stripped.endsWith('\n')) {
+          stripped = stripped.substring(0, stripped.length - 1);
+        }
+        if (stripped.startsWith('```')) {
+          int newlineIdx = stripped.indexOf('\n');
+          if (newlineIdx != -1) {
+            stripped = stripped.substring(newlineIdx + 1);
+          } else {
+            stripped = stripped.substring(3);
+          }
+        }
+        if (stripped.endsWith('```')) {
+          stripped = stripped.substring(0, stripped.length - 3);
+        }
+
+        final startText = text.substring(0, start);
+        final endText = text.substring(end);
+        final newText = '$startText$stripped$endText';
+        controller.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection(
+            baseOffset: start,
+            extentOffset: start + stripped.length,
+          ),
+        );
+      } else {
+        final wrapped = '\n```text\n$selectedText\n```\n';
+        final startText = text.substring(0, start);
+        final endText = text.substring(end);
+        final newText = '$startText$wrapped$endText';
+        controller.value = TextEditingValue(
+          text: newText,
+          selection: TextSelection(
+            baseOffset: start,
+            extentOffset: start + wrapped.length,
+          ),
+        );
+      }
     }
   }
 }
