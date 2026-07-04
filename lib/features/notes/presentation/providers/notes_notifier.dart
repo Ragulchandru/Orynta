@@ -35,6 +35,7 @@
 //   On Right: ref.invalidateSelf() re-runs build() and refreshes all views.
 //   On Left:  notifier state is unchanged; the UI handles the error.
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fpdart/fpdart.dart';
 
@@ -141,6 +142,200 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
   /// Toggles the favorite state of a note.
   Future<Either<Failure, NoteEntity>> toggleFavorite(String id) =>
       _mutate(() => ref.read(toggleFavoriteUseCaseProvider)(id));
+
+  // ─── Bulk Operations ──────────────────────────────────────────────────────
+
+  /// Favorites or unfavorites a batch of notes.
+  Future<void> bulkToggleFavorite(Set<String> ids, bool favorite) async {
+    final repo = ref.read(noteRepositoryProvider);
+    for (final id in ids) {
+      final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
+      await noteResult.fold(
+        (failure) async {},
+        (note) async {
+          final updated = note.copyWith(
+            isFavorite: favorite,
+            updatedAt: DateTime.now(),
+          );
+          await repo.updateNote(updated);
+        },
+      );
+    }
+    ref.invalidateSelf();
+  }
+
+  /// Pins or unpins a batch of notes.
+  Future<void> bulkTogglePin(Set<String> ids, bool pin) async {
+    final repo = ref.read(noteRepositoryProvider);
+    for (final id in ids) {
+      final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
+      await noteResult.fold(
+        (failure) async {},
+        (note) async {
+          final updated = note.copyWith(
+            isPinned: pin,
+            updatedAt: DateTime.now(),
+          );
+          await repo.updateNote(updated);
+        },
+      );
+    }
+    ref.invalidateSelf();
+  }
+
+  /// Archives or unarchives a batch of notes.
+  Future<void> bulkToggleArchive(Set<String> ids, bool archive) async {
+    final repo = ref.read(noteRepositoryProvider);
+    for (final id in ids) {
+      if (archive) {
+        await repo.archiveNote(id);
+      } else {
+        await repo.unarchiveNote(id);
+      }
+    }
+    ref.invalidateSelf();
+  }
+
+  /// Moves a batch of notes to trash (soft delete).
+  Future<void> bulkDelete(Set<String> ids) async {
+    final repo = ref.read(noteRepositoryProvider);
+    for (final id in ids) {
+      await repo.deleteNote(id);
+    }
+    ref.invalidateSelf();
+  }
+
+  /// Duplicates a batch of notes.
+  Future<void> bulkDuplicate(Set<String> ids) async {
+    final repo = ref.read(noteRepositoryProvider);
+    for (final id in ids) {
+      final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
+      await noteResult.fold(
+        (failure) async {},
+        (note) async {
+          final duplicated = NoteEntity(
+            id: '${DateTime.now().millisecondsSinceEpoch}_$id',
+            title: note.title.isNotEmpty ? '${note.title} (Copy)' : 'Copy',
+            body: note.body,
+            color: note.color,
+            isPinned: false,
+            status: note.status,
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            categoryId: note.categoryId,
+            tagIds: note.tagIds,
+            isFavorite: note.isFavorite,
+          );
+          await repo.createNote(duplicated);
+        },
+      );
+    }
+    ref.invalidateSelf();
+  }
+
+  /// Assigns a category/folder ID to a batch of notes.
+  Future<void> bulkMoveToCategory(Set<String> ids, String? categoryId) async {
+    final repo = ref.read(noteRepositoryProvider);
+    for (final id in ids) {
+      final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
+      await noteResult.fold(
+        (failure) async {},
+        (note) async {
+          final updated = note.copyWith(
+            categoryId: categoryId,
+            updatedAt: DateTime.now(),
+          );
+          await repo.updateNote(updated);
+        },
+      );
+    }
+    ref.invalidateSelf();
+  }
+
+  /// Changes the color of a batch of notes.
+  Future<void> bulkChangeColor(Set<String> ids, int? color) async {
+    final repo = ref.read(noteRepositoryProvider);
+    for (final id in ids) {
+      final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
+      await noteResult.fold(
+        (failure) async {},
+        (note) async {
+          final updated = note.copyWith(
+            color: color,
+            updatedAt: DateTime.now(),
+          );
+          await repo.updateNote(updated);
+        },
+      );
+    }
+    ref.invalidateSelf();
+  }
+
+  /// Adds a tag to a batch of notes.
+  Future<void> bulkAddTag(Set<String> ids, String tag) async {
+    final repo = ref.read(noteRepositoryProvider);
+    final cleanTag = tag.trim().replaceAll('#', '');
+    if (cleanTag.isEmpty) return;
+
+    for (final id in ids) {
+      final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
+      await noteResult.fold(
+        (failure) async {},
+        (note) async {
+          final currentTags = List<String>.from(note.tagIds);
+          if (!currentTags.contains(cleanTag)) {
+            final newBody = note.body.isEmpty ? '#$cleanTag' : '${note.body}\n#$cleanTag';
+            final newTags = [...currentTags, cleanTag];
+            final updated = note.copyWith(
+              body: newBody,
+              tagIds: newTags,
+              updatedAt: DateTime.now(),
+            );
+            await repo.updateNote(updated);
+          }
+        },
+      );
+    }
+    ref.invalidateSelf();
+  }
+
+  /// Copies note contents to the clipboard as plain text to share.
+  Future<void> bulkShare(Set<String> ids) async {
+    final buffer = StringBuffer();
+    for (final id in ids) {
+      final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
+      noteResult.fold(
+        (failure) {},
+        (note) {
+          buffer.writeln('---');
+          if (note.title.isNotEmpty) {
+            buffer.writeln('Title: ${note.title}');
+          }
+          buffer.writeln(note.body);
+          buffer.writeln();
+        },
+      );
+    }
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+  }
+
+  /// Exports selected notes as Markdown text onto the clipboard.
+  Future<void> bulkExport(Set<String> ids) async {
+    final buffer = StringBuffer();
+    for (final id in ids) {
+      final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
+      noteResult.fold(
+        (failure) {},
+        (note) {
+          buffer.writeln('# ${note.title.isNotEmpty ? note.title : 'Untitled Note'}');
+          buffer.writeln();
+          buffer.writeln(note.body);
+          buffer.writeln('\n---\n');
+        },
+      );
+    }
+    await Clipboard.setData(ClipboardData(text: buffer.toString()));
+  }
 
   /// Permanently deletes all notes currently in the trash from storage.
   Future<void> emptyTrash() async {
