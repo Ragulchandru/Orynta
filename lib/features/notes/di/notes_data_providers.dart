@@ -35,8 +35,11 @@ import '../../../core/constants/app_strings.dart';
 import '../data/datasources/hive_note_local_data_source.dart';
 import '../data/datasources/note_local_data_source.dart';
 import '../data/models/note_model.dart';
+import '../data/models/note_attachment_model.dart';
 import '../data/repositories/note_repository_impl.dart';
+import '../data/repositories/note_attachment_repository_impl.dart';
 import '../domain/repositories/note_repository.dart';
+import '../domain/repositories/note_attachment_repository.dart';
 
 /// Provides the open [Box]<[NoteModel]> from Hive's global registry.
 ///
@@ -77,4 +80,18 @@ final noteRepositoryProvider = Provider<NoteRepository>(
     dataSource: ref.watch(noteLocalDataSourceProvider),
   ),
   name: 'noteRepositoryProvider',
+);
+
+/// Provides the open [Box]<[NoteAttachmentModel]> from Hive's global registry.
+final attachmentsBoxProvider = Provider<Box<NoteAttachmentModel>>(
+  (ref) => Hive.box<NoteAttachmentModel>(AppStrings.attachmentsBoxName),
+  name: 'attachmentsBoxProvider',
+);
+
+/// Provides the [NoteAttachmentRepository] backed by Hive.
+final noteAttachmentRepositoryProvider = Provider<NoteAttachmentRepository>(
+  (ref) => NoteAttachmentRepositoryImpl(
+    box: ref.watch(attachmentsBoxProvider),
+  ),
+  name: 'noteAttachmentRepositoryProvider',
 );

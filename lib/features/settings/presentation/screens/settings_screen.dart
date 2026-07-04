@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/design_system/design_system.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/router/route_names.dart';
 import '../../../../shared/providers/theme_provider.dart';
@@ -169,67 +170,314 @@ class _SectionHeader extends StatelessWidget {
 // _ThemeSelectorCard
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _ThemeSelectorCard extends ConsumerWidget {
-  const _ThemeSelectorCard();
+class _MiniThemePreview extends StatelessWidget {
+  const _MiniThemePreview({
+    required this.themeData,
+    required this.isSelected,
+  });
+
+  final AppThemeData themeData;
+  final bool isSelected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final activeThemeMode = ref.watch(themeModeNotifierProvider);
-
-    Widget buildThemeOption(ThemeMode mode, String label, IconData icon) {
-      final isSelected = activeThemeMode == mode;
-      return RadioListTile<ThemeMode>(
-        value: mode,
-        title: Row(
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: themeData.surfaceDim,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isSelected ? themeData.primary : themeData.outlineVariant,
+          width: isSelected ? 2.5 : 1.0,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected
-                  ? theme.colorScheme.primary
-                  : theme.colorScheme.onSurfaceVariant,
+            // Miniature Header
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 24,
+              child: Container(
+                color: themeData.navigation.background,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: themeData.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Container(
+                      width: 30,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: themeData.navigation.active.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(width: AppSizes.md),
-            Text(
-              label,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            // Miniature Content Body
+            Positioned(
+              top: 28,
+              left: 8,
+              right: 8,
+              bottom: 8,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: themeData.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: themeData.notes.card,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: themeData.notes.cardBorder, width: 0.5),
+                      ),
+                      padding: const EdgeInsets.all(6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 25,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: themeData.isDark ? Colors.white70 : Colors.black87,
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Container(
+                            width: 35,
+                            height: 2,
+                            decoration: BoxDecoration(
+                              color: themeData.isDark ? Colors.white38 : Colors.black38,
+                              borderRadius: BorderRadius.circular(1),
+                            ),
+                          ),
+                          const Spacer(),
+                          Row(
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: themeData.notes.tagBackground,
+                                  borderRadius: BorderRadius.circular(1),
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Container(
+                                width: 12,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: themeData.notes.tagBackground,
+                                  borderRadius: BorderRadius.circular(1),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
-        activeColor: theme.colorScheme.primary,
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.md),
-      );
-    }
+      ),
+    );
+  }
+}
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+class _ThemeSelectorCard extends ConsumerStatefulWidget {
+  const _ThemeSelectorCard();
+
+  @override
+  ConsumerState<_ThemeSelectorCard> createState() => _ThemeSelectorCardState();
+}
+
+class _ThemeSelectorCardState extends ConsumerState<_ThemeSelectorCard> {
+  String _cornerStyle = 'Rounded';
+  String _animationSpeed = 'Normal';
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final activeTheme = ref.watch(themeModeNotifierProvider);
+    final notifier = ref.read(themeModeNotifierProvider.notifier);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.25,
+          ),
+          itemCount: AppThemeType.values.length,
+          itemBuilder: (context, index) {
+            final type = AppThemeType.values[index];
+            final isSelected = activeTheme == type;
+            final itemTheme = AppThemeFactory.getTheme(type);
+
+            return ScaleOnPress(
+              onTap: () => notifier.setTheme(type),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: _MiniThemePreview(
+                      themeData: itemTheme,
+                      isSelected: isSelected,
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    right: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        type.label,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  if (isSelected)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.green,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
-      ),
-      color: theme.colorScheme.surfaceContainerLow,
-      child: RadioGroup<ThemeMode>(
-        groupValue: activeThemeMode,
-        onChanged: (value) {
-          if (value != null) {
-            ref.read(themeModeNotifierProvider.notifier).setMode(value);
-          }
-        },
-        child: Column(
-          children: [
-            buildThemeOption(ThemeMode.system, 'System Default', Icons.brightness_auto_rounded),
-            Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
-            buildThemeOption(ThemeMode.light, 'Light Mode', Icons.light_mode_rounded),
-            Divider(height: 1, color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
-            buildThemeOption(ThemeMode.dark, 'Dark Mode', Icons.dark_mode_rounded),
+        const SizedBox(height: 16),
+        Text(
+          AppThemeFactory.getTheme(activeTheme).description,
+          style: context.typography.bodyMedium.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'ACCENT COLOR',
+          style: context.typography.labelMedium.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: AppThemeType.values.map((type) {
+            final itemTheme = AppThemeFactory.getTheme(type);
+            final isSelected = activeTheme == type;
+            return GestureDetector(
+              onTap: () => notifier.setTheme(type),
+              child: Container(
+                margin: const EdgeInsets.only(right: 12),
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: itemTheme.primary,
+                  shape: BoxShape.circle,
+                  border: isSelected
+                      ? Border.all(color: theme.colorScheme.onSurface, width: 2.0)
+                      : null,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'CORNER STYLE',
+          style: context.typography.labelMedium.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(value: 'Curved', label: Text('Curved')),
+            ButtonSegment(value: 'Rounded', label: Text('Rounded')),
+            ButtonSegment(value: 'Soft', label: Text('Soft')),
           ],
+          selected: {_cornerStyle},
+          onSelectionChanged: (value) {
+            setState(() {
+              _cornerStyle = value.first;
+            });
+          },
         ),
-      ),
+        const SizedBox(height: 16),
+        Text(
+          'ANIMATION SPEED',
+          style: context.typography.labelMedium.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(value: 'Fast', label: Text('Fast')),
+            ButtonSegment(value: 'Normal', label: Text('Normal')),
+            ButtonSegment(value: 'Slow', label: Text('Slow')),
+          ],
+          selected: {_animationSpeed},
+          onSelectionChanged: (value) {
+            setState(() {
+              _animationSpeed = value.first;
+            });
+          },
+        ),
+      ],
     );
   }
 }

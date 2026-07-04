@@ -1,6 +1,6 @@
 // lib/features/notes/presentation/pages/notes_page.dart
 //
-// Orynta 2.0 — Notes Page (Root Container)
+// Orynta 2.0 — Notes Page (Root Container with Search Suggestions, Filters and Tags)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,9 +14,32 @@ import '../widgets/notes_filter_bar.dart';
 import '../widgets/notes_grid.dart';
 import '../widgets/notes_loading.dart';
 import '../widgets/notes_search_bar.dart';
+import '../widgets/notes_search_overlay.dart';
 
-class NotesPage extends ConsumerWidget {
+class NotesPage extends ConsumerStatefulWidget {
   const NotesPage({super.key});
+
+  @override
+  ConsumerState<NotesPage> createState() => _NotesPageState();
+}
+
+class _NotesPageState extends ConsumerState<NotesPage> {
+  late final TextEditingController _searchBarController;
+  late final FocusNode _searchBarFocusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchBarController = TextEditingController();
+    _searchBarFocusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _searchBarController.dispose();
+    _searchBarFocusNode.dispose();
+    super.dispose();
+  }
 
   void _navigateToCreateNote(BuildContext context) {
     context.push('/notes/new');
@@ -27,9 +50,37 @@ class NotesPage extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(notesHomeControllerProvider);
     final controller = ref.read(notesHomeControllerProvider.notifier);
+
+    final showSearchOverlay = state.isSearchFocused || state.searchQuery.isNotEmpty || state.selectedTag != null;
+
+    if (showSearchOverlay) {
+      return Scaffold(
+        body: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 8.0),
+                child: NotesSearchBar(
+                  initialQuery: state.searchQuery,
+                  onSearch: controller.search,
+                  controller: _searchBarController,
+                  focusNode: _searchBarFocusNode,
+                ),
+              ),
+              Expanded(
+                child: NotesSearchOverlay(
+                  onNoteTap: (context, note) => _onNoteTap(context, note),
+                  searchController: _searchBarController,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -75,6 +126,8 @@ class NotesPage extends ConsumerWidget {
                 child: NotesSearchBar(
                   initialQuery: state.searchQuery,
                   onSearch: controller.search,
+                  controller: _searchBarController,
+                  focusNode: _searchBarFocusNode,
                 ),
               ),
             ),
@@ -111,6 +164,7 @@ class NotesPage extends ConsumerWidget {
                       NotesGrid(
                         notes: state.filteredNotes,
                         onNoteTap: (note) => _onNoteTap(context, note),
+                        searchQuery: state.searchQuery,
                       ),
                   ],
                 ),

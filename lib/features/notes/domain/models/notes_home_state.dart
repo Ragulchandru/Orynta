@@ -5,6 +5,8 @@
 import 'package:flutter/foundation.dart';
 import 'note_summary.dart';
 import 'notes_filter.dart';
+import 'smart_filter.dart';
+import 'sort_option.dart';
 
 @immutable
 class NotesHomeState {
@@ -15,6 +17,11 @@ class NotesHomeState {
     required this.searchQuery,
     required this.loading,
     this.error,
+    this.activeFilters = const {SmartFilter.allNotes},
+    this.sortOption = SortOption.recentlyUpdated,
+    this.selectedTag,
+    this.isSearchFocused = false,
+    this.recentSearches = const [],
   });
 
   final List<NoteSummary> notes;
@@ -23,6 +30,11 @@ class NotesHomeState {
   final String searchQuery;
   final bool loading;
   final String? error;
+  final Set<SmartFilter> activeFilters;
+  final SortOption sortOption;
+  final String? selectedTag;
+  final bool isSearchFocused;
+  final List<String> recentSearches;
 
   NotesHomeState copyWith({
     List<NoteSummary>? notes,
@@ -31,6 +43,11 @@ class NotesHomeState {
     String? searchQuery,
     bool? loading,
     String? error,
+    Set<SmartFilter>? activeFilters,
+    SortOption? sortOption,
+    String? selectedTag,
+    bool? isSearchFocused,
+    List<String>? recentSearches,
   }) {
     return NotesHomeState(
       notes: notes ?? this.notes,
@@ -39,6 +56,11 @@ class NotesHomeState {
       searchQuery: searchQuery ?? this.searchQuery,
       loading: loading ?? this.loading,
       error: error,
+      activeFilters: activeFilters ?? this.activeFilters,
+      sortOption: sortOption ?? this.sortOption,
+      selectedTag: selectedTag ?? this.selectedTag,
+      isSearchFocused: isSearchFocused ?? this.isSearchFocused,
+      recentSearches: recentSearches ?? this.recentSearches,
     );
   }
 }

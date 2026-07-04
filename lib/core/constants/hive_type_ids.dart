@@ -31,6 +31,9 @@ abstract final class HiveTypeIds {
   /// TypeAdapter ID for [NoteModel].
   static const int note = 0;
 
+  /// TypeAdapter ID for [NoteAttachmentModel].
+  static const int noteAttachment = 1;
+
   // ── Phase 2: Categories ───────────────────────────────────────────────────
   /// TypeAdapter ID for [CategoryModel]. (reserved — not yet implemented)
   static const int category = 10;

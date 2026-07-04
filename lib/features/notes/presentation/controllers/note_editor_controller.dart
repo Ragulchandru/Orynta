@@ -109,11 +109,29 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
     });
   }
 
+  List<String> _extractHashtags(String title, String content) {
+    final text = '$title $content';
+    final RegExp regex = RegExp(r'(?:^|\s)#([a-zA-Z0-9_\-]+)');
+    final matches = regex.allMatches(text);
+    final List<String> tags = [];
+    for (final match in matches) {
+      final tag = match.group(1);
+      if (tag != null && tag.isNotEmpty) {
+        if (!tags.contains(tag)) {
+          tags.add(tag);
+        }
+      }
+    }
+    return tags;
+  }
+
   Future<void> autosave() async {
     final currentId = state.noteId;
     if (currentId == null || !state.dirty) return;
 
     state = state.copyWith(saving: true);
+    final tags = _extractHashtags(state.title, state.content);
+    
     final result = await _repository.save(
       currentId,
       state.title,
@@ -122,6 +140,7 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
       isPinned: state.isPinned,
       isFavorite: state.isFavorite,
       isArchived: state.isArchived,
+      tagIds: tags,
     );
     result.fold(
       (failure) {

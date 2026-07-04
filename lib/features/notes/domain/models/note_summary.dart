@@ -15,6 +15,9 @@ class NoteSummary {
     required this.isPinned,
     required this.isFavorite,
     required this.isArchived,
+    this.tagIds = const [],
+    this.hasAttachments = false,
+    this.hasChecklists = false,
   });
 
   final String id;
@@ -25,6 +28,9 @@ class NoteSummary {
   final bool isPinned;
   final bool isFavorite;
   final bool isArchived;
+  final List<String> tagIds;
+  final bool hasAttachments;
+  final bool hasChecklists;
 
   /// Returns friendly relative timestamp ("Just now", "12 min ago", etc.).
   String get relativeTime {

@@ -10,6 +10,9 @@ import '../../domain/models/note_summary.dart';
 import '../../domain/models/notes_filter.dart';
 import '../../domain/repositories/note_repository.dart';
 import '../../domain/repositories/notes_home_repository.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../../../../core/constants/app_strings.dart';
+import '../models/note_attachment_model.dart';
 
 class NotesHomeRepositoryImpl implements NotesHomeRepository {
   const NotesHomeRepositoryImpl({
@@ -104,6 +107,10 @@ class NotesHomeRepositoryImpl implements NotesHomeRepository {
         ? '#${entity.color!.toRadixString(16).padLeft(8, '0').toUpperCase()}'
         : null;
 
+    final attachmentsBox = Hive.box<NoteAttachmentModel>(AppStrings.attachmentsBoxName);
+    final hasAttachments = attachmentsBox.values.any((a) => a.noteId == entity.id);
+    final hasChecklists = entity.body.contains('- [ ]') || entity.body.contains('- [x]');
+
     return NoteSummary(
       id: entity.id,
       title: entity.title,
@@ -113,6 +120,9 @@ class NotesHomeRepositoryImpl implements NotesHomeRepository {
       isPinned: entity.isPinned,
       isFavorite: entity.isFavorite,
       isArchived: entity.status == NoteStatus.archived,
+      tagIds: entity.tagIds,
+      hasAttachments: hasAttachments,
+      hasChecklists: hasChecklists,
     );
   }
 }

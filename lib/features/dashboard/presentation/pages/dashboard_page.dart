@@ -35,12 +35,14 @@ class DashboardPage extends ConsumerWidget {
     final notifier = ref.read(dashboardControllerProvider.notifier);
     final enabledModules = ref.watch(dashboardModulesProvider);
 
+    final theme = context.appTheme;
+
     return Scaffold(
-      backgroundColor: context.colors.background,
+      backgroundColor: theme.surfaceDim,
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () => notifier.refresh(),
-          color: context.colors.primary,
+          color: theme.primary,
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(
               parent: AlwaysScrollableScrollPhysics(),
@@ -50,28 +52,10 @@ class DashboardPage extends ConsumerWidget {
               SliverPadding(
                 padding: context.spacing.paddingScreen,
                 sliver: SliverToBoxAdapter(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Dashboard',
-                            style: context.typography.headlineSmall.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: context.colors.textPrimary,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Your personal productivity hub',
-                            style: context.typography.bodySmall.copyWith(
-                              color: context.colors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
+                  child: PremiumHeader(
+                    title: 'Dashboard',
+                    subtitle: 'Your personal productivity hub',
+                    actions: [
                       IconButton(
                         onPressed: () => notifier.loadModules(),
                         icon: const Icon(Icons.tune_rounded),
@@ -103,22 +87,78 @@ class DashboardPage extends ConsumerWidget {
                   hasScrollBody: false,
                   child: DashboardEmptyView(),
                 )
-              else
-                SliverPadding(
-                  padding: context.spacing.paddingHorizontalLg,
-                  sliver: SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final module = enabledModules[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16.0),
-                          child: _DashboardModuleRenderer(module: module),
-                        );
-                      },
-                      childCount: enabledModules.length,
+              else ...[
+                if (MediaQuery.of(context).size.width >= 800)
+                  SliverPadding(
+                    padding: context.spacing.paddingHorizontalLg,
+                    sliver: SliverToBoxAdapter(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              children: enabledModules
+                                  .where(
+                                    (m) =>
+                                        m.type == DashboardModuleType.hero ||
+                                        m.type == DashboardModuleType.recentNotes ||
+                                        m.type == DashboardModuleType.suggestions,
+                                  )
+                                  .map(
+                                    (m) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 16.0),
+                                      child: _DashboardModuleRenderer(
+                                        module: m,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              children: enabledModules
+                                  .where(
+                                    (m) =>
+                                        m.type != DashboardModuleType.hero &&
+                                        m.type != DashboardModuleType.recentNotes &&
+                                        m.type != DashboardModuleType.suggestions,
+                                  )
+                                  .map(
+                                    (m) => Padding(
+                                      padding: const EdgeInsets.only(bottom: 16.0),
+                                      child: _DashboardModuleRenderer(
+                                        module: m,
+                                      ),
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: context.spacing.paddingHorizontalLg,
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          final module = enabledModules[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: _DashboardModuleRenderer(
+                              module: module,
+                            ),
+                          );
+                        },
+                        childCount: enabledModules.length,
+                      ),
                     ),
                   ),
-                ),
+              ],
 
               const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],

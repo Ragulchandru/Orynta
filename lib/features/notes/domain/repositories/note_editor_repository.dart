@@ -19,6 +19,7 @@ abstract interface class NoteEditorRepository {
     bool? isPinned,
     bool? isFavorite,
     bool? isArchived,
+    List<String>? tagIds,
   });
 
   /// Deletes the note draft if discarded.

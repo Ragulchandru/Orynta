@@ -1,20 +1,23 @@
 // lib/features/notes/presentation/widgets/note_preview_card.dart
 //
-// Orynta 2.0 — Note Preview Card Component
+// Orynta 2.0 — Note Preview Card Component with Search Query Highlights
 
 import 'package:flutter/material.dart';
 import '../../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/note_summary.dart';
+import 'search_highlight_text.dart';
 
 class NotePreviewCard extends StatefulWidget {
   const NotePreviewCard({
     super.key,
     required this.note,
     required this.onTap,
+    this.searchQuery = '',
   });
 
   final NoteSummary note;
   final VoidCallback onTap;
+  final String searchQuery;
 
   @override
   State<NotePreviewCard> createState() => _NotePreviewCardState();
@@ -44,10 +47,12 @@ class _NotePreviewCardState extends State<NotePreviewCard> {
         ? customColor.withValues(alpha: 0.3)
         : context.colors.outlineVariant;
 
+    final primaryContainerColor = context.colors.primaryContainer.withValues(alpha: 0.3);
+
     return AnimatedScale(
       scale: _isPressed ? 0.97 : 1.0,
-      duration: AppDurations.fast,
-      curve: AppCurves.easeOut,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
       child: Container(
         decoration: BoxDecoration(
           color: cardBgColor,
@@ -75,14 +80,20 @@ class _NotePreviewCardState extends State<NotePreviewCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
-                        child: Text(
-                          widget.note.title.isNotEmpty ? widget.note.title : 'Untitled',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        child: SearchHighlightText(
+                          text: widget.note.title.isNotEmpty ? widget.note.title : 'Untitled',
+                          highlight: widget.searchQuery,
                           style: context.typography.titleMedium.copyWith(
                             fontWeight: FontWeight.w700,
                             color: context.colors.textPrimary,
                           ),
+                          highlightStyle: context.typography.titleMedium.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: context.colors.primary,
+                            backgroundColor: primaryContainerColor,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       if (widget.note.isPinned) ...[
@@ -107,16 +118,62 @@ class _NotePreviewCardState extends State<NotePreviewCard> {
 
                   // Preview Content
                   Expanded(
-                    child: Text(
-                      widget.note.previewText,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
+                    child: SearchHighlightText(
+                      text: widget.note.previewText,
+                      highlight: widget.searchQuery,
                       style: context.typography.bodySmall.copyWith(
                         color: context.colors.textSecondary,
                         height: 1.4,
                       ),
+                      highlightStyle: context.typography.bodySmall.copyWith(
+                        color: context.colors.primary,
+                        backgroundColor: primaryContainerColor,
+                        height: 1.4,
+                      ),
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
+
+                  // Tag Chips list inside note card
+                  if (widget.note.tagIds.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      child: Row(
+                        children: widget.note.tagIds.map((tag) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 6.0),
+                            child: RawChip(
+                              label: SearchHighlightText(
+                                text: '#$tag',
+                                highlight: widget.searchQuery,
+                                style: context.typography.labelSmall.copyWith(
+                                  color: context.colors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                highlightStyle: context.typography.labelSmall.copyWith(
+                                  color: context.colors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  backgroundColor: primaryContainerColor,
+                                ),
+                              ),
+                              backgroundColor: context.colors.primary.withValues(alpha: 0.08),
+                              side: BorderSide(
+                                color: context.colors.primary.withValues(alpha: 0.15),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 12),
 

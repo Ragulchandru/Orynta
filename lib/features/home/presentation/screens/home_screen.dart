@@ -210,7 +210,7 @@ class _HomeAppBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final themeMode = ref.watch(themeModeNotifierProvider);
-    final isDark = themeMode == ThemeMode.dark;
+    final isDark = themeMode.isDark;
 
     return SliverAppBar(
       floating: true,

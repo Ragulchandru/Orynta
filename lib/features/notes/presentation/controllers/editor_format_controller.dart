@@ -293,4 +293,65 @@ class EditorFormatController {
       }
     }
   }
+
+  static void clearFormatting(TextEditingController controller) {
+    // 1. Remove block styles
+    toggleBlockStyle(controller, '');
+
+    // 2. Remove inline markers within the current line / selection
+    final text = controller.text;
+    final selection = controller.selection;
+    if (!selection.isValid) return;
+
+    final start = selection.start;
+    final end = selection.end;
+
+    if (selection.isCollapsed) {
+      int lineStart = start;
+      while (lineStart > 0 && text[lineStart - 1] != '\n') {
+        lineStart--;
+      }
+      int lineEnd = end;
+      while (lineEnd < text.length && text[lineEnd] != '\n') {
+        lineEnd++;
+      }
+      final lineText = text.substring(lineStart, lineEnd);
+      final cleanedLine = lineText
+          .replaceAll('**', '')
+          .replaceAll('__', '')
+          .replaceAll('*', '')
+          .replaceAll('_', '')
+          .replaceAll('~~', '')
+          .replaceAll('<u>', '')
+          .replaceAll('</u>', '')
+          .replaceAll('`', '');
+      
+      final startText = text.substring(0, lineStart);
+      final endText = text.substring(lineEnd);
+      controller.value = TextEditingValue(
+        text: '$startText$cleanedLine$endText',
+        selection: TextSelection.collapsed(offset: lineStart + cleanedLine.length),
+      );
+    } else {
+      final selectedText = text.substring(start, end);
+      final cleanedText = selectedText
+          .replaceAll('**', '')
+          .replaceAll('__', '')
+          .replaceAll('*', '')
+          .replaceAll('_', '')
+          .replaceAll('~~', '')
+          .replaceAll('<u>', '')
+          .replaceAll('</u>', '')
+          .replaceAll('`', '');
+      final startText = text.substring(0, start);
+      final endText = text.substring(end);
+      controller.value = TextEditingValue(
+        text: '$startText$cleanedText$endText',
+        selection: TextSelection(
+          baseOffset: start,
+          extentOffset: start + cleanedText.length,
+        ),
+      );
+    }
+  }
 }

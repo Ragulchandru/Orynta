@@ -8,13 +8,17 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/note_color.dart';
+import '../../domain/models/note_attachment.dart';
 import '../controllers/rich_text_editing_controller.dart';
 import '../providers/note_editor_providers.dart';
+import '../providers/note_attachment_providers.dart';
 import '../widgets/editor_app_bar.dart';
 import '../widgets/editor_status_bar.dart';
 import '../widgets/editor_toolbar.dart';
 import '../widgets/note_metadata_sheet.dart';
 import '../widgets/rich_editor_area.dart';
+import '../widgets/attachment_empty_state.dart';
+import '../widgets/attachment_grid.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
   const NoteEditorPage({
@@ -31,6 +35,7 @@ class NoteEditorPage extends ConsumerStatefulWidget {
 class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   late final TextEditingController _titleController;
   late final RichTextEditingController _contentController;
+  late final UndoHistoryController _undoController;
   final FocusNode _contentFocusNode = FocusNode();
   bool _isInitialized = false;
 
@@ -39,6 +44,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     super.initState();
     _titleController = TextEditingController();
     _contentController = RichTextEditingController();
+    _undoController = UndoHistoryController();
 
     _titleController.addListener(_onTitleChanged);
     _contentController.addListener(_onContentChanged);
@@ -50,6 +56,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     _contentController.removeListener(_onContentChanged);
     _titleController.dispose();
     _contentController.dispose();
+    _undoController.dispose();
     _contentFocusNode.dispose();
     super.dispose();
   }
@@ -100,6 +107,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(noteEditorControllerProvider(widget.noteId));
+    final noteId = state.noteId;
+    final attachments = noteId != null
+        ? ref.watch(noteAttachmentsProvider(noteId))
+        : <NoteAttachment>[];
 
     if (state.noteId != null && !_isInitialized) {
       _titleController.text = state.title;
@@ -169,7 +180,29 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                       RichEditorArea(
                         controller: _contentController,
                         focusNode: _contentFocusNode,
+                        undoController: _undoController,
                       ),
+                      if (noteId != null) ...[
+                        const Divider(height: 32),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: Text(
+                            'Attachments',
+                            style: context.typography.titleMedium.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: context.colors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                          child: attachments.isEmpty
+                              ? const AttachmentEmptyState()
+                              : AttachmentGrid(attachments: attachments),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
                     ],
                   ),
                 ),
@@ -177,6 +210,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
               EditorToolbar(
                 controller: _contentController,
                 focusNode: _contentFocusNode,
+                noteId: noteId,
+                undoController: _undoController,
               ),
             ],
           ),

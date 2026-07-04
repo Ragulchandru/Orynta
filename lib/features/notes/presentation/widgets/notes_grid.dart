@@ -11,10 +11,12 @@ class NotesGrid extends StatelessWidget {
     super.key,
     required this.notes,
     required this.onNoteTap,
+    this.searchQuery = '',
   });
 
   final List<NoteSummary> notes;
   final ValueChanged<NoteSummary> onNoteTap;
+  final String searchQuery;
 
   int _calculateCrossAxisCount(double width) {
     if (width < 600) return 2;
@@ -44,6 +46,7 @@ class NotesGrid extends StatelessWidget {
                   child: NotePreviewCard(
                     note: note,
                     onTap: () => onNoteTap(note),
+                    searchQuery: searchQuery,
                   ),
                 ),
               );

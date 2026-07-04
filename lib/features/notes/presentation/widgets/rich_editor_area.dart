@@ -10,16 +10,19 @@ class RichEditorArea extends StatelessWidget {
     super.key,
     required this.controller,
     required this.focusNode,
+    this.undoController,
   });
 
   final TextEditingController controller;
   final FocusNode focusNode;
+  final UndoHistoryController? undoController;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
       focusNode: focusNode,
+      undoController: undoController,
       maxLines: null,
       keyboardType: TextInputType.multiline,
       style: context.typography.bodyMedium.copyWith(

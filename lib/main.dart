@@ -30,6 +30,8 @@ import 'app.dart';
 import 'core/constants/app_strings.dart';
 import 'features/notes/data/models/note_model.dart';
 import 'features/notes/data/models/note_type_adapter.dart';
+import 'features/notes/data/models/note_attachment_model.dart';
+import 'features/notes/data/models/note_attachment_type_adapter.dart';
 import 'features/planner/data/models/task_model.dart';
 import 'features/planner/data/models/task_type_adapter.dart';
 import 'features/habits/data/models/habit_model.dart';
@@ -47,6 +49,7 @@ Future<void> main() async {
   // Step 3 — Register all TypeAdapters before opening any box.
   // Add new adapters here as new features are implemented.
   Hive.registerAdapter(NoteTypeAdapter());
+  Hive.registerAdapter(NoteAttachmentTypeAdapter());
   Hive.registerAdapter(TaskTypeAdapter());
   Hive.registerAdapter(HabitTypeAdapter());
   Hive.registerAdapter(FocusTypeAdapter());
@@ -55,6 +58,7 @@ Future<void> main() async {
   await Future.wait([
     Hive.openBox<String>(AppStrings.settingsBoxName),
     Hive.openBox<NoteModel>(AppStrings.notesBoxName),
+    Hive.openBox<NoteAttachmentModel>(AppStrings.attachmentsBoxName),
     Hive.openBox<TaskModel>(AppStrings.tasksBoxName),
     Hive.openBox<HabitModel>(AppStrings.habitsBoxName),
     Hive.openBox<FocusSessionModel>(AppStrings.focusBoxName),

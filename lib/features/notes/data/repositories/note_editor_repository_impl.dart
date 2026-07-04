@@ -45,6 +45,7 @@ class NoteEditorRepositoryImpl implements NoteEditorRepository {
     bool? isPinned,
     bool? isFavorite,
     bool? isArchived,
+    List<String>? tagIds,
   }) async {
     // Check if the note already exists
     final existingResult = await _noteRepository.getNoteById(id);
@@ -60,6 +61,7 @@ class NoteEditorRepositoryImpl implements NoteEditorRepository {
           isFavorite: isFavorite ?? false,
           status: (isArchived ?? false) ? NoteStatus.archived : NoteStatus.active,
           color: color,
+          tagIds: tagIds ?? const [],
           createdAt: now,
           updatedAt: now,
         );
@@ -76,6 +78,7 @@ class NoteEditorRepositoryImpl implements NoteEditorRepository {
               ? (isArchived ? NoteStatus.archived : NoteStatus.active)
               : existing.status,
           color: color,
+          tagIds: tagIds ?? existing.tagIds,
           updatedAt: DateTime.now(),
         );
         return _noteRepository.updateNote(updatedNote);
