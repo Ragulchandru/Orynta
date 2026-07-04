@@ -86,13 +86,13 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
     // Selection visual overrides
     final cardBgColor = isSelected
         ? theme.primary.withValues(alpha: 0.12)
-        : (customColor ?? context.colors.surfaceContainerLow);
+        : (customColor ?? theme.notes.card);
 
     final outlineColor = isSelected
         ? theme.primary
         : (customColor != null
             ? customColor.withValues(alpha: 0.3)
-            : context.colors.outlineVariant);
+            : theme.notes.cardBorder);
 
     final primaryContainerColor = context.colors.primaryContainer.withValues(alpha: 0.3);
 

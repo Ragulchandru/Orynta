@@ -28,7 +28,7 @@ class QuickActionsRepositoryImpl implements QuickActionsRepository {
       title: 'New Task',
       subtitle: 'Add priority item',
       icon: Icons.add_task_rounded,
-      route: '/planner/new-task',
+      route: '/tasks/new',
       enabled: true,
       analyticsKey: 'quick_action_new_task',
       displayOrder: 1,

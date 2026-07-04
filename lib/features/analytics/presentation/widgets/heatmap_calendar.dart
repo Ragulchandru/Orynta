@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/design_system/design_tokens.dart';
-import '../../../../core/design_system/motion/motion_tokens.dart';
 import '../providers/analytics_provider.dart';
 
 class HeatmapCalendar extends StatefulWidget {

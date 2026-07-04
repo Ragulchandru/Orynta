@@ -501,13 +501,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               children: [
                 _buildMenuItem(
                   context: context,
-                  leading: Icons.label_rounded,
-                  title: 'Workspace Name',
-                  subtitle: profile.workspaceName,
-                  onTap: () => _showEditProfileSheet(context),
-                ),
-                _buildMenuItem(
-                  context: context,
                   leading: Icons.bar_chart_rounded,
                   title: 'Statistics',
                   onTap: () => _showStatisticsSheet(context),

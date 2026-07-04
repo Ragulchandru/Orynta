@@ -3,6 +3,7 @@
 // Orynta 2.0 — Responsive Premium Navigation Shell
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/design_system/design_system.dart';
 import 'quick_create_sheet.dart';
@@ -26,28 +27,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   Widget build(BuildContext context) {
     final theme = context.appTheme;
     final width = MediaQuery.of(context).size.width;
+    final currentIndex = widget.navigationShell.currentIndex;
 
-    Widget body = AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      switchInCurve: Curves.easeInOutCubic,
-      switchOutCurve: Curves.easeInOutCubic,
-      transitionBuilder: (child, animation) {
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0.02, 0.0),
-              end: Offset.zero,
-            ).animate(animation),
-            child: child,
-          ),
-        );
-      },
-      child: KeyedSubtree(
-        key: ValueKey(widget.navigationShell.currentIndex),
-        child: widget.navigationShell,
-      ),
-    );
+    Widget body = widget.navigationShell;
 
     if (width < 600) {
       // Phone: Animated floating bottom bar
@@ -75,9 +57,9 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 children: [
                   // Sliding Active Capsule Indicator
                   AnimatedAlign(
-                    duration: AppMotion.normal,
-                    curve: AppCurves.emphasized,
-                    alignment: Alignment(-1.0 + (widget.navigationShell.currentIndex * 2.0 / 3.0), 0.0),
+                    duration: MotionTokens.durationNormal,
+                    curve: MotionTokens.emphasizedCurve,
+                    alignment: Alignment(-1.0 + (currentIndex * 2.0 / 3.0), 0.0),
                     child: FractionallySizedBox(
                       widthFactor: 0.22,
                       heightFactor: 0.7,
@@ -97,28 +79,28 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                         icon: Icons.today_outlined,
                         activeIcon: Icons.today_rounded,
                         label: 'Today',
-                        isActive: widget.navigationShell.currentIndex == 0,
+                        isActive: currentIndex == 0,
                         onTap: () => widget.navigationShell.goBranch(0),
                       ),
                       _NavBarItem(
                         icon: Icons.sticky_note_2_outlined,
                         activeIcon: Icons.sticky_note_2_rounded,
                         label: 'Notes',
-                        isActive: widget.navigationShell.currentIndex == 1,
+                        isActive: currentIndex == 1,
                         onTap: () => widget.navigationShell.goBranch(1),
                       ),
                       _NavBarItem(
                         icon: Icons.calendar_month_outlined,
                         activeIcon: Icons.calendar_month_rounded,
                         label: 'Planner',
-                        isActive: widget.navigationShell.currentIndex == 2,
+                        isActive: currentIndex == 2,
                         onTap: () => widget.navigationShell.goBranch(2),
                       ),
                       _NavBarItem(
                         icon: Icons.insights_outlined,
                         activeIcon: Icons.insights_rounded,
                         label: 'Insights',
-                        isActive: widget.navigationShell.currentIndex == 3,
+                        isActive: currentIndex == 3,
                         onTap: () => widget.navigationShell.goBranch(3),
                       ),
                     ],
@@ -138,7 +120,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             NavigationRail(
               backgroundColor: theme.navigation.background,
               indicatorColor: theme.navigation.indicator,
-              selectedIndex: widget.navigationShell.currentIndex,
+              selectedIndex: currentIndex,
               onDestinationSelected: (index) => widget.navigationShell.goBranch(index),
               labelType: NavigationRailLabelType.all,
               leading: Padding(
@@ -215,7 +197,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     icon: Icons.today_outlined,
                     activeIcon: Icons.today_rounded,
                     label: 'Today',
-                    isActive: widget.navigationShell.currentIndex == 0,
+                    isActive: currentIndex == 0,
                     isExpanded: _isDrawerExpanded,
                     onTap: () => widget.navigationShell.goBranch(0),
                   ),
@@ -223,7 +205,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     icon: Icons.sticky_note_2_outlined,
                     activeIcon: Icons.sticky_note_2_rounded,
                     label: 'Notes',
-                    isActive: widget.navigationShell.currentIndex == 1,
+                    isActive: currentIndex == 1,
                     isExpanded: _isDrawerExpanded,
                     onTap: () => widget.navigationShell.goBranch(1),
                   ),
@@ -231,7 +213,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     icon: Icons.calendar_month_outlined,
                     activeIcon: Icons.calendar_month_rounded,
                     label: 'Planner',
-                    isActive: widget.navigationShell.currentIndex == 2,
+                    isActive: currentIndex == 2,
                     isExpanded: _isDrawerExpanded,
                     onTap: () => widget.navigationShell.goBranch(2),
                   ),
@@ -239,7 +221,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                     icon: Icons.insights_outlined,
                     activeIcon: Icons.insights_rounded,
                     label: 'Insights',
-                    isActive: widget.navigationShell.currentIndex == 3,
+                    isActive: currentIndex == 3,
                     isExpanded: _isDrawerExpanded,
                     onTap: () => widget.navigationShell.goBranch(3),
                   ),
@@ -264,7 +246,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
   }
 }
 
-class _NavBarItem extends StatelessWidget {
+class _NavBarItem extends StatefulWidget {
   const _NavBarItem({
     required this.icon,
     required this.activeIcon,
@@ -280,33 +262,77 @@ class _NavBarItem extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_NavBarItem> createState() => _NavBarItemState();
+}
+
+class _NavBarItemState extends State<_NavBarItem> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = context.appTheme;
     final activeColor = theme.navigation.active;
     final inactiveColor = theme.navigation.inactive;
 
     return Expanded(
-      child: ScaleOnPress(
-        onTap: onTap,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              color: isActive ? activeColor : inactiveColor,
-              size: 24,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: context.typography.labelSmall.copyWith(
-                fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                color: isActive ? activeColor : inactiveColor,
-                fontSize: 10,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkResponse(
+          onTapDown: (_) => setState(() => _isPressed = true),
+          onTapUp: (_) => setState(() => _isPressed = false),
+          onTapCancel: () => setState(() => _isPressed = false),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            widget.onTap();
+          },
+          radius: 28,
+          highlightColor: Colors.transparent,
+          splashColor: theme.navigation.indicator.withValues(alpha: 0.12),
+          child: AnimatedScale(
+            scale: _isPressed ? 0.97 : (widget.isActive ? 1.18 : 1.0),
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeOutCubic,
+            child: TweenAnimationBuilder<Color?>(
+              tween: ColorTween(
+                begin: widget.isActive ? inactiveColor : activeColor,
+                end: widget.isActive ? activeColor : inactiveColor,
               ),
+              duration: MotionTokens.durationNormal,
+              curve: MotionTokens.decelerateCurve,
+              builder: (context, animColor, child) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      widget.isActive ? widget.activeIcon : widget.icon,
+                      color: animColor,
+                      size: 24,
+                    ),
+                    const SizedBox(height: 2),
+                    AnimatedSlide(
+                      offset: widget.isActive ? const Offset(0, -0.15) : Offset.zero,
+                      duration: MotionTokens.durationNormal,
+                      curve: MotionTokens.emphasizedCurve,
+                      child: AnimatedOpacity(
+                        opacity: widget.isActive ? 1.0 : 0.6,
+                        duration: MotionTokens.durationNormal,
+                        curve: MotionTokens.emphasizedCurve,
+                        child: Text(
+                          widget.label,
+                          style: context.typography.labelSmall.copyWith(
+                            fontWeight: widget.isActive ? FontWeight.bold : FontWeight.normal,
+                            color: animColor,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -340,12 +366,23 @@ class _DrawerItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
       child: ScaleOnPress(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: MotionTokens.emphasizedCurve,
           width: double.infinity,
           height: 48.0,
           decoration: BoxDecoration(
             color: isActive ? theme.navigation.indicator : Colors.transparent,
-            borderRadius: BorderRadius.circular(12.0),
+            borderRadius: BorderRadius.circular(isActive ? 16.0 : 12.0),
+            boxShadow: isActive
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: theme.isDark ? 0.2 : 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : [],
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Row(

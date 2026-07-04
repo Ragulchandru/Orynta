@@ -51,17 +51,17 @@ class NotesFilterBar extends StatelessWidget {
               },
               labelStyle: context.typography.labelMedium.copyWith(
                 color: isSelected
-                    ? context.colors.onPrimary
-                    : context.colors.textSecondary,
+                    ? context.appTheme.notes.chipTextSelected
+                    : context.appTheme.notes.chipText,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
               ),
-              selectedColor: context.colors.primary,
-              backgroundColor: context.colors.surfaceContainerLow,
+              selectedColor: context.appTheme.notes.chipSelected,
+              backgroundColor: context.appTheme.notes.chipBackground,
               shape: RoundedRectangleBorder(
                 borderRadius: context.radius.borderRadiusMd,
                 side: BorderSide(
                   color: isSelected
-                      ? Colors.transparent
+                      ? context.appTheme.notes.chipSelected
                       : context.colors.outlineVariant,
                 ),
               ),

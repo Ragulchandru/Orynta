@@ -16,4 +16,10 @@ abstract final class MotionTokens {
   static const Curve easeInOutCubic = Curves.easeInOutCubic;
   static const Curve emphasized = Cubic(0.2, 0.0, 0.0, 1.0);
   static const Curve decelerate = Curves.decelerate;
+
+  // Aliases for M3 phase guidelines compatibility
+  static Duration get durationNormal => normal;
+  static Duration get durationFast => fast;
+  static Curve get emphasizedCurve => emphasized;
+  static Curve get decelerateCurve => decelerate;
 }

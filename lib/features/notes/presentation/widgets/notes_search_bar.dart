@@ -102,10 +102,10 @@ class _NotesSearchBarState extends ConsumerState<NotesSearchBar> {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: context.colors.surfaceContainerLow,
+        color: context.appTheme.notes.searchBackground,
         borderRadius: context.radius.borderRadiusLg,
         border: Border.all(
-          color: _isFocused ? context.colors.primary : context.colors.outlineVariant,
+          color: _isFocused ? context.colors.primary : context.appTheme.notes.searchBorder,
           width: _isFocused ? 1.5 : 1.0,
         ),
       ),

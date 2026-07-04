@@ -9,6 +9,7 @@ export 'elevation/app_elevation.dart';
 export 'icons/app_icons.dart';
 export 'icons/app_icon_size.dart';
 export 'motion/app_motion.dart';
+export 'motion/motion_tokens.dart';
 export 'curves/app_curves.dart';
 export 'typography/app_typography.dart';
 export 'borders/app_borders.dart';

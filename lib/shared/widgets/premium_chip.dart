@@ -25,18 +25,16 @@ class PremiumChip extends StatelessWidget {
       label: Text(label),
       selected: isSelected,
       onSelected: onSelected,
-      backgroundColor: theme.surfaceContainer,
-      selectedColor: theme.primary,
-      checkmarkColor: theme.isDark ? const Color(0xFF0F0F17) : const Color(0xFFFFFFFF),
+      backgroundColor: theme.notes.chipBackground,
+      selectedColor: theme.notes.chipSelected,
+      checkmarkColor: theme.notes.chipTextSelected,
       labelStyle: context.typography.labelMedium.copyWith(
-        color: isSelected
-            ? (theme.isDark ? const Color(0xFF0F0F17) : const Color(0xFFFFFFFF))
-            : (theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C)),
+        color: isSelected ? theme.notes.chipTextSelected : theme.notes.chipText,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
         side: BorderSide(
-          color: isSelected ? theme.primary : theme.outlineVariant,
+          color: isSelected ? theme.notes.chipSelected : theme.outlineVariant,
           width: 1.0,
         ),
       ),

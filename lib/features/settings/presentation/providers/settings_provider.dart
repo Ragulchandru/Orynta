@@ -11,8 +11,6 @@ class SettingsState {
     required this.accentColor,
     required this.cornerRadius,
     required this.animationSpeed,
-    required this.amoledMode,
-    required this.followSystemTheme,
     required this.autosaveEnabled,
     required this.markdownEnabled,
     required this.defaultFontSize,
@@ -32,8 +30,6 @@ class SettingsState {
   final String accentColor;
   final double cornerRadius;
   final double animationSpeed;
-  final bool amoledMode;
-  final bool followSystemTheme;
   final bool autosaveEnabled;
   final bool markdownEnabled;
   final double defaultFontSize;
@@ -54,8 +50,6 @@ class SettingsState {
       accentColor: 'Default',
       cornerRadius: 16.0,
       animationSpeed: 1.0,
-      amoledMode: false,
-      followSystemTheme: true,
       autosaveEnabled: true,
       markdownEnabled: true,
       defaultFontSize: 14.0,
@@ -77,8 +71,6 @@ class SettingsState {
     String? accentColor,
     double? cornerRadius,
     double? animationSpeed,
-    bool? amoledMode,
-    bool? followSystemTheme,
     bool? autosaveEnabled,
     bool? markdownEnabled,
     double? defaultFontSize,
@@ -98,8 +90,6 @@ class SettingsState {
       accentColor: accentColor ?? this.accentColor,
       cornerRadius: cornerRadius ?? this.cornerRadius,
       animationSpeed: animationSpeed ?? this.animationSpeed,
-      amoledMode: amoledMode ?? this.amoledMode,
-      followSystemTheme: followSystemTheme ?? this.followSystemTheme,
       autosaveEnabled: autosaveEnabled ?? this.autosaveEnabled,
       markdownEnabled: markdownEnabled ?? this.markdownEnabled,
       defaultFontSize: defaultFontSize ?? this.defaultFontSize,
@@ -130,8 +120,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       accentColor: _box.get('setting_accentColor') ?? 'Default',
       cornerRadius: double.tryParse(_box.get('setting_cornerRadius') ?? '16.0') ?? 16.0,
       animationSpeed: double.tryParse(_box.get('setting_animationSpeed') ?? '1.0') ?? 1.0,
-      amoledMode: _box.get('setting_amoledMode') == 'true',
-      followSystemTheme: _box.get('setting_followSystemTheme') != 'false',
       autosaveEnabled: _box.get('setting_autosaveEnabled') != 'false',
       markdownEnabled: _box.get('setting_markdownEnabled') != 'false',
       defaultFontSize: double.tryParse(_box.get('setting_defaultFontSize') ?? '14.0') ?? 14.0,
@@ -162,16 +150,6 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> updateAnimationSpeed(double value) async {
     state = state.copyWith(animationSpeed: value);
     await _box.put('setting_animationSpeed', value.toString());
-  }
-
-  Future<void> updateAmoledMode(bool value) async {
-    state = state.copyWith(amoledMode: value);
-    await _box.put('setting_amoledMode', value.toString());
-  }
-
-  Future<void> updateFollowSystemTheme(bool value) async {
-    state = state.copyWith(followSystemTheme: value);
-    await _box.put('setting_followSystemTheme', value.toString());
   }
 
   Future<void> updateAutosaveEnabled(bool value) async {
@@ -248,6 +226,18 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> updateBiometricsEnabled(bool value) async {
     state = state.copyWith(biometricsEnabled: value);
     await _box.put('app_lock_biometrics_enabled', value.toString());
+  }
+
+  Future<void> resetAppearance() async {
+    // Restores default settings state values
+    state = state.copyWith(
+      accentColor: 'Default',
+      cornerRadius: 16.0,
+      animationSpeed: 1.0,
+    );
+    await _box.put('setting_accentColor', 'Default');
+    await _box.put('setting_cornerRadius', '16.0');
+    await _box.put('setting_animationSpeed', '1.0');
   }
 }
 

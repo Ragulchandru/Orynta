@@ -2,6 +2,7 @@
 //
 // Orynta 2.0 — Settings Center Category Index
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +19,7 @@ import 'sub_screens/language_settings_screen.dart';
 import 'sub_screens/notifications_settings_screen.dart';
 import 'sub_screens/planner_settings_screen.dart';
 import 'sub_screens/security_settings_screen.dart';
+import 'sub_screens/theme_preview_screen.dart';
 import '../widgets/settings_widgets.dart';
 
 enum SettingsCategory {
@@ -31,7 +33,8 @@ enum SettingsCategory {
   language,
   accessibility,
   experimental,
-  about;
+  about,
+  themePreview;
 
   String get label => switch (this) {
         SettingsCategory.appearance => 'Appearance',
@@ -45,6 +48,7 @@ enum SettingsCategory {
         SettingsCategory.language => 'Language & Region',
         SettingsCategory.experimental => 'Experimental Labs',
         SettingsCategory.about => 'About Orynta',
+        SettingsCategory.themePreview => 'Theme Preview',
       };
 
   String get subtitle => switch (this) {
@@ -59,6 +63,7 @@ enum SettingsCategory {
         SettingsCategory.language => 'App language selection and regional formats',
         SettingsCategory.experimental => 'AI suggestions labs and masonry grid experiments',
         SettingsCategory.about => 'Build details, version information, settings reset',
+        SettingsCategory.themePreview => 'Developer component and typography gallery',
       };
 
   IconData get icon => switch (this) {
@@ -73,6 +78,7 @@ enum SettingsCategory {
         SettingsCategory.language => Icons.language_rounded,
         SettingsCategory.experimental => Icons.science_rounded,
         SettingsCategory.about => Icons.info_outline_rounded,
+        SettingsCategory.themePreview => Icons.developer_mode_rounded,
       };
 
   Color get color => switch (this) {
@@ -87,6 +93,7 @@ enum SettingsCategory {
         SettingsCategory.language => Colors.pink,
         SettingsCategory.experimental => Colors.deepPurple,
         SettingsCategory.about => Colors.blueGrey,
+        SettingsCategory.themePreview => Colors.red,
       };
 }
 
@@ -99,6 +106,10 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   SettingsCategory _selectedCategory = SettingsCategory.appearance;
+
+  List<SettingsCategory> get _visibleCategories => SettingsCategory.values
+      .where((c) => c != SettingsCategory.themePreview || kDebugMode)
+      .toList();
 
   void _openSubScreen(BuildContext context, SettingsCategory category) {
     Widget page = switch (category) {
@@ -113,6 +124,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       SettingsCategory.accessibility => const AccessibilitySettingsScreen(),
       SettingsCategory.experimental => const ExperimentalSettingsScreen(),
       SettingsCategory.about => const AboutSettingsScreen(),
+      SettingsCategory.themePreview => const ThemePreviewScreen(),
     };
 
     Navigator.push(
@@ -124,7 +136,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = context.appTheme;
+    final colors = context.colors;
     final width = MediaQuery.of(context).size.width;
+    final categories = _visibleCategories;
 
     if (width >= 1024) {
       // Desktop Sidebar + Master Detail sub-screen embedding
@@ -153,7 +167,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             'Settings',
                             style: context.typography.titleLarge.copyWith(
                               fontWeight: FontWeight.w800,
-                              color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+                              color: colors.textPrimary,
                             ),
                           ),
                         ],
@@ -161,16 +175,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                     Expanded(
                       child: ListView.builder(
-                        itemCount: SettingsCategory.values.length,
+                        itemCount: categories.length,
                         itemBuilder: (context, index) {
-                          final category = SettingsCategory.values[index];
+                          final category = categories[index];
                           final isSelected = _selectedCategory == category;
                           return ListTile(
                             leading: Icon(
                               category.icon,
                               color: isSelected
                                   ? theme.primary
-                                  : (theme.isDark ? const Color(0xFF8E8EA8) : const Color(0xFF4E4E68)),
+                                  : colors.textSecondary,
                             ),
                             title: Text(
                               category.label,
@@ -178,7 +192,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                 color: isSelected
                                     ? theme.primary
-                                    : (theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C)),
+                                    : colors.textPrimary,
                               ),
                             ),
                             selected: isSelected,
@@ -209,6 +223,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       SettingsCategory.accessibility => const AccessibilitySettingsScreen(),
                       SettingsCategory.experimental => const ExperimentalSettingsScreen(),
                       SettingsCategory.about => const AboutSettingsScreen(),
+                      SettingsCategory.themePreview => const ThemePreviewScreen(),
                     },
                   ),
                 ),
@@ -228,7 +243,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           'Settings',
           style: context.typography.titleMedium.copyWith(
             fontWeight: FontWeight.bold,
-            color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+            color: colors.textPrimary,
           ),
         ),
         leading: IconButton(
@@ -243,7 +258,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           children: [
             PremiumSection(
               title: 'PREFERENCES & CONFIGURATION',
-              children: SettingsCategory.values.map((category) {
+              children: categories.map((category) {
                 return PremiumListTile(
                   title: category.label,
                   subtitle: category.subtitle,
@@ -251,7 +266,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   iconColor: theme.primary,
                   trailing: Icon(
                     Icons.chevron_right_rounded,
-                    color: theme.isDark ? const Color(0xFF8E8EA8) : const Color(0xFF8E8EA8),
+                    color: colors.textSecondary,
                   ),
                   onTap: () => _openSubScreen(context, category),
                 );

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_system.dart';
+import '../../../../shared/providers/appearance_mode.dart';
 import '../../../../shared/providers/theme_provider.dart';
 import '../providers/settings_provider.dart';
 import '../widgets/settings_widgets.dart';
@@ -14,13 +15,56 @@ import '../widgets/settings_widgets.dart';
 class AppearanceScreen extends ConsumerWidget {
   const AppearanceScreen({super.key});
 
+  void _showResetConfirmationDialog(BuildContext context, WidgetRef ref) {
+    final theme = context.appTheme;
+    final colors = context.colors;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.surfaceBright,
+        title: Text(
+          'Reset Appearance?',
+          style: context.typography.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colors.textPrimary,
+          ),
+        ),
+        content: Text(
+          'This will restore Orynta Gold preset, Dark appearance, default corner radius, and default animation speeds.',
+          style: context.typography.bodyMedium.copyWith(color: colors.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel', style: TextStyle(color: colors.textSecondary)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              // Reset preset to gold
+              await ref.read(themeModeNotifierProvider.notifier).setTheme(AppThemeType.gold);
+              // Reset mode to dark
+              await ref.read(appearanceModeProvider.notifier).setMode(AppearanceMode.dark);
+              // Reset settings (radius, speed)
+              await ref.read(settingsStateProvider.notifier).resetAppearance();
+            },
+            child: Text('Reset', style: TextStyle(color: theme.error, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsStateProvider);
     final settingsNotifier = ref.read(settingsStateProvider.notifier);
     final themeMode = ref.watch(themeModeNotifierProvider);
     final themeNotifier = ref.read(themeModeNotifierProvider.notifier);
+    final appearanceMode = ref.watch(appearanceModeProvider);
     final theme = context.appTheme;
+    final colors = context.colors;
 
     return Scaffold(
       backgroundColor: theme.surfaceDim,
@@ -30,11 +74,11 @@ class AppearanceScreen extends ConsumerWidget {
           'Appearance',
           style: context.typography.titleMedium.copyWith(
             fontWeight: FontWeight.bold,
-            color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+            color: colors.textPrimary,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 18, color: colors.textPrimary),
           onPressed: () => context.pop(),
         ),
       ),
@@ -43,7 +87,45 @@ class AppearanceScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(24.0),
           physics: const BouncingScrollPhysics(),
           children: [
-            // 1. Live Preview Section
+            // 1. Appearance Mode Selector
+            Text(
+              'APPEARANCE MODE',
+              style: context.typography.labelSmall.copyWith(
+                color: theme.primary,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: SegmentedButton<AppearanceMode>(
+                segments: const <ButtonSegment<AppearanceMode>>[
+                  ButtonSegment<AppearanceMode>(
+                    value: AppearanceMode.light,
+                    label: Text('Light'),
+                    icon: Icon(Icons.wb_sunny_rounded),
+                  ),
+                  ButtonSegment<AppearanceMode>(
+                    value: AppearanceMode.dark,
+                    label: Text('Dark'),
+                    icon: Icon(Icons.nightlight_round_rounded),
+                  ),
+                  ButtonSegment<AppearanceMode>(
+                    value: AppearanceMode.amoled,
+                    label: Text('AMOLED'),
+                    icon: Icon(Icons.circle_rounded),
+                  ),
+                ],
+                selected: <AppearanceMode>{appearanceMode},
+                onSelectionChanged: (Set<AppearanceMode> selected) {
+                  ref.read(appearanceModeProvider.notifier).setMode(selected.first);
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // 2. Live Preview Section
             Text(
               'LIVE PREVIEW',
               style: context.typography.labelSmall.copyWith(
@@ -62,7 +144,7 @@ class AppearanceScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // 2. Preset Themes
+            // 3. Preset Themes
             Text(
               'THEME PRESETS',
               style: context.typography.labelSmall.copyWith(
@@ -85,7 +167,7 @@ class AppearanceScreen extends ConsumerWidget {
               itemBuilder: (context, index) {
                 final type = AppThemeType.values[index];
                 final isSelected = themeMode == type;
-                final itemTheme = AppThemeFactory.getTheme(type);
+                final itemTheme = AppTheme.buildTheme(type, mode: appearanceMode, cornerRadius: settings.cornerRadius);
 
                 return ScaleOnPress(
                   onTap: () => themeNotifier.setTheme(type),
@@ -93,7 +175,7 @@ class AppearanceScreen extends ConsumerWidget {
                     children: [
                       Positioned.fill(
                         child: _MiniThemePreview(
-                          themeData: itemTheme,
+                          themeData: itemTheme.extension<OryThemeExtension>()?.themeData ?? itemTheme as dynamic,
                           isSelected: isSelected,
                         ),
                       ),
@@ -141,52 +223,16 @@ class AppearanceScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // 3. Detailed Modifiers
+            // 4. Detailed Modifiers
             PremiumSection(
               title: 'COLOR & STYLING',
               children: [
-                PremiumListTile(
-                  title: 'Accent Color',
-                  subtitle: settings.accentColor,
-                  icon: Icons.palette_outlined,
-                  iconColor: Colors.purple,
-                  trailing: DropdownButton<String>(
-                    value: settings.accentColor,
-                    onChanged: (val) {
-                      if (val != null) settingsNotifier.updateAccentColor(val);
-                    },
-                    underline: const SizedBox(),
-                    items: ['Default', 'Teal', 'Indigo', 'Amber', 'Orange', 'Coral']
-                        .map((color) => DropdownMenuItem(value: color, child: Text(color)))
-                        .toList(),
-                  ),
-                ),
-                PremiumListTile(
-                  title: 'AMOLED Mode',
-                  subtitle: 'Pitch-black dark backgrounds',
-                  icon: Icons.dark_mode_outlined,
-                  iconColor: Colors.black,
-                  trailing: PremiumSwitch(
-                    value: settings.amoledMode,
-                    onChanged: (val) => settingsNotifier.updateAmoledMode(val),
-                  ),
-                ),
-                PremiumListTile(
-                  title: 'Follow System theme',
-                  subtitle: 'Match system theme settings',
-                  icon: Icons.settings_brightness_rounded,
-                  iconColor: Colors.blue,
-                  trailing: PremiumSwitch(
-                    value: settings.followSystemTheme,
-                    onChanged: (val) => settingsNotifier.updateFollowSystemTheme(val),
-                  ),
-                ),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Corner Radius (${settings.cornerRadius.toInt()}px)', style: context.typography.bodyMedium),
+                      Text('Corner Radius (${settings.cornerRadius.toInt()}px)', style: context.typography.bodyMedium.copyWith(color: colors.textPrimary)),
                       Slider(
                         value: settings.cornerRadius,
                         min: 4.0,
@@ -202,7 +248,7 @@ class AppearanceScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Animation Speed (${settings.animationSpeed.toStringAsFixed(1)}x)', style: context.typography.bodyMedium),
+                      Text('Animation Speed (${settings.animationSpeed.toStringAsFixed(1)}x)', style: context.typography.bodyMedium.copyWith(color: colors.textPrimary)),
                       Slider(
                         value: settings.animationSpeed,
                         min: 0.2,
@@ -213,11 +259,18 @@ class AppearanceScreen extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const PremiumListTile(
+                PremiumListTile(
                   title: 'Dynamic Colors (Android 12+)',
                   subtitle: 'Placeholder for dynamic wallpaper colors',
                   icon: Icons.colorize_rounded,
-                  iconColor: Colors.grey,
+                  iconColor: colors.textSecondary,
+                ),
+                PremiumListTile(
+                  title: 'Reset Appearance',
+                  subtitle: 'Restores default theme preset, appearance, and layouts',
+                  icon: Icons.restore_rounded,
+                  iconColor: theme.error,
+                  onTap: () => _showResetConfirmationDialog(context, ref),
                 ),
               ],
             ),

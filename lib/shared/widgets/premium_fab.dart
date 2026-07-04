@@ -5,7 +5,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import '../../core/design_system/design_system.dart';
-import '../../core/design_system/motion/motion_tokens.dart';
 
 class PremiumFAB extends StatefulWidget {
   const PremiumFAB({
@@ -64,11 +63,12 @@ class _PremiumFABState extends State<PremiumFAB> {
   @override
   Widget build(BuildContext context) {
     final theme = context.appTheme;
-    final bg = widget.backgroundColor ?? theme.primary;
+    final bg = widget.backgroundColor ?? theme.notes.fabBackground;
 
-    // Dynamically compute high contrast foreground color based on background luminance
-    final isLightBg = bg.computeLuminance() > 0.5;
-    final fg = isLightBg ? const Color(0xFF11111C) : const Color(0xFFFFFFFF);
+    // Dynamically compute high contrast foreground color based on background luminance if custom, otherwise use token
+    final fg = widget.backgroundColor != null
+        ? (bg.computeLuminance() > 0.5 ? const Color(0xFF11111C) : const Color(0xFFFFFFFF))
+        : theme.notes.fabForeground;
 
     final showLabel = widget.label != null && _isExtended;
 

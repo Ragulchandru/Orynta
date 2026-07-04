@@ -9,11 +9,11 @@ class ScaleOnPress extends StatefulWidget {
   const ScaleOnPress({
     super.key,
     required this.child,
-    required this.onTap,
+    this.onTap,
   });
 
   final Widget child;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   State<ScaleOnPress> createState() => _ScaleOnPressState();
