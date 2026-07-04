@@ -1,3 +1,7 @@
+// lib/features/planner/presentation/providers/tasks_notifier.dart
+//
+// Orynta 2.0 — Premium Tasks Notifier & Smart Filter Providers
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
@@ -6,6 +10,7 @@ import '../../data/models/task_model.dart';
 import '../../data/repositories/task_repository_impl.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/repositories/task_repository.dart';
+import '../../domain/services/recurrence_engine.dart';
 
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   final box = Hive.box<TaskModel>(AppStrings.tasksBoxName);
@@ -31,6 +36,26 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
     state = [...state, task];
   }
 
+  Future<void> quickAddTask(String title, {String category = 'Personal', DateTime? dueDate}) async {
+    if (title.trim().isEmpty) return;
+    final now = DateTime.now();
+    final task = TaskEntity(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: title.trim(),
+      description: '',
+      priority: 'medium',
+      dueDate: dueDate ?? now,
+      createdAt: now,
+      updatedAt: now,
+      isCompleted: false,
+      timelineSection: 0,
+      estimatedMinutes: 15,
+      tagIds: const [],
+      category: category,
+    );
+    await addTask(task);
+  }
+
   Future<void> updateTask(TaskEntity task) async {
     await _repository.updateTask(task);
     state = [
@@ -42,15 +67,85 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
   Future<void> toggleTaskCompletion(String id) async {
     final index = state.indexWhere((t) => t.id == id);
     if (index != -1) {
-      final updated = state[index].copyWith(
-        isCompleted: !state[index].isCompleted,
-        updatedAt: DateTime.now(),
+      final current = state[index];
+      final newStatus = !current.isCompleted;
+      final now = DateTime.now();
+
+      final updated = current.copyWith(
+        isCompleted: newStatus,
+        updatedAt: now,
       );
+
       await _repository.updateTask(updated);
+
+      // Offline-first recurrence generation
+      if (newStatus && current.recurrenceRule != null && current.dueDate != null) {
+        final nextDue = RecurrenceEngine.computeNextDueDate(current.dueDate!, current.recurrenceRule);
+        if (nextDue != null) {
+          final recurringCopy = current.copyWith(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            dueDate: nextDue,
+            isCompleted: false,
+            createdAt: now,
+            updatedAt: now,
+            subtasks: current.subtasks.map((s) => s.copyWith(isCompleted: false)).toList(),
+          );
+          await _repository.saveTask(recurringCopy);
+          state = [...state, recurringCopy];
+        }
+      }
+
       state = [
         for (final t in state)
           if (t.id == id) updated else t,
       ];
+    }
+  }
+
+  Future<void> toggleSubtaskCompletion(String taskId, String subtaskId) async {
+    final index = state.indexWhere((t) => t.id == taskId);
+    if (index != -1) {
+      final current = state[index];
+      final updatedSubtasks = current.subtasks.map((s) {
+        if (s.id == subtaskId) {
+          return s.copyWith(isCompleted: !s.isCompleted);
+        }
+        return s;
+      }).toList();
+
+      final updated = current.copyWith(
+        subtasks: updatedSubtasks,
+        updatedAt: DateTime.now(),
+      );
+
+      await updateTask(updated);
+    }
+  }
+
+  Future<void> toggleFavorite(String id) async {
+    final index = state.indexWhere((t) => t.id == id);
+    if (index != -1) {
+      final current = state[index];
+      final updated = current.copyWith(
+        isFavorite: !current.isFavorite,
+        updatedAt: DateTime.now(),
+      );
+      await updateTask(updated);
+    }
+  }
+
+  Future<void> reorderTasks(int oldIndex, int newIndex) async {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    final items = List<TaskEntity>.from(state);
+    final item = items.removeAt(oldIndex);
+    items.insert(newIndex, item);
+
+    state = items;
+    for (var i = 0; i < state.length; i++) {
+      final updated = state[i].copyWith(sortOrder: i);
+      await _repository.updateTask(updated);
     }
   }
 
@@ -96,11 +191,16 @@ final tasksProvider = StateNotifierProvider<TasksNotifier, List<TaskEntity>>((re
   return TasksNotifier(repository);
 });
 
+// Alias for cleaner code
+final tasksNotifierProvider = tasksProvider;
+
 // ─── Search, Filter, Sort States ─────────────────────────────────────────────
 
 final taskSearchQueryProvider = StateProvider<String>((ref) => '');
 
-final taskFilterProvider = StateProvider<String>((ref) => 'all'); // all, today, upcoming, completed, pending, high, medium, low
+final taskFilterProvider = StateProvider<String>((ref) => 'all'); // all, today, tomorrow, week, overdue, completed, favorites, high, nodate, repeating
+
+final taskCategoryFilterProvider = StateProvider<String?>((ref) => null);
 
 final taskSortProvider = StateProvider<String>((ref) => 'dueDate'); // dueDate, priority, recentlyUpdated, alphabetical
 
@@ -148,9 +248,9 @@ final selectedTasksProvider = StateNotifierProvider<SelectedTasksNotifier, Set<S
   return SelectedTasksNotifier();
 });
 
-// ─── Computed Providers ──────────────────────────────────────────────────────
+// ─── Computed Smart Search Provider ──────────────────────────────────────────
 
-/// Search results based on [taskSearchQueryProvider]
+/// Search results searching Title, Description, Notes, Tags, Category, Subtasks, and Linked Notes
 final searchResultsProvider = Provider<List<TaskEntity>>((ref) {
   final tasks = ref.watch(tasksProvider);
   final query = ref.watch(taskSearchQueryProvider).trim().toLowerCase();
@@ -158,35 +258,59 @@ final searchResultsProvider = Provider<List<TaskEntity>>((ref) {
   if (query.isEmpty) return tasks;
   
   return tasks.where((t) {
-    return t.title.toLowerCase().contains(query) ||
-           t.description.toLowerCase().contains(query);
+    final inTitle = t.title.toLowerCase().contains(query);
+    final inDesc = t.description.toLowerCase().contains(query);
+    final inNotes = t.notes?.toLowerCase().contains(query) ?? false;
+    final inCategory = t.category.toLowerCase().contains(query);
+    final inTags = t.tagIds.any((tag) => tag.toLowerCase().contains(query));
+    final inSubtasks = t.subtasks.any((sub) => sub.title.toLowerCase().contains(query));
+    final inLinked = t.linkedNoteIds.any((id) => id.toLowerCase().contains(query)) ||
+        (t.linkedNoteId?.toLowerCase().contains(query) ?? false);
+
+    return inTitle || inDesc || inNotes || inCategory || inTags || inSubtasks || inLinked;
   }).toList();
 });
 
-/// Filtered tasks combining search and [taskFilterProvider]
+/// Filtered tasks combining search, smart filters, and category filter
 final filteredTasksProvider = Provider<List<TaskEntity>>((ref) {
   final tasks = ref.watch(searchResultsProvider);
   final filter = ref.watch(taskFilterProvider);
+  final categoryFilter = ref.watch(taskCategoryFilterProvider);
   final today = DateTime.now();
+  final startOfToday = DateTime(today.year, today.month, today.day);
 
   return tasks.where((t) {
+    if (categoryFilter != null && categoryFilter.isNotEmpty) {
+      if (t.category.toLowerCase() != categoryFilter.toLowerCase()) return false;
+    }
+
     return switch (filter) {
       'today' => () {
         if (t.dueDate == null) return true;
         final due = t.dueDate!;
         return due.year == today.year && due.month == today.month && due.day == today.day;
       }(),
-      'upcoming' => () {
+      'tomorrow' => () {
         if (t.dueDate == null) return false;
-        final startOfToday = DateTime(today.year, today.month, today.day);
-        return t.dueDate!.isAfter(startOfToday.add(const Duration(days: 1))) || 
-               (t.dueDate!.year == today.year && t.dueDate!.month == today.month && t.dueDate!.day == today.day && !t.isCompleted);
+        final tomorrow = startOfToday.add(const Duration(days: 1));
+        final due = t.dueDate!;
+        return due.year == tomorrow.year && due.month == tomorrow.month && due.day == tomorrow.day;
+      }(),
+      'week' => () {
+        if (t.dueDate == null) return false;
+        final endOfWeek = startOfToday.add(const Duration(days: 7));
+        return t.dueDate!.isAfter(startOfToday.subtract(const Duration(seconds: 1))) &&
+            t.dueDate!.isBefore(endOfWeek);
+      }(),
+      'overdue' => () {
+        if (t.isCompleted || t.dueDate == null) return false;
+        return t.dueDate!.isBefore(startOfToday);
       }(),
       'completed' => t.isCompleted,
-      'pending' => !t.isCompleted,
+      'favorites' => t.isFavorite,
       'high' => t.priority.toLowerCase() == 'high',
-      'medium' => t.priority.toLowerCase() == 'medium',
-      'low' => t.priority.toLowerCase() == 'low',
+      'nodate' => t.dueDate == null,
+      'repeating' => t.recurrenceRule != null && t.recurrenceRule!.isNotEmpty,
       _ => true,
     };
   }).toList();
@@ -227,7 +351,7 @@ int _priorityWeight(String priority) {
   };
 }
 
-// ─── Business Analytics Summary Providers ────────────────────────────────────
+// ─── Analytics & Section Providers ─────────────────────────────────────────
 
 final completedTasksProvider = Provider<List<TaskEntity>>((ref) {
   return ref.watch(tasksProvider).where((t) => t.isCompleted).toList();
@@ -241,7 +365,6 @@ final highPriorityTasksProvider = Provider<List<TaskEntity>>((ref) {
   return ref.watch(tasksProvider).where((t) => t.priority.toLowerCase() == 'high').toList();
 });
 
-/// All tasks for today (either due today or with no due date).
 final todaysTasksProvider = Provider<List<TaskEntity>>((ref) {
   final tasks = ref.watch(tasksProvider);
   final today = DateTime.now();
@@ -260,19 +383,16 @@ final remainingTodayTasksProvider = Provider<List<TaskEntity>>((ref) {
   return ref.watch(todaysTasksProvider).where((t) => !t.isCompleted).toList();
 });
 
-/// Overdue tasks (due in past, and not completed)
 final overdueTasksProvider = Provider<List<TaskEntity>>((ref) {
   final tasks = ref.watch(tasksProvider);
   final now = DateTime.now();
+  final startOfToday = DateTime(now.year, now.month, now.day);
   return tasks.where((t) {
     if (t.isCompleted || t.dueDate == null) return false;
-    // Overdue if due date is before today
-    final startOfToday = DateTime(now.year, now.month, now.day);
     return t.dueDate!.isBefore(startOfToday);
   }).toList();
 });
 
-/// Upcoming pending tasks scheduled in future
 final upcomingTasksProvider = Provider<List<TaskEntity>>((ref) {
   final tasks = ref.watch(tasksProvider);
   final now = DateTime.now();
@@ -283,7 +403,6 @@ final upcomingTasksProvider = Provider<List<TaskEntity>>((ref) {
   }).toList();
 });
 
-/// Next upcoming pending task (closest due date in future)
 final nextUpcomingTaskProvider = Provider<TaskEntity?>((ref) {
   final upcoming = ref.watch(upcomingTasksProvider);
   if (upcoming.isEmpty) return null;
@@ -292,34 +411,9 @@ final nextUpcomingTaskProvider = Provider<TaskEntity?>((ref) {
   return sorted.first;
 });
 
-/// Completion percentage for today's tasks + mock habits (Dashboard display)
 final completionRateProvider = Provider<double>((ref) {
   final todaysTasks = ref.watch(todaysTasksProvider);
   final tasksCompleted = todaysTasks.where((t) => t.isCompleted).length;
   final totalTasks = todaysTasks.length;
-
-  const habitsCompleted = 3;
-  const totalHabits = 4;
-
-  final completedCount = tasksCompleted + habitsCompleted;
-  final totalCount = totalTasks + totalHabits;
-  return totalCount > 0 ? completedCount / totalCount : 0.0;
-});
-
-// ─── Timeline Morning/Afternoon/Evening/Night Sections ────────────────────────
-
-final morningTasksProvider = Provider<List<TaskEntity>>((ref) {
-  return ref.watch(sortedTasksProvider).where((t) => t.timelineSection == 0).toList();
-});
-
-final afternoonTasksProvider = Provider<List<TaskEntity>>((ref) {
-  return ref.watch(sortedTasksProvider).where((t) => t.timelineSection == 1).toList();
-});
-
-final eveningTasksProvider = Provider<List<TaskEntity>>((ref) {
-  return ref.watch(sortedTasksProvider).where((t) => t.timelineSection == 2).toList();
-});
-
-final nightTasksProvider = Provider<List<TaskEntity>>((ref) {
-  return ref.watch(sortedTasksProvider).where((t) => t.timelineSection == 3).toList();
+  return totalTasks > 0 ? tasksCompleted / totalTasks : 0.0;
 });

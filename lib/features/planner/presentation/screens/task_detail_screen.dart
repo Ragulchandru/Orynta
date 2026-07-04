@@ -1,314 +1,427 @@
+// lib/features/planner/presentation/screens/task_detail_screen.dart
+//
+// Orynta 2.0 — Premium Task Details & Editor Screen
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-import '../../../../core/constants/app_sizes.dart';
+import '../../../../core/design_system/design_system.dart';
+import '../../domain/entities/subtask_entity.dart';
+import '../../domain/entities/task_entity.dart';
+import '../../domain/models/category_model.dart';
 import '../providers/tasks_notifier.dart';
-import '../../../focus/presentation/providers/timer_provider.dart';
 
-class TaskDetailScreen extends ConsumerWidget {
+class TaskDetailScreen extends ConsumerStatefulWidget {
   const TaskDetailScreen({
     super.key,
-    required this.taskId,
+    this.task,
+    this.taskId,
   });
 
-  final String taskId;
+  final TaskEntity? task;
+  final String? taskId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  ConsumerState<TaskDetailScreen> createState() => _TaskDetailScreenState();
+}
 
-    // Watch the full task list to get the specific task
-    final tasks = ref.watch(tasksProvider);
-    final taskIndex = tasks.indexWhere((t) => t.id == taskId);
+class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
+  late TextEditingController _titleController;
+  late TextEditingController _descController;
+  late TextEditingController _notesController;
+  late TextEditingController _subtaskInputController;
 
-    if (taskIndex == -1) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Task Details')),
-        body: const Center(
-          child: Text('Task not found.'),
-        ),
+  late TaskEntity _workingTask;
+  late String _priority;
+  late String _category;
+  late DateTime? _dueDate;
+  late TimeOfDay? _dueTime;
+  late String? _recurrenceRule;
+  late int? _reminderMs;
+  late int _estimatedMinutes;
+  late List<SubtaskEntity> _subtasks;
+  late List<String> _linkedNoteIds;
+
+  @override
+  void initState() {
+    super.initState();
+    _workingTask = widget.task ??
+        ref.read(tasksProvider).firstWhere(
+              (item) => item.id == widget.taskId,
+              orElse: () => TaskEntity(
+                id: widget.taskId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+                title: 'New Task',
+                description: '',
+                priority: 'medium',
+                dueDate: DateTime.now(),
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+                isCompleted: false,
+                timelineSection: 0,
+                estimatedMinutes: 15,
+                tagIds: const [],
+              ),
+            );
+
+    final t = _workingTask;
+    _titleController = TextEditingController(text: t.title);
+    _descController = TextEditingController(text: t.description);
+    _notesController = TextEditingController(text: t.notes ?? '');
+    _subtaskInputController = TextEditingController();
+
+    _priority = t.priority;
+    _category = t.category;
+    _dueDate = t.dueDate;
+    _dueTime = t.dueDate != null ? TimeOfDay.fromDateTime(t.dueDate!) : null;
+    _recurrenceRule = t.recurrenceRule;
+    _reminderMs = t.reminderMs;
+    _estimatedMinutes = t.estimatedMinutes;
+    _subtasks = List.from(t.subtasks);
+    _linkedNoteIds = List.from(t.linkedNoteIds.isNotEmpty
+        ? t.linkedNoteIds
+        : (t.linkedNoteId != null ? [t.linkedNoteId!] : []),);
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    _notesController.dispose();
+    _subtaskInputController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveChanges() async {
+    if (_titleController.text.trim().isEmpty) return;
+
+    DateTime? finalDueDate = _dueDate;
+    if (_dueDate != null && _dueTime != null) {
+      finalDueDate = DateTime(
+        _dueDate!.year,
+        _dueDate!.month,
+        _dueDate!.day,
+        _dueTime!.hour,
+        _dueTime!.minute,
       );
     }
 
-    final task = tasks[taskIndex];
-    final priorityColor = _getPriorityColor(task.priority);
-    final formattedDueDate = task.dueDate != null
-        ? DateFormat('EEEE, MMMM d, yyyy - h:mm a').format(task.dueDate!)
-        : 'No due date';
+    final updated = _workingTask.copyWith(
+      title: _titleController.text.trim(),
+      description: _descController.text.trim(),
+      notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+      priority: _priority,
+      category: _category,
+      dueDate: finalDueDate,
+      recurrenceRule: _recurrenceRule,
+      reminderMs: _reminderMs,
+      estimatedMinutes: _estimatedMinutes,
+      subtasks: _subtasks,
+      linkedNoteIds: _linkedNoteIds,
+      updatedAt: DateTime.now(),
+    );
 
-    final createdDate = DateFormat('MMMM d, yyyy - h:mm a').format(task.createdAt);
-    final updatedDate = DateFormat('MMMM d, yyyy - h:mm a').format(task.updatedAt);
+    final exists = ref.read(tasksProvider).any((item) => item.id == updated.id);
+    if (exists) {
+      await ref.read(tasksNotifierProvider.notifier).updateTask(updated);
+    } else {
+      await ref.read(tasksNotifierProvider.notifier).addTask(updated);
+    }
+
+    if (mounted) context.pop();
+  }
+
+  void _addSubtask() {
+    final text = _subtaskInputController.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _subtasks.add(
+        SubtaskEntity(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          title: text,
+          isCompleted: false,
+        ),
+      );
+      _subtaskInputController.clear();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.appTheme;
 
     return Scaffold(
+      backgroundColor: theme.surfaceDim,
       appBar: AppBar(
-        title: const Text(
+        backgroundColor: theme.surface,
+        elevation: 0,
+        title: Text(
           'Task Details',
-          style: TextStyle(fontFamily: 'Playfair Display', fontWeight: FontWeight.bold),
+          style: context.typography.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.close_rounded),
+          onPressed: () => context.pop(),
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.delete_outline_rounded),
-            tooltip: 'Delete Task',
+            icon: Icon(
+              _workingTask.isFavorite ? Icons.star_rounded : Icons.star_border_rounded,
+              color: _workingTask.isFavorite ? Colors.amber : theme.outline,
+            ),
             onPressed: () {
-              _confirmDelete(context, ref);
+              ref.read(tasksNotifierProvider.notifier).toggleFavorite(_workingTask.id);
+              setState(() {
+                _workingTask = _workingTask.copyWith(isFavorite: !_workingTask.isFavorite);
+              });
             },
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: ElevatedButton(
+              onPressed: _saveChanges,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Save'),
+            ),
           ),
         ],
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(AppSizes.lg),
+          padding: const EdgeInsets.all(20.0),
+          physics: const BouncingScrollPhysics(),
           children: [
-            // Status checkbox and Title Card
-            Card(
-              elevation: 0,
-              color: colorScheme.surfaceContainerLow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.md),
-                side: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                ),
+            // Title Input
+            TextField(
+              controller: _titleController,
+              style: context.typography.titleLarge.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.md),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Checkbox(
-                      value: task.isCompleted,
-                      onChanged: (_) {
-                        ref.read(tasksProvider.notifier).toggleTaskCompletion(task.id);
-                      },
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                    const SizedBox(width: AppSizes.xs),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            task.title,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              decoration: task.isCompleted ? TextDecoration.lineThrough : null,
-                              color: task.isCompleted
-                                  ? colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
-                                  : colorScheme.onSurface,
-                            ),
-                          ),
-                          if (task.description.isNotEmpty) ...[
-                            const SizedBox(height: AppSizes.sm),
-                            Text(
-                              task.description,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              decoration: const InputDecoration(
+                hintText: 'Task Title',
+                border: InputBorder.none,
               ),
             ),
-            const SizedBox(height: AppSizes.md),
+            const SizedBox(height: 8),
 
-            // Metadata sections list
-            _buildMetaRow(
-              context: context,
-              icon: Icons.priority_high_rounded,
-              iconColor: priorityColor,
-              label: 'Priority',
-              value: task.priority.toUpperCase(),
+            // Description Input
+            TextField(
+              controller: _descController,
+              maxLines: 2,
+              style: context.typography.bodyMedium.copyWith(
+                color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+              ),
+              decoration: const InputDecoration(
+                hintText: 'Add description...',
+                border: InputBorder.none,
+              ),
             ),
+            const SizedBox(height: 16),
             const Divider(),
-            _buildMetaRow(
-              context: context,
-              icon: Icons.wb_sunny_outlined,
-              iconColor: colorScheme.primary,
-              label: 'Timeline Section',
-              value: _getSectionName(task.timelineSection),
+
+            // Category & Priority Row
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Category', style: context.typography.labelSmall),
+                      const SizedBox(height: 4),
+                      DropdownButtonFormField<String>(
+                        initialValue: _category,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: PlannerCategory.builtInCategories
+                            .map((c) => DropdownMenuItem(value: c.name, child: Text(c.name)))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => _category = val);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Priority', style: context.typography.labelSmall),
+                      const SizedBox(height: 4),
+                      DropdownButtonFormField<String>(
+                        initialValue: _priority,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: ['high', 'medium', 'low']
+                            .map((p) => DropdownMenuItem(value: p, child: Text(p.toUpperCase())))
+                            .toList(),
+                        onChanged: (val) {
+                          if (val != null) setState(() => _priority = val);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const Divider(),
-            _buildMetaRow(
-              context: context,
-              icon: Icons.calendar_today_rounded,
-              iconColor: colorScheme.secondary,
-              label: 'Due Date',
-              value: formattedDueDate,
-            ),
-            const Divider(),
-            _buildMetaRow(
-              context: context,
-              icon: Icons.timer_outlined,
-              iconColor: Colors.red,
-              label: 'Estimated Minutes',
-              value: task.estimatedMinutes > 0 ? '${task.estimatedMinutes}m' : 'None',
-            ),
-            const Divider(),
-            
-            // Linked Note (Placeholder)
+
+            const SizedBox(height: 20),
+
+            // Due Date & Time Pickers
             ListTile(
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(Icons.link_rounded, color: colorScheme.outline),
-              title: Text(
-                'Linked Note',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: colorScheme.outline,
-                ),
-              ),
+              leading: Icon(Icons.calendar_month_rounded, color: theme.primary),
+              title: const Text('Due Date & Time'),
               subtitle: Text(
-                'No linked note (Coming soon)',
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colorScheme.outline.withValues(alpha: 0.6),
-                ),
+                _dueDate != null
+                    ? '${DateFormat('EEE, MMM d, yyyy').format(_dueDate!)}${_dueTime != null ? ' at ${_dueTime!.format(context)}' : ''}'
+                    : 'No due date set',
               ),
-              trailing: const Icon(Icons.chevron_right_rounded),
+              trailing: IconButton(
+                icon: const Icon(Icons.edit_calendar_rounded),
+                onPressed: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _dueDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                  );
+                  if (picked != null) {
+                    if (!context.mounted) return;
+                    final tod = await showTimePicker(
+                      context: context,
+                      initialTime: _dueTime ?? TimeOfDay.now(),
+                    );
+                    setState(() {
+                      _dueDate = picked;
+                      _dueTime = tod;
+                    });
+                  }
+                },
+              ),
             ),
-            const Divider(),
-            
-            if (!task.isCompleted) ...[
-              const SizedBox(height: AppSizes.sm),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonalIcon(
-                  onPressed: () {
-                    ref.read(timerProvider.notifier).selectTask(task.id);
-                    ref.read(timerProvider.notifier).selectHabit(null);
-                    context.push('/focus');
-                  },
-                  icon: const Icon(Icons.alarm_on_rounded),
-                  label: const Text('Start Focus Session'),
-                ),
-              ),
-              const SizedBox(height: AppSizes.sm),
-              const Divider(),
-            ],
 
-            const SizedBox(height: AppSizes.md),
-
-            // Auditing info (Created & Updated stamps)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.xs),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Created: $createdDate',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.outline.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Last Updated: $updatedDate',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.outline.withValues(alpha: 0.6),
-                    ),
-                  ),
+            // Recurrence Rule
+            ListTile(
+              leading: Icon(Icons.repeat_rounded, color: theme.secondary),
+              title: const Text('Repeat'),
+              subtitle: Text(_recurrenceRule ?? 'Does not repeat'),
+              trailing: DropdownButton<String?>(
+                value: _recurrenceRule,
+                underline: const SizedBox(),
+                items: const [
+                  DropdownMenuItem(value: null, child: Text('Never')),
+                  DropdownMenuItem(value: 'DAILY', child: Text('Daily')),
+                  DropdownMenuItem(value: 'WEEKDAYS', child: Text('Weekdays (Mon-Fri)')),
+                  DropdownMenuItem(value: 'WEEKLY', child: Text('Weekly')),
+                  DropdownMenuItem(value: 'MONTHLY', child: Text('Monthly')),
+                  DropdownMenuItem(value: 'YEARLY', child: Text('Yearly')),
                 ],
+                onChanged: (val) => setState(() => _recurrenceRule = val),
               ),
             ),
+
+            const SizedBox(height: 16),
+            const Divider(),
+
+            // Checklist / Subtasks Section
+            Text('Checklist', style: context.typography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            ..._subtasks.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final sub = entry.value;
+              return ListTile(
+                leading: Checkbox(
+                  value: sub.isCompleted,
+                  onChanged: (val) {
+                    setState(() {
+                      _subtasks[idx] = sub.copyWith(isCompleted: val ?? false);
+                    });
+                  },
+                ),
+                title: Text(
+                  sub.title,
+                  style: TextStyle(
+                    decoration: sub.isCompleted ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: () {
+                    setState(() => _subtasks.removeAt(idx));
+                  },
+                ),
+              );
+            }),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _subtaskInputController,
+                    decoration: const InputDecoration(
+                      hintText: 'Add a subtask...',
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    onSubmitted: (_) => _addSubtask(),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.add_circle_outline_rounded, color: theme.primary),
+                  onPressed: _addSubtask,
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+            const Divider(),
+
+            // Notes Section
+            Text('Task Notes', style: context.typography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _notesController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: 'Write notes or markdown text...',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Linked Notes Section
+            if (_linkedNoteIds.isNotEmpty) ...[
+              Text('Linked Orynta Notes', style: context.typography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ..._linkedNoteIds.map((noteId) {
+                return Card(
+                  child: ListTile(
+                    leading: Icon(Icons.note_alt_rounded, color: theme.primary),
+                    title: Text('Note ID: $noteId'),
+                    trailing: const Icon(Icons.open_in_new_rounded, size: 18),
+                    onTap: () {
+                      context.push('/notes/edit/$noteId');
+                    },
+                  ),
+                );
+              }),
+            ],
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Navigate to task editor screen
-          context.push('/tasks/$taskId/edit');
-        },
-        child: const Icon(Icons.edit_rounded),
-      ),
-    );
-  }
-
-  Widget _buildMetaRow({
-    required BuildContext context,
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String value,
-  }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSizes.sm, horizontal: AppSizes.xs),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: iconColor),
-          const SizedBox(width: AppSizes.sm),
-          Text(
-            label,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getSectionName(int section) {
-    return switch (section) {
-      0 => 'Morning',
-      1 => 'Afternoon',
-      2 => 'Evening',
-      3 => 'Night',
-      _ => 'Unscheduled',
-    };
-  }
-
-  Color _getPriorityColor(String priority) {
-    return switch (priority.toLowerCase()) {
-      'high' => Colors.red,
-      'medium' => Colors.orange,
-      _ => Colors.blueGrey,
-    };
-  }
-
-  void _confirmDelete(BuildContext context, WidgetRef ref) {
-    showDialog(
-      context: context,
-      builder: (BuildContext ctx) {
-        return AlertDialog(
-          title: const Text('Delete Task'),
-          content: const Text('Are you sure you want to delete this task? This action cannot be undone.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                ref.read(tasksProvider.notifier).deleteTask(taskId);
-                Navigator.of(ctx).pop(); // Dismiss dialog
-                context.pop(); // Pop details screen back to planner
-              },
-              child: Text(
-                'Delete',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ),
-          ],
-        );
-      },
     );
   }
 }

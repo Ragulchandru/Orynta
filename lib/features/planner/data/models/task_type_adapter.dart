@@ -1,3 +1,7 @@
+// lib/features/planner/data/models/task_type_adapter.dart
+//
+// Orynta 2.0 — Backward-Compatible Task TypeAdapter for Hive Storage
+
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../../../core/constants/hive_type_ids.dart';
@@ -9,6 +13,7 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
 
   @override
   TaskModel read(BinaryReader reader) {
+    // Legacy positional slots 0 to 11
     final id = reader.readString();                              // slot 0
     final title = reader.readString();                          // slot 1
     final description = reader.readString();                    // slot 2
@@ -32,6 +37,85 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
     final hasLinkedNote = reader.readBool();                    // slot 11
     final linkedNoteId = hasLinkedNote ? reader.readString() : null;
 
+    // Optional expanded slots for backward compatibility
+    String category = 'Personal';
+    List<Map<String, dynamic>> subtasksRaw = [];
+    int? reminderMs;
+    int? earlyReminderMinutes;
+    String? recurrenceRule;
+    List<Map<String, dynamic>> attachmentsRaw = [];
+    bool isFavorite = false;
+    String? notes;
+    int sortOrder = 0;
+    List<String> linkedNoteIds = [];
+    int? dueTimeMs;
+
+    if (reader.availableBytes > 0) {
+      category = reader.readString();                           // slot 12
+    }
+
+    if (reader.availableBytes > 0) {
+      final subtaskCount = reader.readInt();                    // slot 13
+      subtasksRaw = List.generate(subtaskCount, (_) {
+        return {
+          'id': reader.readString(),
+          'title': reader.readString(),
+          'isCompleted': reader.readBool(),
+        };
+      });
+    }
+
+    if (reader.availableBytes > 0) {
+      final hasReminder = reader.readBool();
+      reminderMs = hasReminder ? reader.readInt() : null;
+    }
+
+    if (reader.availableBytes > 0) {
+      final hasEarlyReminder = reader.readBool();
+      earlyReminderMinutes = hasEarlyReminder ? reader.readInt() : null;
+    }
+
+    if (reader.availableBytes > 0) {
+      final hasRecurrence = reader.readBool();
+      recurrenceRule = hasRecurrence ? reader.readString() : null;
+    }
+
+    if (reader.availableBytes > 0) {
+      final attachCount = reader.readInt();
+      attachmentsRaw = List.generate(attachCount, (_) {
+        return {
+          'id': reader.readString(),
+          'filePath': reader.readString(),
+          'fileName': reader.readString(),
+          'fileType': reader.readString(),
+          'sizeBytes': reader.readInt(),
+        };
+      });
+    }
+
+    if (reader.availableBytes > 0) {
+      isFavorite = reader.readBool();
+    }
+
+    if (reader.availableBytes > 0) {
+      final hasNotes = reader.readBool();
+      notes = hasNotes ? reader.readString() : null;
+    }
+
+    if (reader.availableBytes > 0) {
+      sortOrder = reader.readInt();
+    }
+
+    if (reader.availableBytes > 0) {
+      final linkedCount = reader.readInt();
+      linkedNoteIds = List.generate(linkedCount, (_) => reader.readString());
+    }
+
+    if (reader.availableBytes > 0) {
+      final hasDueTime = reader.readBool();
+      dueTimeMs = hasDueTime ? reader.readInt() : null;
+    }
+
     return TaskModel(
       id: id,
       title: title,
@@ -45,6 +129,17 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
       estimatedMinutes: estimatedMinutes,
       tagIds: tagIds,
       linkedNoteId: linkedNoteId,
+      category: category,
+      subtasksRaw: subtasksRaw,
+      reminderMs: reminderMs,
+      earlyReminderMinutes: earlyReminderMinutes,
+      recurrenceRule: recurrenceRule,
+      attachmentsRaw: attachmentsRaw,
+      isFavorite: isFavorite,
+      notes: notes,
+      sortOrder: sortOrder,
+      linkedNoteIds: linkedNoteIds,
+      dueTimeMs: dueTimeMs,
     );
   }
 
@@ -71,5 +166,48 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
 
     writer.writeBool(obj.linkedNoteId != null);                 // slot 11
     if (obj.linkedNoteId != null) writer.writeString(obj.linkedNoteId!);
+
+    // Expanded slots
+    writer.writeString(obj.category);                           // slot 12
+
+    writer.writeInt(obj.subtasksRaw.length);                    // slot 13
+    for (final s in obj.subtasksRaw) {
+      writer.writeString(s['id'] as String? ?? '');
+      writer.writeString(s['title'] as String? ?? '');
+      writer.writeBool(s['isCompleted'] as bool? ?? false);
+    }
+
+    writer.writeBool(obj.reminderMs != null);
+    if (obj.reminderMs != null) writer.writeInt(obj.reminderMs!);
+
+    writer.writeBool(obj.earlyReminderMinutes != null);
+    if (obj.earlyReminderMinutes != null) writer.writeInt(obj.earlyReminderMinutes!);
+
+    writer.writeBool(obj.recurrenceRule != null);
+    if (obj.recurrenceRule != null) writer.writeString(obj.recurrenceRule!);
+
+    writer.writeInt(obj.attachmentsRaw.length);
+    for (final a in obj.attachmentsRaw) {
+      writer.writeString(a['id'] as String? ?? '');
+      writer.writeString(a['filePath'] as String? ?? '');
+      writer.writeString(a['fileName'] as String? ?? '');
+      writer.writeString(a['fileType'] as String? ?? '');
+      writer.writeInt(a['sizeBytes'] as int? ?? 0);
+    }
+
+    writer.writeBool(obj.isFavorite);
+
+    writer.writeBool(obj.notes != null);
+    if (obj.notes != null) writer.writeString(obj.notes!);
+
+    writer.writeInt(obj.sortOrder);
+
+    writer.writeInt(obj.linkedNoteIds.length);
+    for (final noteId in obj.linkedNoteIds) {
+      writer.writeString(noteId);
+    }
+
+    writer.writeBool(obj.dueTimeMs != null);
+    if (obj.dueTimeMs != null) writer.writeInt(obj.dueTimeMs!);
   }
 }

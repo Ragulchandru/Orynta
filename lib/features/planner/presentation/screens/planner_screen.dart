@@ -1,296 +1,296 @@
+// lib/features/planner/presentation/screens/planner_screen.dart
+//
+// Orynta 2.0 — Redesigned Premium Planner 2.0 Dashboard
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/router/route_names.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../workspace/presentation/widgets/workspace_avatar.dart';
-import '../../../calendar/presentation/providers/calendar_providers.dart';
-import '../../../calendar/presentation/widgets/agenda_section.dart';
-import '../../../calendar/presentation/widgets/calendar_header.dart';
-import '../../../calendar/presentation/widgets/month_grid.dart';
-import '../../../calendar/presentation/widgets/week_strip.dart';
+import '../../domain/entities/task_entity.dart';
+import '../../domain/models/category_model.dart';
+import '../providers/planner_stats_provider.dart';
 import '../providers/tasks_notifier.dart';
-import '../../../habits/presentation/providers/habits_notifier.dart';
-import '../widgets/task_multiselect_bar.dart';
-import '../../../focus/presentation/providers/focus_notifier.dart';
+import '../widgets/task_card.dart';
+import 'planner_calendar_view.dart';
+import 'task_detail_screen.dart';
 
-final showMonthlyCalendarProvider = StateProvider<bool>((ref) => false);
-
-class PlannerScreen extends ConsumerWidget {
+class PlannerScreen extends ConsumerStatefulWidget {
   const PlannerScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  ConsumerState<PlannerScreen> createState() => _PlannerScreenState();
+}
 
-    final selectedDate = ref.watch(selectedDateProvider);
-    final formattedDate = DateFormat('MMMM d, yyyy').format(selectedDate);
+class _PlannerScreenState extends ConsumerState<PlannerScreen> {
+  final TextEditingController _quickAddController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
-    // Watch query state variables
-    final searchQuery = ref.watch(taskSearchQueryProvider);
-    final activeFilter = ref.watch(taskFilterProvider);
-    final activeSort = ref.watch(taskSortProvider);
+  @override
+  void dispose() {
+    _quickAddController.dispose();
+    _searchController.dispose();
+    super.dispose();
+  }
 
-    // Watch selections and collapse states
-    final selectedIds = ref.watch(selectedTasksProvider);
-    final isSelectionMode = selectedIds.isNotEmpty;
-    final showMonthlyCalendar = ref.watch(showMonthlyCalendarProvider);
-    // Calculate daily completion rate
-    final dayTasks = ref.watch(selectedDateTasksProvider);
-    final dayCompleted = dayTasks.where((t) => t.isCompleted).length;
-    final dayPercent = dayTasks.isNotEmpty ? (dayCompleted / dayTasks.length * 100).toInt() : 100;
-
-
-
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header details
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(AppSizes.lg, AppSizes.md, AppSizes.lg, AppSizes.xs),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Planner',
-                            style: theme.textTheme.headlineMedium?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontFamily: 'Playfair Display',
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(Icons.calendar_month_rounded, size: 14, color: colorScheme.primary),
-                              const SizedBox(width: 4),
-                              Text(
-                                formattedDate,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: AppSizes.md),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(100),
-                                ),
-                                child: Text(
-                                  '$dayPercent% Done',
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      // Toggle month grid / clear selections / avatar actions
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: Icon(
-                              showMonthlyCalendar ? Icons.calendar_view_week_rounded : Icons.calendar_view_month_rounded,
-                              color: colorScheme.primary,
-                            ),
-                            tooltip: showMonthlyCalendar ? 'Show Weekly View' : 'Show Monthly View',
-                            onPressed: () {
-                              ref.read(showMonthlyCalendarProvider.notifier).state = !showMonthlyCalendar;
-                            },
-                          ),
-                          if (isSelectionMode)
-                            TextButton(
-                              onPressed: () {
-                                ref.read(selectedTasksProvider.notifier).clearSelection();
-                              },
-                              child: const Text('Clear'),
-                            ),
-                          const SizedBox(width: 8),
-                          const WorkspaceAvatar(),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(),
-
-                // Calendar layouts (Collapsible MonthGrid or WeekStrip)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
-                  child: AnimatedSize(
-                    duration: const Duration(milliseconds: 250),
-                    curve: Curves.easeInOut,
-                    child: showMonthlyCalendar
-                        ? Column(
-                            children: [
-                              const CalendarHeader(),
-                              const MonthGrid(),
-                              const SizedBox(height: AppSizes.sm),
-                              TextButton.icon(
-                                onPressed: () {
-                                  ref.read(showMonthlyCalendarProvider.notifier).state = false;
-                                },
-                                icon: const Icon(Icons.expand_less_rounded),
-                                label: const Text('Show Weekly Bar'),
-                              ),
-                            ],
-                          )
-                        : const WeekStrip(),
-                  ),
-                ),
-                const SizedBox(height: AppSizes.sm),
-
-                // Search, Filter, Sort Controls row
-                _buildControls(context, ref, searchQuery, activeFilter, activeSort),
-                const SizedBox(height: AppSizes.sm),
-
-                // Agenda Timeline sections lists
-                Expanded(
-                  child: ListView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(AppSizes.lg, 0, AppSizes.lg, AppSizes.xxxl * 2),
-                    children: [
-                      _buildHabitsSection(context, ref),
-                      const SizedBox(height: AppSizes.md),
-                      const AgendaSection(),
-                      const SizedBox(height: AppSizes.md),
-                      _buildFocusSessionsSection(context, ref),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // Floating multiselect action bar
-            const Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: TaskMultiselectBar(),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: isSelectionMode
-          ? null
-          : PremiumFAB(
-              onPressed: () => context.pushNamed(RouteNames.createTask),
-              icon: const Icon(Icons.add_rounded),
-            ),
+  void _showCalendar(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PlannerCalendarView()),
     );
   }
 
-  Widget _buildControls(
-    BuildContext context,
-    WidgetRef ref,
-    String query,
-    String activeFilter,
-    String activeSort,
-  ) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  void _openTaskDetail(TaskEntity task) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => TaskDetailScreen(task: task)),
+    );
+  }
 
-    final filterOptions = [
-      {'value': 'all', 'label': 'All'},
-      {'value': 'today', 'label': 'Today'},
-      {'value': 'upcoming', 'label': 'Upcoming'},
-      {'value': 'completed', 'label': 'Completed'},
-      {'value': 'pending', 'label': 'Pending'},
-      {'value': 'high', 'label': 'High Priority'},
-      {'value': 'medium', 'label': 'Medium Priority'},
-      {'value': 'low', 'label': 'Low Priority'},
+  void _createNewTask() {
+    final now = DateTime.now();
+    final newTask = TaskEntity(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: 'New Task',
+      description: '',
+      priority: 'medium',
+      dueDate: now,
+      createdAt: now,
+      updatedAt: now,
+      isCompleted: false,
+      timelineSection: 0,
+      estimatedMinutes: 15,
+      tagIds: const [],
+    );
+    _openTaskDetail(newTask);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.appTheme;
+    final stats = ref.watch(plannerStatsProvider);
+    final sortedTasks = ref.watch(sortedTasksProvider);
+    final width = MediaQuery.of(context).size.width;
+
+    return Scaffold(
+      backgroundColor: theme.surfaceDim,
+      appBar: AppBar(
+        backgroundColor: theme.surface,
+        elevation: 0,
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: context.typography.bodyMedium.copyWith(
+                  color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+                ),
+                decoration: const InputDecoration(
+                  hintText: 'Search tasks, subtasks, notes, tags...',
+                  border: InputBorder.none,
+                ),
+                onChanged: (val) {
+                  ref.read(taskSearchQueryProvider.notifier).state = val;
+                },
+              )
+            : Text(
+                'Planner 2.0',
+                style: context.typography.titleLarge.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+                ),
+              ),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  ref.read(taskSearchQueryProvider.notifier).state = '';
+                }
+              });
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.calendar_month_rounded),
+            onPressed: () => _showCalendar(context),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 12.0),
+            child: WorkspaceAvatar(),
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: width >= 1024
+            ? _buildDesktopLayout(context, theme, stats, sortedTasks)
+            : width >= 600
+                ? _buildTabletLayout(context, theme, stats, sortedTasks)
+                : _buildPhoneLayout(context, theme, stats, sortedTasks),
+      ),
+      floatingActionButton: PremiumFAB(
+        onPressed: _createNewTask,
+        icon: const Icon(Icons.add_rounded),
+      ),
+    );
+  }
+
+  // ─── Top Productivity Dashboard Header ─────────────────────────────────────
+
+  Widget _buildTopProgressCards(BuildContext context, AppThemeData theme, PlannerStatsData stats) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: PremiumCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(14.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Today Progress', style: context.typography.labelSmall),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${(stats.todayCompletionRate * 100).round()}%',
+                            style: context.typography.headlineSmall.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.primary,
+                            ),
+                          ),
+                          Text('${stats.todayCompleted}/${stats.todayTotal} Done', style: context.typography.bodySmall),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value: stats.todayCompletionRate,
+                        backgroundColor: theme.outlineVariant.withValues(alpha: 0.3),
+                        color: theme.primary,
+                        minHeight: 6,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: PremiumCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(14.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Current Streak', style: context.typography.labelSmall),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.local_fire_department_rounded, color: Colors.orange, size: 24),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${stats.currentStreak} Days',
+                            style: context.typography.headlineSmall.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text('Score: ${stats.productivityScore}/100', style: context.typography.bodySmall),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ─── Smart Filters & Categories Bar ────────────────────────────────────────
+
+  Widget _buildFiltersAndCategories(BuildContext context, AppThemeData theme) {
+    final activeFilter = ref.watch(taskFilterProvider);
+    final activeCategory = ref.watch(taskCategoryFilterProvider);
+
+    final filters = [
+      {'id': 'all', 'label': 'All'},
+      {'id': 'today', 'label': 'Today'},
+      {'id': 'tomorrow', 'label': 'Tomorrow'},
+      {'id': 'week', 'label': 'This Week'},
+      {'id': 'overdue', 'label': 'Overdue'},
+      {'id': 'high', 'label': 'High Priority'},
+      {'id': 'completed', 'label': 'Completed'},
+      {'id': 'favorites', 'label': 'Favorites'},
+      {'id': 'repeating', 'label': 'Repeating'},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Search & Sort row
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
-          child: Row(
+        // Category Pills
+        SizedBox(
+          height: 36,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
             children: [
-              Expanded(
-                child: TextField(
-                  onChanged: (val) {
-                    ref.read(taskSearchQueryProvider.notifier).state = val;
-                  },
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                    hintText: 'Search selected date tasks...',
-                    hintStyle: TextStyle(color: colorScheme.outline),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(AppSizes.sm),
-                      borderSide: BorderSide(
-                        color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              ChoiceChip(
+                label: const Text('All Categories'),
+                selected: activeCategory == null,
+                onSelected: (_) => ref.read(taskCategoryFilterProvider.notifier).state = null,
+              ),
+              const SizedBox(width: 8),
+              ...PlannerCategory.builtInCategories.map((c) {
+                final isSelected = activeCategory == c.name;
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: ChoiceChip(
+                    avatar: Icon(c.icon, size: 14, color: isSelected ? Colors.white : c.color),
+                    label: Text(c.name),
+                    selected: isSelected,
+                    selectedColor: theme.primary,
+                    onSelected: (_) {
+                      ref.read(taskCategoryFilterProvider.notifier).state = isSelected ? null : c.name;
+                    },
                   ),
-                ),
-              ),
-              const SizedBox(width: AppSizes.sm),
-              
-              // Sort dropdown
-              PopupMenuButton<String>(
-                icon: const Icon(Icons.sort_rounded),
-                tooltip: 'Sort Mode',
-                color: colorScheme.surface,
-                onSelected: (mode) {
-                  ref.read(taskSortProvider.notifier).state = mode;
-                },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'dueDate', child: Text('Sort by Due Date')),
-                  PopupMenuItem(value: 'priority', child: Text('Sort by Priority')),
-                  PopupMenuItem(value: 'recentlyUpdated', child: Text('Sort by Recents')),
-                  PopupMenuItem(value: 'alphabetical', child: Text('Sort Alphabetically')),
-                ],
-              ),
+                );
+              }),
             ],
           ),
         ),
-        const SizedBox(height: AppSizes.sm),
 
-        // Filter chips list
+        const SizedBox(height: 10),
+
+        // Smart Filter Chips
         SizedBox(
           height: 36,
-          child: ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
+          child: ListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: filterOptions.length,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSizes.xs),
-            itemBuilder: (context, index) {
-              final option = filterOptions[index];
-              final isSelected = activeFilter == option['value'];
-
-              return FilterChip(
-                label: Text(option['label']!),
-                selected: isSelected,
-                onSelected: (_) {
-                  ref.read(taskFilterProvider.notifier).state = option['value']!;
-                },
-                labelStyle: TextStyle(
-                  fontSize: 12,
-                  color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
+            physics: const BouncingScrollPhysics(),
+            itemCount: filters.length,
+            itemBuilder: (context, idx) {
+              final f = filters[idx];
+              final isSelected = activeFilter == f['id'];
+              return Padding(
+                padding: const EdgeInsets.only(right: 8.0),
+                child: FilterChip(
+                  label: Text(f['label']!),
+                  selected: isSelected,
+                  selectedColor: theme.primary.withValues(alpha: 0.2),
+                  checkmarkColor: theme.primary,
+                  onSelected: (_) {
+                    ref.read(taskFilterProvider.notifier).state = f['id']!;
+                  },
                 ),
-                selectedColor: colorScheme.primary,
-                showCheckmark: false,
-                padding: EdgeInsets.zero,
               );
             },
           ),
@@ -299,224 +299,208 @@ class PlannerScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHabitsSection(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+  // ─── Quick Add Input Bar ───────────────────────────────────────────────────
 
-    final selectedDate = ref.watch(selectedDateProvider);
-    final selectedDateHabits = ref.watch(habitsForSelectedDateProvider);
+  Widget _buildQuickAddBar(BuildContext context, AppThemeData theme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.add_task_rounded, color: theme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _quickAddController,
+              decoration: const InputDecoration(
+                hintText: 'Quick Add Task (e.g. Buy groceries tomorrow)...',
+                border: InputBorder.none,
+              ),
+              onSubmitted: (val) {
+                ref.read(tasksNotifierProvider.notifier).quickAddTask(val);
+                _quickAddController.clear();
+              },
+            ),
+          ),
+          IconButton(
+            icon: Icon(Icons.arrow_upward_rounded, color: theme.primary),
+            onPressed: () {
+              ref.read(tasksNotifierProvider.notifier).quickAddTask(_quickAddController.text);
+              _quickAddController.clear();
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
-    if (selectedDateHabits.isEmpty) return const SizedBox.shrink();
+  // ─── Phone Single Column Layout ─────────────────────────────────────────────
 
-    final completedCount = selectedDateHabits.where((h) => h.completedToday).length;
-    final totalCount = selectedDateHabits.length;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildPhoneLayout(
+    BuildContext context,
+    AppThemeData theme,
+    PlannerStatsData stats,
+    List<TaskEntity> sortedTasks,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.all(16.0),
+      physics: const BouncingScrollPhysics(),
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+        _buildTopProgressCards(context, theme, stats),
+        const SizedBox(height: 16),
+        _buildFiltersAndCategories(context, theme),
+        const SizedBox(height: 16),
+        _buildQuickAddBar(context, theme),
+        const SizedBox(height: 16),
+
+        if (sortedTasks.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 40.0),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.check_circle_outline_rounded, size: 48, color: theme.outline),
+                  const SizedBox(height: 12),
+                  Text('All clear! No tasks match your filter.', style: context.typography.bodyMedium),
+                ],
+              ),
+            ),
+          )
+        else
+          ReorderableListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: sortedTasks.length,
+            onReorderItem: (oldIdx, newIdx) {
+              ref.read(tasksNotifierProvider.notifier).reorderTasks(oldIdx, newIdx);
+            },
+            itemBuilder: (context, idx) {
+              final task = sortedTasks[idx];
+              return KeyedSubtree(
+                key: ValueKey(task.id),
+                child: TaskCard(
+                  task: task,
+                  onToggle: () => ref.read(tasksNotifierProvider.notifier).toggleTaskCompletion(task.id),
+                  onDelete: () => ref.read(tasksNotifierProvider.notifier).deleteTask(task.id),
+                  isSelected: false,
+                  isSelectionMode: false,
+                  onTapSelection: () {},
+                  onLongPress: () {},
+                  onTapDetail: () => _openTaskDetail(task),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  // ─── Tablet 2-Column Layout ────────────────────────────────────────────────
+
+  Widget _buildTabletLayout(
+    BuildContext context,
+    AppThemeData theme,
+    PlannerStatsData stats,
+    List<TaskEntity> sortedTasks,
+  ) {
+    return ListView(
+      padding: const EdgeInsets.all(24.0),
+      physics: const BouncingScrollPhysics(),
+      children: [
+        _buildTopProgressCards(context, theme, stats),
+        const SizedBox(height: 20),
+        _buildFiltersAndCategories(context, theme),
+        const SizedBox(height: 20),
+        _buildQuickAddBar(context, theme),
+        const SizedBox(height: 20),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 16.0,
+            mainAxisSpacing: 16.0,
+            childAspectRatio: 2.2,
+          ),
+          itemCount: sortedTasks.length,
+          itemBuilder: (context, idx) {
+            final task = sortedTasks[idx];
+            return TaskCard(
+              task: task,
+              onToggle: () => ref.read(tasksNotifierProvider.notifier).toggleTaskCompletion(task.id),
+              onDelete: () => ref.read(tasksNotifierProvider.notifier).deleteTask(task.id),
+              isSelected: false,
+              isSelectionMode: false,
+              onTapSelection: () {},
+              onLongPress: () {},
+              onTapDetail: () => _openTaskDetail(task),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  // ─── Desktop Adaptive Layout ───────────────────────────────────────────────
+
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    AppThemeData theme,
+    PlannerStatsData stats,
+    List<TaskEntity> sortedTasks,
+  ) {
+    return Row(
+      children: [
+        // Sidebar Filters & Categories
+        Container(
+          width: 280,
+          color: theme.surface,
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Smart Filters', style: context.typography.titleSmall.copyWith(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 12),
+              _buildFiltersAndCategories(context, theme),
+            ],
+          ),
+        ),
+        VerticalDivider(width: 1, color: theme.outlineVariant),
+        // Main Task List
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
               children: [
-                Icon(Icons.spa_rounded, size: 18, color: colorScheme.primary),
-                const SizedBox(width: AppSizes.xs),
-                Text(
-                  'Daily Routines',
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
+                _buildTopProgressCards(context, theme, stats),
+                const SizedBox(height: 16),
+                _buildQuickAddBar(context, theme),
+                const SizedBox(height: 16),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: sortedTasks.length,
+                    itemBuilder: (context, idx) {
+                      final task = sortedTasks[idx];
+                      return TaskCard(
+                        task: task,
+                        onToggle: () => ref.read(tasksNotifierProvider.notifier).toggleTaskCompletion(task.id),
+                        onDelete: () => ref.read(tasksNotifierProvider.notifier).deleteTask(task.id),
+                        isSelected: false,
+                        isSelectionMode: false,
+                        onTapSelection: () {},
+                        onLongPress: () {},
+                        onTapDetail: () => _openTaskDetail(task),
+                      );
+                    },
                   ),
                 ),
               ],
             ),
-            Text(
-              '$completedCount/$totalCount',
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: colorScheme.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSizes.sm),
-        SizedBox(
-          height: 64,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemCount: selectedDateHabits.length,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSizes.sm),
-            itemBuilder: (context, index) {
-              final habit = selectedDateHabits[index];
-              final isDone = habit.completedToday;
-              final habitColor = Color(habit.color);
-
-              return Card(
-                elevation: 0,
-                margin: EdgeInsets.zero,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppSizes.md),
-                  side: BorderSide(
-                    color: isDone
-                        ? Colors.green.withValues(alpha: 0.5)
-                        : colorScheme.outlineVariant.withValues(alpha: 0.3),
-                    width: isDone ? 1.5 : 1,
-                  ),
-                ),
-                color: isDone
-                    ? Colors.green.withValues(alpha: 0.05)
-                    : colorScheme.surfaceContainerLow,
-                child: InkWell(
-                  onTap: () {
-                    if (isDone) {
-                      ref.read(habitsProvider.notifier).decrementHabit(habit.id, selectedDate);
-                    } else {
-                      ref.read(habitsProvider.notifier).incrementHabit(habit.id, selectedDate);
-                    }
-                  },
-                  borderRadius: BorderRadius.circular(AppSizes.md),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 8),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          isDone
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          color: isDone ? Colors.green : habitColor,
-                          size: 18,
-                        ),
-                        const SizedBox(width: AppSizes.sm),
-                        Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              habit.title,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  decoration: isDone ? TextDecoration.lineThrough : null,
-                                  color: isDone
-                                      ? colorScheme.onSurfaceVariant.withValues(alpha: 0.5)
-                                      : colorScheme.onSurface,
-                                ),
-                            ),
-                            if (habit.targetCount > 1) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                '${habit.currentCount}/${habit.targetCount}',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
           ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFocusSessionsSection(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    final selectedDate = ref.watch(selectedDateProvider);
-    final allSessions = ref.watch(focusNotifierProvider);
-
-    final selectedDateSessions = allSessions.where((s) {
-      return s.createdAt.year == selectedDate.year &&
-             s.createdAt.month == selectedDate.month &&
-             s.createdAt.day == selectedDate.day &&
-             s.completed;
-    }).toList();
-
-    if (selectedDateSessions.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.alarm_on_rounded, size: 18, color: colorScheme.primary),
-            const SizedBox(width: AppSizes.xs),
-            Text(
-              'Focus Log',
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSizes.sm),
-        ListView.separated(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          padding: EdgeInsets.zero,
-          itemCount: selectedDateSessions.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AppSizes.xs),
-          itemBuilder: (context, index) {
-            final session = selectedDateSessions[index];
-            final isBreak = session.sessionType != 'focus';
-            final timeStr = DateFormat('h:mm a').format(session.endTime);
-            final durationStr = '${session.actualDurationMinutes}m';
-
-            final icon = isBreak ? Icons.coffee_rounded : Icons.timer_outlined;
-            final iconColor = isBreak ? Colors.green : colorScheme.primary;
-            final label = isBreak
-                ? (session.sessionType == 'shortBreak' ? 'Short Break' : 'Long Break')
-                : 'Focus Session';
-
-            return Card(
-              elevation: 0,
-              margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppSizes.md),
-                side: BorderSide(
-                  color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-                ),
-              ),
-              color: colorScheme.surfaceContainerLow,
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: 0),
-                leading: CircleAvatar(
-                  backgroundColor: iconColor.withValues(alpha: 0.1),
-                  radius: 16,
-                  child: Icon(icon, color: iconColor, size: 16),
-                ),
-                title: Text(
-                  label,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                subtitle: Text(
-                  'Completed at $timeStr',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                trailing: Text(
-                  durationStr,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            );
-          },
         ),
       ],
     );
