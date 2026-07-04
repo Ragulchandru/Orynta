@@ -27,7 +27,27 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     final theme = context.appTheme;
     final width = MediaQuery.of(context).size.width;
 
-    Widget body = widget.navigationShell;
+    Widget body = AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      switchInCurve: Curves.easeInOutCubic,
+      switchOutCurve: Curves.easeInOutCubic,
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.02, 0.0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          ),
+        );
+      },
+      child: KeyedSubtree(
+        key: ValueKey(widget.navigationShell.currentIndex),
+        child: widget.navigationShell,
+      ),
+    );
 
     if (width < 600) {
       // Phone: Animated floating bottom bar

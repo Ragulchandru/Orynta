@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../../../core/design_system/design_tokens.dart';
+
 import '../../../domain/models/quick_action.dart';
 
 class QuickActionCard extends StatefulWidget {
@@ -25,7 +26,9 @@ class _QuickActionCardState extends State<QuickActionCard> {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = context.colors.primary;
+    final theme = context.appTheme;
+    final colors = context.colors;
+    final primaryColor = theme.primary;
     final isEnabled = widget.action.enabled;
 
     return AnimatedScale(
@@ -38,24 +41,23 @@ class _QuickActionCardState extends State<QuickActionCard> {
         child: Container(
           constraints: const BoxConstraints(minHeight: 56.0),
           decoration: BoxDecoration(
-            color: context.colors.surfaceContainerLow,
-            borderRadius: context.radius.borderRadiusLg,
+            color: theme.notes.card,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(
               color: isEnabled
-                  ? context.colors.outlineVariant
-                  : context.colors.outlineVariant.withValues(alpha: 0.5),
+                  ? theme.notes.cardBorder
+                  : theme.notes.cardBorder.withValues(alpha: 0.5),
             ),
-            boxShadow: isEnabled ? context.shadows.small : null,
           ),
           child: Material(
             color: Colors.transparent,
-            borderRadius: context.radius.borderRadiusLg,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             child: InkWell(
               onTap: isEnabled ? widget.onTap : null,
               onTapDown: isEnabled ? (_) => setState(() => _isPressed = true) : null,
               onTapUp: isEnabled ? (_) => setState(() => _isPressed = false) : null,
               onTapCancel: isEnabled ? () => setState(() => _isPressed = false) : null,
-              borderRadius: context.radius.borderRadiusLg,
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               hoverColor: primaryColor.withValues(alpha: 0.04),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
@@ -70,12 +72,12 @@ class _QuickActionCardState extends State<QuickActionCard> {
                           padding: const EdgeInsets.all(10.0),
                           decoration: BoxDecoration(
                             color: primaryColor.withValues(alpha: isEnabled ? 0.08 : 0.04),
-                            borderRadius: context.radius.borderRadiusMd,
+                            borderRadius: BorderRadius.circular(12.0),
                           ),
                           child: Icon(
                             widget.action.icon,
                             size: 22,
-                            color: isEnabled ? primaryColor : context.colors.textSecondary,
+                            color: isEnabled ? primaryColor : colors.textSecondary,
                           ),
                         ),
                         if (widget.action.badge != null)
@@ -84,15 +86,15 @@ class _QuickActionCardState extends State<QuickActionCard> {
                               margin: const EdgeInsets.only(left: 8),
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: context.colors.primary.withValues(alpha: 0.1),
-                                borderRadius: context.radius.borderRadiusSm,
+                                color: theme.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8.0),
                               ),
                               child: Text(
                                 widget.action.badge!,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: context.typography.labelSmall.copyWith(
-                                  color: context.colors.primary,
+                                  color: theme.primary,
                                   fontWeight: FontWeight.w700,
                                   fontSize: 10,
                                 ),
@@ -104,20 +106,18 @@ class _QuickActionCardState extends State<QuickActionCard> {
 
                     const SizedBox(height: 12),
 
-                    // Title
                     Text(
                       widget.action.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: context.typography.titleMedium.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: isEnabled ? context.colors.textPrimary : context.colors.textSecondary,
+                        color: isEnabled ? colors.textPrimary : colors.textSecondary,
                       ),
                     ),
 
                     const SizedBox(height: 4),
 
-                    // Subtitle / Content (Flexible)
                     if (widget.action.subtitle != null && widget.action.subtitle!.isNotEmpty)
                       Expanded(
                         child: Text(
@@ -125,7 +125,7 @@ class _QuickActionCardState extends State<QuickActionCard> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: context.typography.bodySmall.copyWith(
-                            color: context.colors.textSecondary,
+                            color: colors.textSecondary,
                           ),
                         ),
                       ),

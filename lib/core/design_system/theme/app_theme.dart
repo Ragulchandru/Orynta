@@ -114,6 +114,21 @@ abstract final class AppTheme {
           side: BorderSide(color: t.outlineVariant, width: 1.0),
         ),
       ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          textStyle: WidgetStateProperty.all(
+            const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          padding: WidgetStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          ),
+        ),
+      ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: t.primary,
         foregroundColor: t.brightness == Brightness.dark ? const Color(0xFF0F0F17) : const Color(0xFFFFFFFF),

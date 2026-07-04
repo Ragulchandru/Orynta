@@ -5,6 +5,7 @@ import '../../../notes/presentation/providers/notes_notifier.dart';
 import '../../../planner/presentation/providers/tasks_notifier.dart';
 import '../../../habits/presentation/providers/habits_notifier.dart';
 import '../../../focus/presentation/providers/focus_notifier.dart';
+import '../../../planner/presentation/providers/planner_stats_provider.dart';
 
 // ─── Daily Stats Model ───────────────────────────────────────────────────────
 
@@ -199,101 +200,90 @@ final monthlyStatsProvider = Provider<List<DailyStats>>((ref) {
 
 final achievementsProvider = Provider<List<AchievementEntity>>((ref) {
   final tasks = ref.watch(tasksProvider);
-  final habits = ref.watch(habitsProvider);
-  final focus = ref.watch(focusNotifierProvider);
   final notesAsync = ref.watch(notesProvider);
   final notes = notesAsync.value ?? [];
-  final todayScore = ref.watch(productivityScoreProvider);
+  final stats = ref.watch(plannerStatsProvider);
+  final score = ref.watch(productivityScoreProvider);
 
-  // 1. First Focus Session
-  final totalFocusSessions = focus.where((s) => s.sessionType == 'focus' && s.completed).length;
-  final firstFocusUnlocked = totalFocusSessions >= 1;
-  final firstFocusProgress = firstFocusUnlocked ? 1.0 : 0.0;
-
-  // 2. 7-Day Habit Streak
-  int maxHabitStreak = 0;
-  for (final h in habits) {
-    if (h.currentStreak > maxHabitStreak) maxHabitStreak = h.currentStreak;
-    if (h.longestStreak > maxHabitStreak) maxHabitStreak = h.longestStreak;
-  }
-  final habitStreakUnlocked = maxHabitStreak >= 7;
-  final habitStreakProgress = (maxHabitStreak / 7.0).clamp(0.0, 1.0);
-
-  // 3. 25 Tasks Completed
+  // 1. First Task Completed
   final completedTasks = tasks.where((t) => t.isCompleted).length;
-  final tasksCompletedUnlocked = completedTasks >= 25;
-  final tasksCompletedProgress = (completedTasks / 25.0).clamp(0.0, 1.0);
+  final firstTaskUnlocked = completedTasks >= 1;
+  final firstTaskProgress = firstTaskUnlocked ? 1.0 : 0.0;
 
-  // 4. 100 Focus Hours
-  final totalFocusMinutes = focus
-      .where((s) => s.sessionType == 'focus' && s.completed)
-      .map((s) => s.actualDurationMinutes)
-      .fold(0, (a, b) => a + b);
-  final focusHoursUnlocked = totalFocusMinutes >= 6000; // 100 hours
-  final focusHoursProgress = (totalFocusMinutes / 6000.0).clamp(0.0, 1.0);
+  // 2. 7 Day Streak
+  final streak7Unlocked = stats.currentStreak >= 7;
+  final streak7Progress = (stats.currentStreak / 7.0).clamp(0.0, 1.0);
 
-  // 5. 50 Notes Created
-  final notesCreatedUnlocked = notes.length >= 50;
-  final notesCreatedProgress = (notes.length / 50.0).clamp(0.0, 1.0);
+  // 3. 30 Day Streak
+  final streak30Unlocked = stats.currentStreak >= 30;
+  final streak30Progress = (stats.currentStreak / 30.0).clamp(0.0, 1.0);
 
-  // 6. Productivity Elite (Score above 90)
-  final eliteUnlocked = todayScore >= 90.0;
-  final eliteProgress = (todayScore / 90.0).clamp(0.0, 1.0);
+  // 4. 100 Notes
+  final notes100Unlocked = notes.length >= 100;
+  final notes100Progress = (notes.length / 100.0).clamp(0.0, 1.0);
+
+  // 5. 100 Tasks
+  final tasks100Unlocked = completedTasks >= 100;
+  final tasks100Progress = (completedTasks / 100.0).clamp(0.0, 1.0);
+
+  // 6. Productivity Master
+  final masterUnlocked = score >= 95.0;
+  final masterProgress = (score / 95.0).clamp(0.0, 1.0);
 
   return [
     AchievementEntity(
-      id: 'first_focus',
-      title: 'First Focus Session',
-      description: 'Log your first completed focus block.',
-      icon: Icons.timer_outlined,
-      isUnlocked: firstFocusUnlocked,
-      progress: firstFocusProgress,
-      progressLabel: firstFocusUnlocked ? '1/1' : '0/1',
+      id: 'first_task',
+      title: 'First Task',
+      description: 'Unlock your journey by completing your very first task.',
+      icon: Icons.check_circle_outline_rounded,
+      isUnlocked: firstTaskUnlocked,
+      progress: firstTaskProgress,
+      progressLabel: firstTaskUnlocked ? '1/1' : '0/1',
     ),
     AchievementEntity(
-      id: 'habit_streak',
-      title: '7-Day Habit Streak',
-      description: 'Maintain a habit streak of 7 days.',
+      id: 'streak_7',
+      title: '7 Day Streak',
+      description: 'Maintain an active task completion streak for 7 consecutive days.',
       icon: Icons.local_fire_department_rounded,
-      isUnlocked: habitStreakUnlocked,
-      progress: habitStreakProgress,
-      progressLabel: '$maxHabitStreak/7 days',
+      isUnlocked: streak7Unlocked,
+      progress: streak7Progress,
+      progressLabel: '${stats.currentStreak}/7 days',
     ),
     AchievementEntity(
-      id: 'tasks_completed',
-      title: '25 Tasks Completed',
-      description: 'Complete 25 planned tasks.',
-      icon: Icons.checklist_rounded,
-      isUnlocked: tasksCompletedUnlocked,
-      progress: tasksCompletedProgress,
-      progressLabel: '$completedTasks/25 tasks',
+      id: 'streak_30',
+      title: '30 Day Streak',
+      description: 'Maintain a task completion streak for 30 consecutive days.',
+      icon: Icons.emoji_events_rounded,
+      isUnlocked: streak30Unlocked,
+      progress: streak30Progress,
+      progressLabel: '${stats.currentStreak}/30 days',
     ),
     AchievementEntity(
-      id: 'focus_hours',
-      title: '100 Focus Hours',
-      description: 'Log 100 hours of active focus sessions.',
-      icon: Icons.hourglass_empty_rounded,
-      isUnlocked: focusHoursUnlocked,
-      progress: focusHoursProgress,
-      progressLabel: '${(totalFocusMinutes / 60).toStringAsFixed(1)}/100 hrs',
-    ),
-    AchievementEntity(
-      id: 'notes_created',
-      title: '50 Notes Created',
-      description: 'Capture 50 detailed thoughts or study notes.',
+      id: 'notes_100',
+      title: '100 Notes',
+      description: 'Capture 100 thoughts, quick logs, or study guides in Orynta.',
       icon: Icons.description_outlined,
-      isUnlocked: notesCreatedUnlocked,
-      progress: notesCreatedProgress,
-      progressLabel: '${notes.length}/50 notes',
+      isUnlocked: notes100Unlocked,
+      progress: notes100Progress,
+      progressLabel: '${notes.length}/100 notes',
     ),
     AchievementEntity(
-      id: 'elite_productivity',
-      title: 'Productivity Elite',
-      description: 'Reach a daily productivity score above 90.',
+      id: 'tasks_100',
+      title: '100 Tasks',
+      description: 'Complete 100 structured tasks on your planner.',
+      icon: Icons.checklist_rounded,
+      isUnlocked: tasks100Unlocked,
+      progress: tasks100Progress,
+      progressLabel: '$completedTasks/100 tasks',
+    ),
+    AchievementEntity(
+      id: 'prod_master',
+      title: 'Productivity Master',
+      description: 'Reach a peak daily productivity score of 95 or above.',
       icon: Icons.stars_rounded,
-      isUnlocked: eliteUnlocked,
-      progress: eliteProgress,
-      progressLabel: '${todayScore.toInt()}/90 score',
+      isUnlocked: masterUnlocked,
+      progress: masterProgress,
+      progressLabel: '${score.toInt()}/95 points',
     ),
   ];
 });

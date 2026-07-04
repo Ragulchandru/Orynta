@@ -10,6 +10,7 @@ import '../../domain/models/onboarding_config.dart';
 import '../../domain/repositories/onboarding_repository.dart';
 import '../providers/onboarding_providers.dart';
 import 'onboarding_analytics.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 
 @immutable
 class OnboardingState {
@@ -66,20 +67,22 @@ final onboardingConfigProvider = Provider<OnboardingConfig>((ref) {
   return const OnboardingConfig();
 });
 
+
 final onboardingControllerProvider =
     StateNotifierProvider.autoDispose<OnboardingController, OnboardingState>((ref) {
   final config = ref.watch(onboardingConfigProvider);
   final repository = ref.watch(onboardingRepositoryProvider);
-  return OnboardingController(config, repository);
+  return OnboardingController(config, repository, ref);
 });
 
 class OnboardingController extends StateNotifier<OnboardingState> {
-  OnboardingController(OnboardingConfig config, this._repository)
+  OnboardingController(OnboardingConfig config, this._repository, this._ref)
       : super(OnboardingState(currentPage: 0, config: config)) {
     OnboardingAnalytics.log(OnboardingAnalytics.eventStarted);
   }
 
   final OnboardingRepository _repository;
+  final Ref _ref;
 
   void setPage(int page) {
     if (page < 0 || page >= state.config.totalPages) return;
@@ -165,5 +168,15 @@ class OnboardingController extends StateNotifier<OnboardingState> {
     await _repository.setDefaultNotesLayout(layout);
     await _repository.setPreferredTheme(theme);
     await _repository.setOnboardingCompleted(true);
+
+    if (name.trim().isNotEmpty) {
+      _ref.read(profileProvider.notifier).updateProfile(
+            name: name.trim(),
+            workspaceName: 'Local Workspace',
+            avatarColor: 0xFF3A86F0, // Default blue avatar color
+          );
+    } else {
+      _ref.read(profileProvider.notifier).resetProfile();
+    }
   }
 }

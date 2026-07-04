@@ -68,10 +68,10 @@ class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               child: SegmentedButton<CalendarMode>(
                 segments: const [
-                  ButtonSegment(value: CalendarMode.month, label: Text('Month')),
-                  ButtonSegment(value: CalendarMode.week, label: Text('Week')),
-                  ButtonSegment(value: CalendarMode.day, label: Text('Day')),
-                  ButtonSegment(value: CalendarMode.agenda, label: Text('Agenda')),
+                  ButtonSegment(value: CalendarMode.month, label: FittedBox(fit: BoxFit.scaleDown, child: Text('Month', maxLines: 1))),
+                  ButtonSegment(value: CalendarMode.week, label: FittedBox(fit: BoxFit.scaleDown, child: Text('Week', maxLines: 1))),
+                  ButtonSegment(value: CalendarMode.day, label: FittedBox(fit: BoxFit.scaleDown, child: Text('Day', maxLines: 1))),
+                  ButtonSegment(value: CalendarMode.agenda, label: FittedBox(fit: BoxFit.scaleDown, child: Text('Agenda', maxLines: 1))),
                 ],
                 selected: {_mode},
                 onSelectionChanged: (set) => setState(() => _mode = set.first),

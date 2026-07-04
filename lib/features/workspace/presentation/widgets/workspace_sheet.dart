@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/design_system.dart';
-import '../providers/workspace_provider.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../settings/presentation/widgets/settings_widgets.dart';
 
 class WorkspaceSheet extends ConsumerWidget {
@@ -98,8 +98,7 @@ class WorkspaceSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = context.appTheme;
-    final workspaceState = ref.watch(workspaceProvider);
-    final user = workspaceState.user;
+    final profile = ref.watch(profileProvider);
 
     final containerDecoration = BoxDecoration(
       color: theme.surface,
@@ -148,9 +147,9 @@ class WorkspaceSheet extends ConsumerWidget {
                 tag: 'workspace_avatar',
                 child: CircleAvatar(
                   radius: 28,
-                  backgroundColor: theme.primary,
+                  backgroundColor: Color(profile.avatarColor),
                   child: Text(
-                    user?.initials ?? 'U',
+                    profile.initials,
                     style: context.typography.titleMedium.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -164,17 +163,17 @@ class WorkspaceSheet extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      user?.name ?? 'Guest User',
+                      profile.displayName.isNotEmpty ? profile.displayName : 'Guest User',
                       style: context.typography.titleMedium.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+                        color: context.colors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      workspaceState.workspaceName,
+                      profile.workspaceName,
                       style: context.typography.bodySmall.copyWith(
-                        color: theme.isDark ? const Color(0xFF8E8EA8) : const Color(0xFF8E8EA8),
+                        color: context.colors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),

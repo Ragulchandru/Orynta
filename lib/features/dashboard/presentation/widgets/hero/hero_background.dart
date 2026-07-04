@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../../../core/design_system/design_tokens.dart';
+
 import '../../../domain/models/hero_background_style.dart';
 
 class HeroBackground extends StatelessWidget {
@@ -20,32 +21,32 @@ class HeroBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = context.colors.primary;
+    final theme = context.appTheme;
 
     return Container(
       width: double.infinity,
       padding: padding ?? const EdgeInsets.all(24.0),
       decoration: BoxDecoration(
-        color: context.colors.surfaceContainerLow,
-        borderRadius: context.radius.borderRadiusXl,
+        color: theme.notes.card,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(
-          color: context.colors.outlineVariant.withValues(alpha: 0.8),
+          color: theme.notes.cardBorder,
+          width: 1.0,
         ),
-        boxShadow: context.shadows.medium,
       ),
       child: Stack(
         children: [
-          // Subtle radial glow overlay
+          // Subtle radial glow overlay (uses theme.primary)
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                borderRadius: context.radius.borderRadiusXl,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 gradient: RadialGradient(
                   center: Alignment.topRight,
                   radius: 1.2,
                   colors: [
-                    primaryColor.withValues(alpha: 0.05),
-                    context.colors.transparent,
+                    theme.primary.withValues(alpha: 0.05),
+                    Colors.transparent,
                   ],
                 ),
               ),

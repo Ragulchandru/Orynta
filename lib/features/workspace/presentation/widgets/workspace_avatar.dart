@@ -5,26 +5,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../../../core/design_system/design_system.dart';
-import '../providers/workspace_provider.dart';
-import 'workspace_sheet.dart';
+import '../../../../core/router/route_names.dart';
+import '../../../profile/presentation/providers/profile_provider.dart';
 
 class WorkspaceAvatar extends ConsumerWidget {
   const WorkspaceAvatar({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final theme = context.appTheme;
-    final workspaceState = ref.watch(workspaceProvider);
-    final user = workspaceState.user;
+    final profile = ref.watch(profileProvider);
 
-    final avatarBgColor = theme.primary.withValues(alpha: 0.12);
-    final textColor = theme.primary;
+    final avatarBgColor = Color(profile.avatarColor).withValues(alpha: 0.12);
+    final textColor = Color(profile.avatarColor);
 
     return ScaleOnPress(
       onTap: () {
         HapticFeedback.mediumImpact();
-        showWorkspaceSheet(context);
+        context.pushNamed(RouteNames.profile);
       },
       child: Hero(
         tag: 'workspace_avatar',
@@ -35,24 +35,24 @@ class WorkspaceAvatar extends ConsumerWidget {
             shape: BoxShape.circle,
             color: avatarBgColor,
             border: Border.all(
-              color: theme.primary.withValues(alpha: 0.3),
+              color: textColor.withValues(alpha: 0.3),
               width: 1.5,
             ),
           ),
           alignment: Alignment.center,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
-            child: user?.photoUrl != null
+            child: profile.profilePhotoPath != null && profile.profilePhotoPath!.isNotEmpty
                 ? ClipOval(
                     child: Image.network(
-                      user!.photoUrl!,
+                      profile.profilePhotoPath!,
                       width: 38,
                       height: 38,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _buildInitialsText(user.initials, textColor, context),
+                      errorBuilder: (context, error, stackTrace) => _buildInitialsText(profile.initials, textColor, context),
                     ),
                   )
-                : _buildInitialsText(user?.initials ?? 'U', textColor, context),
+                : _buildInitialsText(profile.displayName.isNotEmpty ? profile.initials : 'U', textColor, context),
           ),
         ),
       ),

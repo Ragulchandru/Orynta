@@ -37,6 +37,7 @@ import '../../features/habits/presentation/screens/create_habit_screen.dart';
 import '../../features/focus/presentation/screens/focus_screen.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
+import '../../features/profile/presentation/screens/profile_screen.dart';
 import '../../shared/widgets/main_navigation_shell.dart';
 import 'route_names.dart';
 
@@ -311,6 +312,16 @@ GoRouter appRouter(Ref ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (BuildContext context, GoRouterState state) {
           return const AppearanceScreen();
+        },
+      ),
+
+      // ── Profile Screen ───────────────────────────────────────────────────────
+      GoRoute(
+        path: '/profile',
+        name: RouteNames.profile,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          return const ProfileScreen();
         },
       ),
     ],

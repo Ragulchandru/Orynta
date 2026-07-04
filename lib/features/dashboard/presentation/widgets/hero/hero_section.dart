@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../profile/presentation/providers/profile_provider.dart';
 import '../../providers/hero_providers.dart';
 import 'date_widget.dart';
 import 'greeting_widget.dart';
@@ -23,6 +24,10 @@ class HeroSection extends ConsumerWidget {
     final heightResolver = ref.watch(heroHeightResolverProvider);
     final screenHeight = MediaQuery.of(context).size.height;
     final minHeight = heightResolver.resolveMinHeight(screenHeight);
+
+    // Watch only displayName to optimize rebuilding
+    final displayName = ref.watch(profileProvider.select((p) => p.displayName));
+    final effectiveName = displayName.trim().isNotEmpty ? displayName.trim() : 'Guest';
 
     return HeroBackground(
       style: state.backgroundStyle,
@@ -41,7 +46,7 @@ class HeroSection extends ConsumerWidget {
                 Expanded(
                   child: GreetingWidget(
                     greeting: state.greeting,
-                    displayName: state.displayName,
+                    displayName: effectiveName,
                   ),
                 ),
                 DateWidget(
