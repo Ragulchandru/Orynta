@@ -100,7 +100,7 @@ abstract final class AppDurations {
   // ─── Splash Screen Timeline Tokens ────────────────────────────────────────
 
   /// Total splash duration before navigation (2800ms)
-  static const Duration splashTotal = Duration(milliseconds: 2800);
+  static const Duration splashTotal = Duration(milliseconds: 2700);
 
   /// Splash background fade duration (0ms -> 250ms)
   static const Duration splashBackgroundFade = Duration(milliseconds: 250);

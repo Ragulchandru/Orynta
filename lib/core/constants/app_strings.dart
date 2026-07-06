@@ -12,6 +12,8 @@ abstract final class AppStrings {
   static const String appName = 'Orynta';
   static const String appTagline = 'Capture Ideas. Organize Life.';
   static const String splashTagline = 'Organize beautifully.\nFocus effortlessly.';
+  static const String appVersion = '2.0.1';
+  static const String appBuildNumber = '102';
 
   // ─── Hive Box Names ───────────────────────────────────────────────────────
   // These are the keys used to open Hive boxes.

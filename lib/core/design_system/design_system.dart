@@ -40,3 +40,4 @@ export '../../shared/widgets/premium_snackbar.dart';
 export '../../shared/widgets/premium_chip.dart';
 export '../../shared/widgets/hover_card.dart';
 export '../../shared/widgets/scale_on_press.dart';
+export '../../shared/widgets/orynta_logo.dart';

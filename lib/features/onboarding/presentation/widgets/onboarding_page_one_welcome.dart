@@ -4,8 +4,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_strings.dart';
-import '../../../../core/design_system/design_tokens.dart';
-import 'abstract_graphic_welcome.dart';
+import '../../../../core/design_system/design_system.dart';
 
 class OnboardingPageOneWelcome extends StatelessWidget {
   const OnboardingPageOneWelcome({super.key});
@@ -19,8 +18,8 @@ class OnboardingPageOneWelcome extends StatelessWidget {
         children: [
           const Spacer(),
 
-          // Abstract Welcome Graphic
-          const AbstractGraphicWelcome(size: 180),
+          // Official Orynta Branding Logo
+          const OryntaLogo(size: 180),
 
           SizedBox(height: context.spacing.xxl),
 

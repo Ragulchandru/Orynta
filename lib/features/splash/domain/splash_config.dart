@@ -13,7 +13,7 @@ import '../../../../core/design_system/durations/app_durations.dart';
 class SplashConfig {
   const SplashConfig({
     this.heroTag = 'orynta_logo',
-    this.logoAssetPath = 'assets/images/app_logo.png',
+    this.logoAssetPath = 'assets/images/orynta_logo.png',
     this.minSplashDuration = AppDurations.splashTotal,
     this.reducedMotionDuration = AppDurations.splashReducedMotionTotal,
     this.maxSplashTimeout = const Duration(milliseconds: 5000),

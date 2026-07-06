@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/design_system.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../notes/domain/models/notes_filter.dart';
 import '../../../notes/presentation/providers/notes_home_providers.dart';
 import '../../../notes/presentation/providers/notes_notifier.dart';
@@ -185,14 +186,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
           ),
           title: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: theme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Icon(Icons.info_outline_rounded, color: theme.primary),
-              ),
+              const OryntaLogo(size: 32),
               const SizedBox(width: 12),
               Text(
                 'About Orynta',
@@ -216,7 +210,7 @@ class _MoreScreenState extends ConsumerState<MoreScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Version 2.0.1 (Premium Build)\nOffline-First Architecture powered by Hive.\nDesigned & Built with Clean Architecture.',
+                'Version ${AppStrings.appVersion} (Premium Build)\nOffline-First Architecture powered by Hive.\nDesigned & Built with Clean Architecture.',
                 style: context.typography.bodySmall.copyWith(
                   color: theme.isDark ? const Color(0xFF8E8EA8) : const Color(0xFF8E8EA8),
                   height: 1.5,

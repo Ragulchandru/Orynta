@@ -1,19 +1,13 @@
 // lib/features/splash/presentation/pages/splash_page.dart
 //
-// Orynta 2.0 — Premium Splash Screen Presentation (Revision 2 Redesign)
-//
-// Redesigned luxury visual hierarchy with tight, balanced grouping, 8.0 letter-spacing typography,
-// 4% radial primary glow backdrop, and a smooth cinematic upward translation right before route transition.
+// Orynta 2.0 — Premium Full-Screen Brand Reveal Splash
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../../core/constants/app_strings.dart';
-import '../../../../core/design_system/design_tokens.dart';
+import '../../../../core/design_system/design_system.dart';
 import '../controllers/splash_controller.dart';
-import '../widgets/animated_loading_indicator.dart';
-import '../widgets/animated_logo.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -25,19 +19,13 @@ class SplashPage extends ConsumerStatefulWidget {
 class _SplashPageState extends ConsumerState<SplashPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _timelineController;
-
-  // Staggered cinematic animation curves
-  late final Animation<double> _backgroundFade;
-  late final Animation<double> _glowFade;
-  late final Animation<double> _logoFade;
   late final Animation<double> _logoScale;
-  late final Animation<double> _titleFade;
-  late final Animation<double> _taglineFade;
-  late final Animation<double> _loadingFade;
-  late final Animation<double> _upwardShift;
+  late final Animation<double> _logoOpacity;
 
-  final GlobalKey<AnimatedLoadingIndicatorState> _loadingKey = GlobalKey();
-  bool _isNavigating = false;
+  bool _isAnimationComplete = false;
+  bool _isInitComplete = false;
+  bool _hasNavigated = false;
+  String? _targetRoute;
 
   @override
   void initState() {
@@ -45,103 +33,87 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
     _timelineController = AnimationController(
       vsync: this,
-      duration: AppDurations.splashTotal,
+      duration: AppDurations.splashTotal, // 2700ms
     );
 
-    // 0ms -> 250ms (0.00 -> 0.09)
-    _backgroundFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _timelineController,
-        curve: const Interval(0.00, 0.09, curve: Curves.easeIn),
+    _logoScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.85, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 1.0,
       ),
-    );
+      TweenSequenceItem(
+        tween: ConstantTween<double>(1.0),
+        weight: 1.0,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.22)
+            .chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 1.0,
+      ),
+    ]).animate(_timelineController);
 
-    // 150ms -> 500ms (0.05 -> 0.18)
-    _glowFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _timelineController,
-        curve: const Interval(0.05, 0.18, curve: Curves.easeOut),
+    _logoOpacity = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 0.0, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 1.0,
       ),
-    );
-
-    // 250ms -> 700ms (0.09 -> 0.25)
-    _logoFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _timelineController,
-        curve: const Interval(0.09, 0.25, curve: Curves.easeOut),
+      TweenSequenceItem(
+        tween: ConstantTween<double>(1.0),
+        weight: 1.0,
       ),
-    );
-
-    _logoScale = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _timelineController,
-        curve: const Interval(0.09, 0.25, curve: Curves.easeOutCubic),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 0.0)
+            .chain(CurveTween(curve: Curves.easeInOutCubic)),
+        weight: 1.0,
       ),
-    );
-
-    // 800ms -> 1200ms (0.28 -> 0.43)
-    _titleFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _timelineController,
-        curve: const Interval(0.28, 0.43, curve: Curves.easeOut),
-      ),
-    );
-
-    // 1200ms -> 1600ms (0.43 -> 0.57)
-    _taglineFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _timelineController,
-        curve: const Interval(0.43, 0.57, curve: Curves.easeOut),
-      ),
-    );
-
-    // 1500ms -> 1900ms (0.53 -> 0.68)
-    _loadingFade = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _timelineController,
-        curve: const Interval(0.53, 0.68, curve: Curves.easeOut),
-      ),
-    );
-
-    // 2400ms -> 2800ms (0.85 -> 1.00) — Subtle -12dp cinematic upward shift
-    _upwardShift = Tween<double>(begin: 0.0, end: -12.0).animate(
-      CurvedAnimation(
-        parent: _timelineController,
-        curve: const Interval(0.85, 1.00, curve: Curves.easeInOutCubic),
-      ),
-    );
+    ]).animate(_timelineController);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startSplashSequence();
     });
   }
 
-  void _startSplashSequence() {
+  Future<void> _startSplashSequence() async {
+    if (!mounted) return;
+
+    // 1. Precache Logo asset
+    await precacheImage(
+      const AssetImage('assets/images/orynta_logo.png'),
+      context,
+    );
+
+    if (!mounted) return;
+
     final isReducedMotion = MediaQuery.of(context).disableAnimations;
 
-    if (isReducedMotion) {
-      _timelineController.value = 1.0;
-    } else {
-      _timelineController.forward();
-    }
-
+    // 2. Start initialization process concurrently
     ref.read(splashControllerProvider.notifier).startSplash(
           isReducedMotion: isReducedMotion,
-          onReadyToNavigate: _onNavigationReady,
+          onReadyToNavigate: () {}, // Handled by our state machine check
         );
+
+    // 3. Play animation or jump to end depending on accessibility reduced motion
+    if (isReducedMotion) {
+      _timelineController.value = 0.5; // Stay visible in Phase 2
+      _isAnimationComplete = true;
+      _tryNavigate();
+    } else {
+      await _timelineController.forward();
+      _isAnimationComplete = true;
+      _tryNavigate();
+    }
   }
 
-  void _onNavigationReady() {
-    if (_isNavigating || !mounted) return;
-    _isNavigating = true;
+  void _tryNavigate() {
+    if (_hasNavigated || !mounted) return;
 
-    // Halt dot tickers cleanly before page transition
-    _loadingKey.currentState?.stop();
-
-    final targetRoute =
-        ref.read(splashControllerProvider).targetRoute ?? '/';
-
-    context.go(targetRoute);
+    // Check if both conditions are met
+    if (_isAnimationComplete && _isInitComplete) {
+      _hasNavigated = true;
+      context.go(_targetRoute ?? '/');
+    }
   }
 
   @override
@@ -152,134 +124,54 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
   @override
   Widget build(BuildContext context) {
-    // Watching controller state ensures active provider lifecycle
+    // Watch splashState to update _isInitComplete and retrieve targetRoute
     final splashState = ref.watch(splashControllerProvider);
-    final config = splashState.config;
     final isReducedMotion = MediaQuery.of(context).disableAnimations;
 
+    if (splashState.status == SplashStatus.initialized ||
+        splashState.status == SplashStatus.navigating) {
+      if (!_isInitComplete) {
+        _isInitComplete = true;
+        _targetRoute = splashState.targetRoute;
+        // Schedule next check on next microtask so we don't call navigate during build phase
+        Future.microtask(() => _tryNavigate());
+      }
+    }
+
     return Scaffold(
-      backgroundColor: context.colors.background,
-      body: FadeTransition(
-        opacity: isReducedMotion
-            ? const AlwaysStoppedAnimation(1.0)
-            : _backgroundFade,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // ── Soft 4% Radial Primary Glow Backdrop ────────────────────────
-            Positioned.fill(
-              child: FadeTransition(
-                opacity: isReducedMotion
-                    ? const AlwaysStoppedAnimation(1.0)
-                    : _glowFade,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: RadialGradient(
-                      center: Alignment.center,
-                      radius: 0.55,
-                      colors: [
-                        context.colors.primary.withValues(alpha: 0.04),
-                        context.colors.transparent,
-                      ],
-                    ),
-                  ),
-                ),
+      backgroundColor: const Color(0xFF000000),
+      body: Center(
+        child: AnimatedBuilder(
+          animation: _timelineController,
+          builder: (context, child) {
+            final double opacityValue = isReducedMotion ? 1.0 : _logoOpacity.value;
+            final double scaleValue = isReducedMotion ? 1.0 : _logoScale.value;
+
+            return Opacity(
+              opacity: opacityValue,
+              child: Transform.scale(
+                scale: scaleValue,
+                child: child,
               ),
-            ),
-
-            // ── Unified Centered Layout ────────────────────────────────────
-            SafeArea(
-              child: Center(
-                child: AnimatedBuilder(
-                  animation: _timelineController,
-                  builder: (context, child) {
-                    final offsetY = isReducedMotion ? 0.0 : _upwardShift.value;
-                    return Transform.translate(
-                      offset: Offset(0, offsetY),
-                      child: child,
-                    );
-                  },
-                  child: Padding(
-                    padding: context.spacing.paddingScreen,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // 1. Brand Mark / Logo
-                        AnimatedLogo(
-                          fadeAnimation: isReducedMotion
-                              ? const AlwaysStoppedAnimation(1.0)
-                              : _logoFade,
-                          scaleAnimation: isReducedMotion
-                              ? const AlwaysStoppedAnimation(1.0)
-                              : _logoScale,
-                          heroTag: config.heroTag,
-                          logoAssetPath: config.logoAssetPath,
-                          isReducedMotion: isReducedMotion,
-                          size: 72.0,
-                        ),
-
-                        const SizedBox(height: 16.0),
-
-                        // 2. Premium App Name ("ORYNTA")
-                        FadeTransition(
-                          opacity: isReducedMotion
-                              ? const AlwaysStoppedAnimation(1.0)
-                              : _titleFade,
-                          child: Text(
-                            AppStrings.appName.toUpperCase(),
-                            style: context.typography.headlineLarge.copyWith(
-                              fontSize: 30.0,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 8.0,
-                              color: context.colors.textPrimary,
-                            ),
-                          ),
-                        ),
-
-                        if (config.showTagline) ...[
-                          const SizedBox(height: 8.0),
-
-                          // 3. Tagline
-                          FadeTransition(
-                            opacity: isReducedMotion
-                                ? const AlwaysStoppedAnimation(1.0)
-                                : _taglineFade,
-                            child: Text(
-                              AppStrings.splashTagline,
-                              textAlign: TextAlign.center,
-                              style: context.typography.bodyMedium.copyWith(
-                                fontSize: 14.0,
-                                fontWeight: FontWeight.w400,
-                                letterSpacing: 0.8,
-                                height: 1.5,
-                                color: context.colors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
-
-                        if (config.showLoadingIndicator) ...[
-                          const SizedBox(height: 28.0),
-
-                          // 4. Custom 3-Dot Loading Indicator (Visually connected)
-                          FadeTransition(
-                            opacity: isReducedMotion
-                                ? const AlwaysStoppedAnimation(1.0)
-                                : _loadingFade,
-                            child: AnimatedLoadingIndicator(
-                              key: _loadingKey,
-                              isReducedMotion: isReducedMotion,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
+            );
+          },
+          child: Hero(
+            tag: 'orynta_logo',
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final logoWidth = constraints.maxWidth * 0.82;
+                return SizedBox(
+                  width: logoWidth,
+                  child: Image.asset(
+                    'assets/images/orynta_logo.png',
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.high,
+                    isAntiAlias: true,
                   ),
-                ),
-              ),
+                );
+              },
             ),
-          ],
+          ),
         ),
       ),
     );

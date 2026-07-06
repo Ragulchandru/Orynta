@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/design_system.dart';
+import '../../../../core/constants/app_strings.dart';
 import '../../../profile/presentation/providers/profile_provider.dart';
 import '../../../settings/presentation/widgets/settings_widgets.dart';
 
@@ -32,14 +33,7 @@ class WorkspaceSheet extends ConsumerWidget {
           ),
           title: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8.0),
-                decoration: BoxDecoration(
-                  color: theme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12.0),
-                ),
-                child: Icon(Icons.info_outline_rounded, color: theme.primary),
-              ),
+              const OryntaLogo(size: 32),
               const SizedBox(width: 12),
               Text(
                 'About Orynta',
@@ -63,7 +57,7 @@ class WorkspaceSheet extends ConsumerWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                'Version 2.0.1\nBuild 102 (Stable Premium)\nOffline-First Architecture powered by Hive.\nDesigned & Built with Clean Architecture.',
+                'Version ${AppStrings.appVersion}\nBuild ${AppStrings.appBuildNumber} (Stable Premium)\nOffline-First Architecture powered by Hive.\nDesigned & Built with Clean Architecture.',
                 style: context.typography.bodySmall.copyWith(
                   color: theme.isDark ? const Color(0xFF8E8EA8) : const Color(0xFF8E8EA8),
                   height: 1.5,
@@ -240,7 +234,7 @@ class WorkspaceSheet extends ConsumerWidget {
           const SizedBox(height: 12),
           Center(
             child: Text(
-              'Orynta v2.0.1 (Build 102)',
+              'Orynta v${AppStrings.appVersion} (Build ${AppStrings.appBuildNumber})',
               style: context.typography.labelSmall.copyWith(
                 color: theme.isDark ? const Color(0xFF4E4E68) : const Color(0xFF8E8EA8),
               ),

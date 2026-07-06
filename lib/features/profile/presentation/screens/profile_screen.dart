@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_tokens.dart';
+import '../../../../core/constants/app_strings.dart';
 
 import '../../../../core/router/route_names.dart';
 import '../../../notes/presentation/providers/notes_notifier.dart';
@@ -548,7 +549,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
             const SizedBox(height: 32),
             Text(
-              'Version 2.0.0',
+              'Version ${AppStrings.appVersion}',
               style: context.typography.labelSmall.copyWith(
                 color: colors.textSecondary.withValues(alpha: 0.6),
                 fontWeight: FontWeight.bold,

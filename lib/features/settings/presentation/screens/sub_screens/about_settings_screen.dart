@@ -80,18 +80,51 @@ class AboutSettingsScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(24.0),
           physics: const BouncingScrollPhysics(),
           children: [
+            Center(
+              child: Column(
+                children: [
+                  const OryntaLogo(size: 140),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Orynta',
+                    style: context.typography.headlineMedium.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Write • Organize • Elevate',
+                    style: context.typography.bodyMedium.copyWith(
+                      color: theme.isDark ? const Color(0xFF8E8EA8) : const Color(0xFF8E8EA8),
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Version ${AppStrings.appVersion}',
+                    style: context.typography.labelSmall.copyWith(
+                      color: theme.isDark ? const Color(0xFF4E4E68) : const Color(0xFF8E8EA8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
             const PremiumSection(
               title: 'APPLICATION DETAILS',
               children: [
                 PremiumListTile(
                   title: 'Orynta Version',
-                  subtitle: '2.0.1 (Premium Pro Build)',
+                  subtitle: '${AppStrings.appVersion} (Premium Pro Build)',
                   icon: Icons.info_outline_rounded,
                   iconColor: Colors.blue,
                 ),
                 PremiumListTile(
                   title: 'Build Number',
-                  subtitle: '102 (Stable Hive Offline Architecture)',
+                  subtitle: '${AppStrings.appBuildNumber} (Stable Hive Offline Architecture)',
                   icon: Icons.build_outlined,
                   iconColor: Colors.teal,
                 ),
