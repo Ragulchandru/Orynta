@@ -7,6 +7,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/entities/reminder_offset.dart';
+import '../../domain/services/planner_notification_service.dart';
 import '../providers/tasks_notifier.dart';
 
 class CreateTaskScreen extends ConsumerStatefulWidget {
@@ -97,7 +98,7 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
     }
   }
 
-  void _saveTask() {
+  Future<void> _saveTask() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Combine date and time
@@ -111,6 +112,11 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
         time.hour,
         time.minute,
       );
+    }
+
+    if (_earlyReminderMinutes != null && combinedDue != null) {
+      final hasPermission = await PlannerNotificationService.checkAndRequestPermissions(context);
+      if (!hasPermission) return;
     }
 
     if (_isEditing && _existingTask != null) {
@@ -146,8 +152,11 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
       ref.read(tasksProvider.notifier).addTask(task);
     }
 
-    context.pop();
+    if (mounted) {
+      context.pop();
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -330,6 +339,12 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                         onSelected: (_) {
                           setState(() {
                             _priority = opt['value'] as String;
+                            _earlyReminderMinutes = switch (_priority.toLowerCase()) {
+                              'high' => 30,
+                              'medium' => 15,
+                              'low' => 10,
+                              _ => null,
+                            };
                           });
                         },
                       ),
@@ -466,24 +481,23 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                 ),
               ),
               const SizedBox(height: AppSizes.sm),
-              DropdownButtonFormField<int>(
-                initialValue: _earlyReminderMinutes ?? 15,
+              DropdownButtonFormField<int?>(
+                key: ValueKey(_earlyReminderMinutes),
+                initialValue: _earlyReminderMinutes,
                 decoration: const InputDecoration(
                   labelText: 'Reminder Alert',
                   prefixIcon: Icon(Icons.notifications_active_rounded),
                 ),
                 items: ReminderOffset.values.map((offset) {
-                  return DropdownMenuItem<int>(
+                  return DropdownMenuItem<int?>(
                     value: offset.minutes,
                     child: Text(offset.label),
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      _earlyReminderMinutes = val;
-                    });
-                  }
+                  setState(() {
+                    _earlyReminderMinutes = val;
+                  });
                 },
               ),
               const SizedBox(height: AppSizes.md),

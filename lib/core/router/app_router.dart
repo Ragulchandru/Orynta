@@ -39,6 +39,8 @@ import '../../features/focus/presentation/screens/focus_screen.dart';
 import '../../features/onboarding/presentation/pages/onboarding_page.dart';
 import '../../features/splash/presentation/pages/splash_page.dart';
 import '../../features/profile/presentation/screens/profile_screen.dart';
+import '../../features/notifications/presentation/screens/notification_center_screen.dart';
+import '../../features/notifications/presentation/screens/notification_diagnostics_screen.dart';
 import '../../shared/widgets/main_navigation_shell.dart';
 import 'route_names.dart';
 
@@ -226,6 +228,27 @@ GoRouter appRouter(Ref ref) {
           return const TrashScreen();
         },
       ),
+
+      // ── Notification Center ──────────────────────────────────────────────────
+      GoRoute(
+        path: '/notifications',
+        name: RouteNames.notifications,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          return const NotificationCenterScreen();
+        },
+      ),
+
+      // ── Notification Diagnostics ─────────────────────────────────────────────
+      GoRoute(
+        path: '/notification-diagnostics',
+        name: 'notificationDiagnostics',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          return const NotificationDiagnosticsScreen();
+        },
+      ),
+
 
       // ── Create Task Screen ───────────────────────────────────────────────────
       GoRoute(

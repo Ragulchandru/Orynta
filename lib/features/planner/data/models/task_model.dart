@@ -33,6 +33,8 @@ class TaskModel {
     this.dueTimeMs,
     this.isArchived = false,
     this.repeatReminderInterval = 'never',
+    this.reminderStatus,
+    this.notificationId,
   });
 
   final String id;
@@ -60,6 +62,8 @@ class TaskModel {
   final int? dueTimeMs;
   final bool isArchived;
   final String? repeatReminderInterval;
+  final String? reminderStatus;
+  final int? notificationId;
 
   factory TaskModel.fromEntity(TaskEntity entity) {
     return TaskModel(
@@ -102,6 +106,8 @@ class TaskModel {
       dueTimeMs: entity.dueTimeMs,
       isArchived: entity.isArchived,
       repeatReminderInterval: entity.repeatReminderInterval,
+      reminderStatus: entity.reminderStatus,
+      notificationId: entity.notificationId,
     );
   }
 
@@ -148,6 +154,8 @@ class TaskModel {
       dueTimeMs: dueTimeMs,
       isArchived: isArchived,
       repeatReminderInterval: repeatReminderInterval,
+      reminderStatus: reminderStatus,
+      notificationId: notificationId,
     );
   }
 }

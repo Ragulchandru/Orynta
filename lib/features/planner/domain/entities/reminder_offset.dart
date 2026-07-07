@@ -1,6 +1,7 @@
 // lib/features/planner/domain/entities/reminder_offset.dart
 
 enum ReminderOffset {
+  none,
   atTime,
   fiveMinutes,
   tenMinutes,
@@ -12,8 +13,10 @@ enum ReminderOffset {
   twoDays,
   oneWeek;
 
-  int get minutes {
+  int? get minutes {
     switch (this) {
+      case ReminderOffset.none:
+        return null;
       case ReminderOffset.atTime:
         return 0;
       case ReminderOffset.fiveMinutes:
@@ -39,6 +42,8 @@ enum ReminderOffset {
 
   String get label {
     switch (this) {
+      case ReminderOffset.none:
+        return 'None';
       case ReminderOffset.atTime:
         return 'At time';
       case ReminderOffset.fiveMinutes:
@@ -63,12 +68,12 @@ enum ReminderOffset {
   }
 
   static ReminderOffset fromMinutes(int? mins) {
-    if (mins == null) return ReminderOffset.fifteenMinutes; // default fallback
+    if (mins == null) return ReminderOffset.none;
     for (final val in ReminderOffset.values) {
       if (val.minutes == mins) {
         return val;
       }
     }
-    return ReminderOffset.fifteenMinutes;
+    return ReminderOffset.none;
   }
 }

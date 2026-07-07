@@ -52,11 +52,19 @@ class ExperimentalSettingsScreen extends ConsumerWidget {
                   icon: Icons.dashboard_customize_outlined,
                   iconColor: theme.isDark ? const Color(0xFF4E4E68) : const Color(0xFF8E8EA8),
                 ),
+                PremiumListTile(
+                  title: 'Notification Diagnostics',
+                  subtitle: 'Inspect engine state, permission details, and send test alerts',
+                  icon: Icons.bug_report_outlined,
+                  iconColor: theme.primary,
+                  onTap: () => context.push('/notification-diagnostics'),
+                ),
               ],
             ),
           ],
         ),
       ),
+
     );
   }
 }

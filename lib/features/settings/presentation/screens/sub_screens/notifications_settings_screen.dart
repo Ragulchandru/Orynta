@@ -61,24 +61,6 @@ class NotificationsSettingsScreen extends ConsumerWidget {
                     onChanged: (val) => notifier.updateDailyReminderEnabled(val),
                   ),
                 ),
-                if (settings.dailyReminderEnabled)
-                  PremiumListTile(
-                    title: 'Reminder Time',
-                    subtitle: settings.dailyReminderTime,
-                    icon: Icons.timer_outlined,
-                    iconColor: Colors.blue,
-                    onTap: () async {
-                      final tod = await showTimePicker(
-                        context: context,
-                        initialTime: const TimeOfDay(hour: 9, minute: 0),
-                      );
-                      if (tod != null && context.mounted) {
-                        final formatted =
-                            '${tod.hour.toString().padLeft(2, '0')}:${tod.minute.toString().padLeft(2, '0')}';
-                        notifier.updateDailyReminderTime(formatted);
-                      }
-                    },
-                  ),
               ],
             ),
             const SizedBox(height: 16),

@@ -301,45 +301,6 @@ class BulkActionsSheet extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionHeader(context, 'Quick Actions'),
-              _buildActionItem(
-                context: context,
-                icon: Icons.star_rounded,
-                label: 'Favorite All',
-                onTap: () {
-                  ref.read(notesProvider.notifier).bulkToggleFavorite(selectedIds, true);
-                  onActionCompleted();
-                },
-              ),
-              _buildActionItem(
-                context: context,
-                icon: Icons.star_border_rounded,
-                label: 'Unfavorite All',
-                onTap: () {
-                  ref.read(notesProvider.notifier).bulkToggleFavorite(selectedIds, false);
-                  onActionCompleted();
-                },
-              ),
-              _buildActionItem(
-                context: context,
-                icon: Icons.push_pin_rounded,
-                label: 'Pin All',
-                onTap: () {
-                  ref.read(notesProvider.notifier).bulkTogglePin(selectedIds, true);
-                  onActionCompleted();
-                },
-              ),
-              _buildActionItem(
-                context: context,
-                icon: Icons.pin_drop_outlined,
-                label: 'Unpin All',
-                onTap: () {
-                  ref.read(notesProvider.notifier).bulkTogglePin(selectedIds, false);
-                  onActionCompleted();
-                },
-              ),
-              const Divider(height: 1),
-
               _buildSectionHeader(context, 'Organization'),
               _buildActionItem(
                 context: context,

@@ -41,9 +41,7 @@ class ProductivityScoreCard extends StatelessWidget {
                 score.label,
                 style: context.typography.titleLarge.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: score.hasData
-                      ? context.colors.primary
-                      : context.colors.textSecondary,
+                  color: context.colors.primary,
                 ),
               ),
             ),

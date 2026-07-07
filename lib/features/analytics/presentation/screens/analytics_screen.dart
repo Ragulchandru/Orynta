@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../../../shared/widgets/staggered_entrance.dart';
 import '../../../notes/presentation/providers/notes_notifier.dart';
@@ -27,6 +26,7 @@ import '../widgets/priority_bar_chart.dart';
 import '../widgets/productivity_score_card.dart';
 import '../widgets/task_completion_overview_card.dart';
 import '../widgets/weekly_line_chart.dart';
+import '../widgets/analytics_intelligence_card.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -332,157 +332,148 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     final colors = context.colors;
     final perf = ref.watch(performanceDaysProvider);
 
-    return Card(
-      color: colors.surfaceContainerLow,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.lg),
-        side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Performance Highs & Lows',
+          style: context.typography.titleMedium.copyWith(
+            fontWeight: FontWeight.bold,
+            color: colors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
           children: [
-            Text(
-              'Performance Highs & Lows',
-              style: context.typography.titleMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
+            // 🏆 Highest Productivity Card
+            Expanded(
+              child: Card(
+                color: colors.surfaceContainerLow,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.3)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Text('🏆', style: TextStyle(fontSize: 20)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Highest Productivity',
+                              style: context.typography.labelSmall.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        perf.best.dayName,
+                        style: context.typography.titleLarge.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${perf.best.completedCount} completed',
+                        style: context.typography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.primary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${(perf.best.completionRate * 100).toStringAsFixed(0)}% completion rate',
+                        style: context.typography.labelSmall.copyWith(
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Row(
+            const SizedBox(width: 12),
+            // ⚠️ Needs Improvement Card
+            Expanded(
+              child: Card(
+                color: colors.surfaceContainerLow,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.3)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('🏆', style: TextStyle(fontSize: 24)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              perf.best.dayName,
-                              style: context.typography.bodyLarge.copyWith(fontWeight: FontWeight.bold, color: colors.textPrimary),
+                      Row(
+                        children: [
+                          const Text('⚠️', style: TextStyle(fontSize: 20)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Needs Improvement',
+                              style: context.typography.labelSmall.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colors.textSecondary,
+                              ),
                             ),
-                            Text(
-                              '${perf.best.completedCount} Completed',
-                              style: context.typography.labelMedium.copyWith(color: colors.primary),
-                            ),
-                            Text(
-                              perf.best.label,
-                              style: context.typography.labelSmall.copyWith(color: colors.textSecondary),
-                            ),
-                          ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        perf.worst.dayName,
+                        style: context.typography.titleLarge.copyWith(
+                          fontWeight: FontWeight.w900,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${perf.worst.completedCount} completed',
+                        style: context.typography.bodyMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.error,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${(perf.worst.completionRate * 100).toStringAsFixed(0)}% completion rate',
+                        style: context.typography.labelSmall.copyWith(
+                          color: colors.textSecondary,
                         ),
                       ),
                     ],
                   ),
                 ),
-                Expanded(
-                  child: Row(
-                    children: [
-                      const Text('⚠️', style: TextStyle(fontSize: 24)),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              perf.worst.dayName,
-                              style: context.typography.bodyLarge.copyWith(fontWeight: FontWeight.bold, color: colors.textPrimary),
-                            ),
-                            Text(
-                              '${perf.worst.completedCount} Completed',
-                              style: context.typography.labelMedium.copyWith(color: theme.error),
-                            ),
-                            Text(
-                              perf.worst.label,
-                              style: context.typography.labelSmall.copyWith(color: colors.textSecondary),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildHourlyTimeline(BuildContext context, WidgetRef ref) {
-    final theme = context.appTheme;
     final colors = context.colors;
     final hourly = ref.watch(timelineHourlyProductivityProvider);
 
-    return Card(
-      color: colors.surfaceContainerLow,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppSizes.lg),
-        side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.3)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Productivity Timeline',
-              style: context.typography.titleMedium.copyWith(
-                fontWeight: FontWeight.bold,
-                color: colors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: hourly.map((h) {
-                final maxCount = hourly.map((item) => item.count).reduce((a, b) => a > b ? a : b);
-                const double maxHeight = 60.0;
-                final double height = maxCount > 0 ? (h.count / maxCount) * maxHeight : 4.0;
-
-                return Column(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: height.clamp(4.0, maxHeight),
-                      decoration: BoxDecoration(
-                        color: colors.primary.withValues(alpha: 0.8),
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      h.label,
-                      style: context.typography.labelSmall.copyWith(fontSize: 8, color: colors.textSecondary),
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 16),
-            _buildTimelineInsights(hourly, theme, colors),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTimelineInsights(List<HourlyProductivity> hourly, AppThemeData theme, OryAppColors colors) {
-    if (hourly.isEmpty) return const SizedBox();
-
     var maxCount = -1;
-    var maxLabel = 'N/A';
+    var maxLabel = '6 AM';
     var minCount = 999999;
-    var minLabel = 'N/A';
+    var minLabel = '6 AM';
 
     for (final h in hourly) {
       if (h.count > maxCount) {
@@ -495,27 +486,256 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
       }
     }
 
-    final peakInsight = maxCount > 0
-        ? 'Your peak focus window is around $maxLabel.'
-        : 'Log more focus sessions to analyze peak windows.';
-    final lowInsight = maxCount > 0
-        ? 'Lowest task activity occurs around $minLabel.'
-        : 'Average task completions are evenly distributed.';
+    if (maxCount <= 0) {
+      maxCount = 0;
+      maxLabel = '--';
+      minLabel = '--';
+    }
+
+    final peakRating = maxCount >= 10 ? 'Outstanding' : (maxCount >= 5 ? 'Excellent' : (maxCount > 0 ? 'Good' : 'No Data'));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '💡 Focus Insights',
-          style: context.typography.labelMedium.copyWith(
-            fontWeight: FontWeight.bold,
-            color: colors.primary,
+        // 1. Peak Focus Large Card
+        Card(
+          color: colors.surfaceContainerLow,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.3)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Peak Focus',
+                      style: context.typography.titleMedium.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        peakRating,
+                        style: context.typography.labelSmall.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  maxLabel,
+                  style: context.typography.displayMedium.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Stack(
+                  children: [
+                    Container(
+                      height: 8,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: colors.outlineVariant.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: maxCount > 0 ? (maxCount / (maxCount + 5)).clamp(0.1, 1.0) : 0.0,
+                      child: Container(
+                        height: 8,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [colors.primary, colors.secondary],
+                          ),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 4),
-        Text(peakInsight, style: context.typography.bodySmall.copyWith(color: colors.textPrimary)),
-        const SizedBox(height: 2),
-        Text(lowInsight, style: context.typography.bodySmall.copyWith(color: colors.textSecondary)),
+        const SizedBox(height: 16),
+
+        // 2. Hourly Timeline Card with animated vertical bars
+        Card(
+          color: colors.surfaceContainerLow,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.3)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Productivity Timeline',
+                  style: context.typography.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: hourly.map((h) {
+                    final overallMax = hourly.map((item) => item.count).reduce((a, b) => a > b ? a : b);
+                    const double maxHeight = 80.0;
+                    final double height = overallMax > 0 ? (h.count / overallMax) * maxHeight : 4.0;
+                    final isPeak = h.label == maxLabel;
+
+                    return Expanded(
+                      child: Column(
+                        children: [
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 500),
+                            curve: Curves.easeOutBack,
+                            width: 14,
+                            height: height.clamp(4.0, maxHeight),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.bottomCenter,
+                                end: Alignment.topCenter,
+                                colors: isPeak
+                                    ? [colors.primary, colors.secondary]
+                                    : [colors.primary.withValues(alpha: 0.3), colors.primary.withValues(alpha: 0.5)],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Text(
+                            h.label,
+                            style: context.typography.labelSmall.copyWith(
+                              fontSize: 9,
+                              fontWeight: isPeak ? FontWeight.bold : FontWeight.normal,
+                              color: isPeak ? colors.textPrimary : colors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // 3. Focus Insights cards
+        Row(
+          children: [
+            Expanded(
+              child: Card(
+                color: colors.surfaceContainerLow,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.3)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Peak Productivity',
+                        style: context.typography.labelSmall.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        maxLabel,
+                        style: context.typography.titleMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: List.generate(
+                          5,
+                          (i) => Icon(
+                            Icons.star_rounded,
+                            size: 14,
+                            color: i < (maxCount > 0 ? (maxCount >= 5 ? 5 : 4) : 0) ? Colors.amber : colors.outlineVariant,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Card(
+                color: colors.surfaceContainerLow,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  side: BorderSide(color: colors.outlineVariant.withValues(alpha: 0.3)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Lowest Activity',
+                        style: context.typography.labelSmall.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        minLabel,
+                        style: context.typography.titleMedium.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: colors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        maxCount > 0 ? 'Good time for planning' : 'No data logged yet',
+                        style: context.typography.bodySmall.copyWith(
+                          color: colors.primary,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -528,11 +748,14 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     final score = ref.watch(todayStatsProvider);
     final focus = ref.watch(focusAnalyticsProvider);
     final stats = ref.watch(plannerStatsProvider);
+    final metrics = ref.watch(periodMetricsProvider);
     final notes = ref.watch(notesProvider).value ?? [];
     final timelineEvents = ref.watch(activityTimelineProvider);
     final monthly = ref.watch(monthlyStatsProvider);
     final achievements = ref.watch(achievementsProvider);
     final tasks = ref.watch(tasksProvider);
+    final perf = ref.watch(performanceDaysProvider);
+
 
     final activeNotesCount = notes.where((n) => n.status == NoteStatus.active).length;
     final favNotesCount = notes.where((n) => n.isFavorite).length;
@@ -568,37 +791,54 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     index: 0,
                     child: _buildSummaryCards(context, ref, false),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 1,
                     child: ProductivityScoreCard(score: score.productivityScore),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: AnalyticsIntelligenceCard(
+                      created: metrics.created,
+                      completed: metrics.completed,
+                      prevCreated: metrics.prevCreated,
+                      prevCompleted: metrics.prevCompleted,
+                      completionRate: metrics.completionRate,
+                      prevCompletionRate: metrics.prevCompletionRate,
+                      longestStreak: stats.longestStreak,
+                      totalFocusMinutes: focus.totalFocusMinutes,
+                      range: activeRange,
+                      bestDay: perf.best.dayName,
+                      worstDay: perf.worst.dayName,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 2,
                     child: _buildBestWorstDays(context, ref),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 3,
                     child: _buildHourlyTimeline(context, ref),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 4,
                     child: HeatmapCalendar(monthlyStats: monthly),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   const StaggeredEntrance(
                     index: 5,
                     child: WeeklyLineChart(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   const StaggeredEntrance(
                     index: 6,
                     child: TaskCompletionOverviewCard(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 7,
                     child: Row(
@@ -622,7 +862,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     index: 1,
                     child: FocusAnalyticsCard(data: focus),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 2,
                     child: NotesAnalyticsCard(
@@ -632,7 +872,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       notesCreatedToday: score.notesCreated,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 3,
                     child: PlannerAnalyticsCard(
@@ -641,17 +881,17 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       recurringTasksCount: recurringTasksCount,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   const StaggeredEntrance(
                     index: 4,
                     child: GoalsCard(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 5,
                     child: AchievementsCard(achievements: achievements),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 6,
                     child: ActivityTimelineWidget(events: timelineEvents),
@@ -659,6 +899,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 ],
               ),
             ),
+
           ],
         );
       } else if (width >= 600) {
@@ -673,42 +914,59 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     index: 0,
                     child: _buildSummaryCards(context, ref, false),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 1,
                     child: ProductivityScoreCard(score: score.productivityScore),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
+                  StaggeredEntrance(
+                    index: 1,
+                    child: AnalyticsIntelligenceCard(
+                      created: metrics.created,
+                      completed: metrics.completed,
+                      prevCreated: metrics.prevCreated,
+                      prevCompleted: metrics.prevCompleted,
+                      completionRate: metrics.completionRate,
+                      prevCompletionRate: metrics.prevCompletionRate,
+                      longestStreak: stats.longestStreak,
+                      totalFocusMinutes: focus.totalFocusMinutes,
+                      range: activeRange,
+                      bestDay: perf.best.dayName,
+                      worstDay: perf.worst.dayName,
+                    ),
+                  ),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 2,
                     child: _buildBestWorstDays(context, ref),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 3,
                     child: _buildHourlyTimeline(context, ref),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 4,
                     child: HeatmapCalendar(monthlyStats: monthly),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   const StaggeredEntrance(
                     index: 5,
                     child: WeeklyLineChart(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   const StaggeredEntrance(
                     index: 6,
                     child: TaskCompletionOverviewCard(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 7,
                     child: CategoryPieChart(tasks: tasks),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 8,
                     child: PriorityBarChart(priorityCounts: priorityCounts),
@@ -725,7 +983,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     index: 1,
                     child: FocusAnalyticsCard(data: focus),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 2,
                     child: NotesAnalyticsCard(
@@ -735,7 +993,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       notesCreatedToday: score.notesCreated,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 3,
                     child: PlannerAnalyticsCard(
@@ -744,17 +1002,17 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       recurringTasksCount: recurringTasksCount,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   const StaggeredEntrance(
                     index: 4,
                     child: GoalsCard(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 5,
                     child: AchievementsCard(achievements: achievements),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 28),
                   StaggeredEntrance(
                     index: 6,
                     child: ActivityTimelineWidget(events: timelineEvents),
@@ -772,52 +1030,69 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
               index: 0,
               child: _buildSummaryCards(context, ref, true),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 1,
               child: ProductivityScoreCard(score: score.productivityScore),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
+            StaggeredEntrance(
+              index: 1,
+              child: AnalyticsIntelligenceCard(
+                created: metrics.created,
+                completed: metrics.completed,
+                prevCreated: metrics.prevCreated,
+                prevCompleted: metrics.prevCompleted,
+                completionRate: metrics.completionRate,
+                prevCompletionRate: metrics.prevCompletionRate,
+                longestStreak: stats.longestStreak,
+                totalFocusMinutes: focus.totalFocusMinutes,
+                range: activeRange,
+                bestDay: perf.best.dayName,
+                worstDay: perf.worst.dayName,
+              ),
+            ),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 2,
               child: _buildBestWorstDays(context, ref),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 3,
               child: _buildHourlyTimeline(context, ref),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 4,
               child: HeatmapCalendar(monthlyStats: monthly),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             const StaggeredEntrance(
               index: 5,
               child: WeeklyLineChart(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             const StaggeredEntrance(
               index: 6,
               child: TaskCompletionOverviewCard(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 7,
               child: CategoryPieChart(tasks: tasks),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 8,
               child: PriorityBarChart(priorityCounts: priorityCounts),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 9,
               child: FocusAnalyticsCard(data: focus),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 10,
               child: NotesAnalyticsCard(
@@ -827,7 +1102,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 notesCreatedToday: score.notesCreated,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 11,
               child: PlannerAnalyticsCard(
@@ -836,17 +1111,17 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 recurringTasksCount: recurringTasksCount,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             const StaggeredEntrance(
               index: 12,
               child: GoalsCard(),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 13,
               child: AchievementsCard(achievements: achievements),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
             StaggeredEntrance(
               index: 14,
               child: ActivityTimelineWidget(events: timelineEvents),
@@ -854,6 +1129,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           ],
         );
       }
+
     }
 
     return Scaffold(

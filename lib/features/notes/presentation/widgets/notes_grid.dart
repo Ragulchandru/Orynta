@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/note_summary.dart';
 import '../../domain/models/notes_view_mode.dart';
@@ -20,8 +21,9 @@ class NotesGrid extends ConsumerWidget {
   final ValueChanged<NoteSummary> onNoteTap;
   final String searchQuery;
 
-  int _calculateCrossAxisCount(double width, NotesViewMode viewMode) {
-    if (viewMode == NotesViewMode.list || viewMode == NotesViewMode.comfortableList) {
+  int _crossAxisCount(double width, NotesViewMode viewMode) {
+    if (viewMode == NotesViewMode.list ||
+        viewMode == NotesViewMode.comfortableList) {
       return 1;
     }
     if (width < 600) return 2;
@@ -41,7 +43,7 @@ class NotesGrid extends ConsumerWidget {
     final List<Widget> sections = [];
 
     if (groupBy == NotesGroupBy.none) {
-      sections.add(_buildGrid(context, notes, viewMode));
+      sections.add(_buildMasonry(context, notes, viewMode));
     } else {
       final Map<String, List<NoteSummary>> grouped = {};
       for (final note in notes) {
@@ -55,9 +57,7 @@ class NotesGrid extends ConsumerWidget {
             }
           }
           key = catId ?? 'General';
-          if (key.trim().isEmpty) {
-            key = 'General';
-          }
+          if (key.trim().isEmpty) key = 'General';
         } else if (groupBy == NotesGroupBy.date) {
           final now = DateTime.now();
           final diff = now.difference(note.updatedAt).inDays;
@@ -87,7 +87,7 @@ class NotesGrid extends ConsumerWidget {
             ),
           ),
         );
-        sections.add(_buildGrid(context, noteGroup, viewMode));
+        sections.add(_buildMasonry(context, noteGroup, viewMode));
       });
     }
 
@@ -97,58 +97,51 @@ class NotesGrid extends ConsumerWidget {
     );
   }
 
-  Widget _buildGrid(BuildContext context, List<NoteSummary> noteList, NotesViewMode viewMode) {
+  Widget _buildMasonry(
+    BuildContext context,
+    List<NoteSummary> noteList,
+    NotesViewMode viewMode,
+  ) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = _calculateCrossAxisCount(constraints.maxWidth, viewMode);
-        final List<Widget> rows = [];
+        final cols = _crossAxisCount(constraints.maxWidth, viewMode);
 
-        for (int i = 0; i < noteList.length; i += crossAxisCount) {
-          final chunk = noteList.sublist(
-            i,
-            (i + crossAxisCount) > noteList.length ? noteList.length : i + crossAxisCount,
-          );
-
-          final rowChildren = <Widget>[];
-          for (int j = 0; j < crossAxisCount; j++) {
-            if (j < chunk.length) {
-              final note = chunk[j];
-              rowChildren.add(
-                Expanded(
-                  child: NotePreviewCard(
-                    note: note,
-                    onTap: () => onNoteTap(note),
-                    searchQuery: searchQuery,
-                  ),
+        // List/comfortable-list modes use a plain vertical list — no masonry.
+        if (cols == 1) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final note in noteList) ...[
+                NotePreviewCard(
+                  note: note,
+                  onTap: () => onNoteTap(note),
+                  searchQuery: searchQuery,
                 ),
-              );
-            } else {
-              rowChildren.add(const Expanded(child: SizedBox.shrink()));
-            }
-            if (j < crossAxisCount - 1) {
-              rowChildren.add(const SizedBox(width: 20));
-            }
-          }
-
-          rows.add(
-            IntrinsicHeight(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: rowChildren,
-              ),
-            ),
+                const SizedBox(height: 12),
+              ],
+            ],
           );
-
-          if (i + crossAxisCount < noteList.length) {
-            rows.add(const SizedBox(height: 20));
-          }
         }
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: rows,
+        // Grid modes: true masonry — cards take their natural content height.
+        return MasonryGridView.count(
+          crossAxisCount: cols,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: noteList.length,
+          itemBuilder: (context, index) {
+            final note = noteList[index];
+            return NotePreviewCard(
+              note: note,
+              onTap: () => onNoteTap(note),
+              searchQuery: searchQuery,
+            );
+          },
         );
       },
     );
   }
 }
+

@@ -3,7 +3,7 @@
 // Orynta 2.0 — Redesigned Premium Formatting Options Bottom Sheet (Apple Notes / Craft Inspired)
 
 import 'package:flutter/material.dart';
-import '../../../../core/design_system/design_tokens.dart';
+import '../../../../core/design_system/design_system.dart';
 import '../controllers/editor_format_controller.dart';
 
 class FormattingBottomSheet extends StatelessWidget {
@@ -75,9 +75,9 @@ class FormattingBottomSheet extends StatelessWidget {
 
     return Container(
       height: sheetHeight,
-      decoration: const BoxDecoration(
-        color: Color(0xFF141421), // Orynta premium dark background
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28.0)),
+      decoration: BoxDecoration(
+        color: context.colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28.0)),
       ),
       padding: const EdgeInsets.fromLTRB(24.0, 12.0, 24.0, 24.0),
       child: Column(
@@ -90,7 +90,7 @@ class FormattingBottomSheet extends StatelessWidget {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
+                color: context.colors.outlineVariant.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(2.0),
               ),
             ),
@@ -101,7 +101,7 @@ class FormattingBottomSheet extends StatelessWidget {
             'Formatting',
             style: context.typography.titleLarge.copyWith(
               fontWeight: FontWeight.w800,
-              color: Colors.white,
+              color: context.colors.textPrimary,
             ),
           ),
           const SizedBox(height: 24),
@@ -371,14 +371,15 @@ class _FormattingCardState extends State<_FormattingCard> {
 
     final Color bgColor = widget.isSelected
         ? context.colors.primaryContainer.withValues(alpha: 0.25)
-        : const Color(0xFF1C1C2E);
+        : context.colors.surfaceContainer;
 
     final Border? border = widget.isSelected
         ? Border.all(color: primary, width: 2.0)
         : null;
 
-    final Color iconColor = widget.isSelected ? primary : Colors.white;
-    final Color textColor = widget.isSelected ? primary : Colors.white.withValues(alpha: 0.7);
+    final Color iconColor = widget.isSelected ? primary : context.colors.textPrimary;
+    final Color textColor = widget.isSelected ? primary : context.colors.textSecondary;
+
 
     return Opacity(
       opacity: widget.enabled ? 1.0 : 0.4,

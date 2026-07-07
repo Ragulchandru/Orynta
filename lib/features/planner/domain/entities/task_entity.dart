@@ -2,10 +2,32 @@
 //
 // Orynta 2.0 — Extended Task Entity (Pure Immutable Dart Model)
 
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 
+import 'notification_status.dart';
 import 'subtask_entity.dart';
 import 'task_attachment_entity.dart';
+
+// ─── Stable Notification ID ───────────────────────────────────────────────────
+//
+// FNV-1a 32-bit hash — deterministic and platform-independent.
+// String.hashCode is NOT used here because it is not guaranteed to be stable
+// across Dart VM restarts or different platforms.
+//
+// This function is called ONCE at task creation time.  The result is stored
+// as `notificationId` inside the task and persisted to Hive.  It is NEVER
+// recalculated from the task ID at runtime.
+int fnv1a32(String input) {
+  var hash = 0x811c9dc5;
+  for (final byte in utf8.encode(input)) {
+    hash ^= byte;
+    hash = (hash * 0x01000193) & 0xFFFFFFFF;
+  }
+  // Clamp to signed 32-bit to satisfy flutter_local_notifications.
+  return hash > 0x7FFFFFFF ? hash - 0x100000000 : hash;
+}
 
 @immutable
 class TaskEntity {
@@ -35,6 +57,9 @@ class TaskEntity {
     this.dueTimeMs,
     this.isArchived = false,
     this.repeatReminderInterval = 'never',
+    // ── New fields ───────────────────────────────────────────────────────────
+    this.reminderStatus,
+    this.notificationId,
   });
 
   final String id;
@@ -63,6 +88,27 @@ class TaskEntity {
   final bool isArchived;
   final String? repeatReminderInterval;
 
+  /// Explicit reminder status string — `'cancelled'` when the user cancels the
+  /// alert, `null` otherwise (status is computed from other fields).
+  final String? reminderStatus;
+
+  /// Stable integer used as the flutter_local_notifications notification ID.
+  /// Generated ONCE via [fnv1a32] at creation time and stored in Hive.
+  /// NEVER re-derived from [id] at runtime.
+  final int? notificationId;
+
+  // ─── Computed notification status ──────────────────────────────────────────
+
+  NotificationStatus get computedNotificationStatus {
+    if (isCompleted) return NotificationStatus.completed;
+    if (reminderStatus == 'cancelled') return NotificationStatus.cancelled;
+    if (reminderMs == null) return NotificationStatus.cancelled;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return reminderMs! > now
+        ? NotificationStatus.upcoming
+        : NotificationStatus.missed;
+  }
+
   TaskEntity copyWith({
     String? id,
     String? title,
@@ -89,6 +135,8 @@ class TaskEntity {
     int? dueTimeMs,
     bool? isArchived,
     String? repeatReminderInterval,
+    String? reminderStatus,
+    int? notificationId,
   }) {
     return TaskEntity(
       id: id ?? this.id,
@@ -115,7 +163,10 @@ class TaskEntity {
       linkedNoteIds: linkedNoteIds ?? this.linkedNoteIds,
       dueTimeMs: dueTimeMs ?? this.dueTimeMs,
       isArchived: isArchived ?? this.isArchived,
-      repeatReminderInterval: repeatReminderInterval ?? this.repeatReminderInterval,
+      repeatReminderInterval:
+          repeatReminderInterval ?? this.repeatReminderInterval,
+      reminderStatus: reminderStatus ?? this.reminderStatus,
+      notificationId: notificationId ?? this.notificationId,
     );
   }
 

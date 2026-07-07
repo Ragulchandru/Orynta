@@ -69,38 +69,35 @@ double _calculateScoreForDay({
   required int habitsCompleted,
   required int habitsTotal,
   required int focusMinutes,
-  required int notesCreated,
-  required int notesEdited,
+  required int streak,
+  required int missedReminders,
+  required int overdueTasks,
 }) {
-  final hasTasks = (tasksCompleted + tasksPending) > 0;
-  final hasHabits = habitsTotal > 0;
+  // 1. Completed tasks (weight 0.3)
+  final double completedTasksFactor = (tasksCompleted / 4.0).clamp(0.0, 1.0);
 
-  final taskScore = hasTasks ? tasksCompleted / (tasksCompleted + tasksPending) : 0.0;
-  final habitScore = hasHabits ? habitsCompleted / habitsTotal : 0.0;
-  final focusScore = (focusMinutes / 50.0).clamp(0.0, 1.0);
-  final noteScore = ((notesCreated + notesEdited) / 3.0).clamp(0.0, 1.0);
+  // 2. Completion % (weight 0.2)
+  final int totalTasks = tasksCompleted + tasksPending;
+  final double completionRateFactor = totalTasks > 0 ? tasksCompleted / totalTasks : 1.0;
 
-  double weightedSum = 0.0;
-  double totalWeight = 0.0;
+  // 3. Habits completed (weight 0.2)
+  final double habitsFactor = habitsTotal > 0 ? habitsCompleted / habitsTotal : 1.0;
 
-  if (hasTasks) {
-    weightedSum += taskScore * 0.3;
-    totalWeight += 0.3;
-  }
-  if (hasHabits) {
-    weightedSum += habitScore * 0.3;
-    totalWeight += 0.3;
-  }
-  if (focusMinutes > 0) {
-    weightedSum += focusScore * 0.3;
-    totalWeight += 0.3;
-  }
-  if ((notesCreated + notesEdited) > 0) {
-    weightedSum += noteScore * 0.1;
-    totalWeight += 0.1;
-  }
+  // 4. Focus sessions minutes (weight 0.15)
+  final double focusFactor = (focusMinutes / 75.0).clamp(0.0, 1.0);
 
-  return totalWeight > 0 ? (weightedSum / totalWeight) * 100 : 0.0;
+  // 5. Daily streak / Consistency (weight 0.15)
+  final double streakFactor = (streak / 7.0).clamp(0.0, 1.0);
+
+  final double baseScore = (completedTasksFactor * 30.0) +
+                     (completionRateFactor * 20.0) +
+                     (habitsFactor * 20.0) +
+                     (focusFactor * 15.0) +
+                     (streakFactor * 15.0);
+
+  final double deductions = (missedReminders * 5.0) + (overdueTasks * 2.0);
+
+  return (baseScore - deductions).clamp(0.0, 100.0);
 }
 
 // ─── Analytics Engine Computed Providers ────────────────────────────────────
@@ -110,12 +107,30 @@ final dailyStatsProvider = Provider.family<DailyStats, DateTime>((ref, rawDate) 
 
   // Tasks completed vs pending
   final tasks = ref.watch(tasksProvider);
+  final habits = ref.watch(habitsProvider);
+  final focusSessions = ref.watch(focusNotifierProvider);
+  final notesAsync = ref.watch(notesProvider);
+  final notes = notesAsync.value ?? [];
+
+  if (tasks.isEmpty && habits.isEmpty && focusSessions.isEmpty && notes.isEmpty) {
+    return DailyStats(
+      date: date,
+      tasksCompleted: 0,
+      tasksPending: 0,
+      habitsCompleted: 0,
+      habitsTotal: 0,
+      focusMinutes: 0,
+      notesCreated: 0,
+      notesEdited: 0,
+      productivityScore: 0.0,
+    );
+  }
+
   final dayTasks = tasks.where((t) => _isSameDay(t.dueDate ?? t.createdAt, date)).toList();
   final tasksCompleted = dayTasks.where((t) => t.isCompleted).length;
   final tasksPending = dayTasks.length - tasksCompleted;
 
   // Habits completed vs total
-  final habits = ref.watch(habitsProvider);
   int habitsCompleted = 0;
   int habitsTotal = 0;
   final dateKey = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
@@ -128,19 +143,53 @@ final dailyStatsProvider = Provider.family<DailyStats, DateTime>((ref, rawDate) 
   }
 
   // Focus minutes completed
-  final focusSessions = ref.watch(focusNotifierProvider);
   final dayFocusMinutes = focusSessions
       .where((s) => _isSameDay(s.createdAt, date) && s.sessionType == 'focus' && s.completed)
       .map((s) => s.actualDurationMinutes)
       .fold(0, (a, b) => a + b);
 
-  // Notes created/edited today
-  final notesAsync = ref.watch(notesProvider);
-  final notes = notesAsync.value ?? [];
   final notesCreated = notes.where((n) => _isSameDay(n.createdAt, date)).length;
+
   final notesEdited = notes
       .where((n) => _isSameDay(n.updatedAt, date) && !_isSameDay(n.createdAt, n.updatedAt))
       .length;
+
+  // Overdue tasks
+  final overdueTasks = tasks.where((t) {
+    if (t.isCompleted || t.isArchived || t.dueDate == null) return false;
+    return t.dueDate!.isBefore(date);
+  }).length;
+
+  // Missed reminders
+  final missedReminders = tasks.where((t) {
+    if (t.isCompleted || t.isArchived || t.reminderMs == null) return false;
+    return t.reminderMs! < date.millisecondsSinceEpoch;
+  }).length;
+
+  // Streak
+  final completionDates = tasks
+      .where((t) => t.isCompleted)
+      .map((t) => DateTime(t.updatedAt.year, t.updatedAt.month, t.updatedAt.day))
+      .toSet()
+      .toList()
+    ..sort((a, b) => a.compareTo(b));
+
+  int streak = 0;
+  if (completionDates.isNotEmpty) {
+    final dateMidnight = DateTime(date.year, date.month, date.day);
+    if (completionDates.contains(dateMidnight) || completionDates.contains(dateMidnight.subtract(const Duration(days: 1)))) {
+      streak = 1;
+      var checkDay = completionDates.contains(dateMidnight) ? dateMidnight : dateMidnight.subtract(const Duration(days: 1));
+      while (true) {
+        checkDay = checkDay.subtract(const Duration(days: 1));
+        if (completionDates.contains(checkDay)) {
+          streak++;
+        } else {
+          break;
+        }
+      }
+    }
+  }
 
   final score = _calculateScoreForDay(
     tasksCompleted: tasksCompleted,
@@ -148,8 +197,9 @@ final dailyStatsProvider = Provider.family<DailyStats, DateTime>((ref, rawDate) 
     habitsCompleted: habitsCompleted,
     habitsTotal: habitsTotal,
     focusMinutes: dayFocusMinutes,
-    notesCreated: notesCreated,
-    notesEdited: notesEdited,
+    streak: streak,
+    missedReminders: missedReminders,
+    overdueTasks: overdueTasks,
   );
 
   return DailyStats(
@@ -444,10 +494,12 @@ class PerformanceDay {
   final String dayName;
   final int completedCount;
   final String label;
+  final double completionRate;
   const PerformanceDay({
     required this.dayName,
     required this.completedCount,
     required this.label,
+    required this.completionRate,
   });
 }
 
@@ -690,13 +742,18 @@ final performanceDaysProvider = Provider<PerformanceSummary>((ref) {
   final todayStart = DateTime(now.year, now.month, now.day);
   final monthAgo = todayStart.subtract(const Duration(days: 29));
 
-  final completedTasks = tasks.where((t) => t.isCompleted && t.updatedAt.isAfter(monthAgo)).toList();
+  final activeTasks = tasks.where((t) => !t.isArchived && t.updatedAt.isAfter(monthAgo)).toList();
 
   // Group by day of week (1 = Monday, 7 = Sunday)
+  final Map<int, int> weekdayTotal = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
   final Map<int, int> weekdayCompletions = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0};
-  for (final t in completedTasks) {
+
+  for (final t in activeTasks) {
     final day = t.updatedAt.weekday;
-    weekdayCompletions[day] = (weekdayCompletions[day] ?? 0) + 1;
+    weekdayTotal[day] = (weekdayTotal[day] ?? 0) + 1;
+    if (t.isCompleted) {
+      weekdayCompletions[day] = (weekdayCompletions[day] ?? 0) + 1;
+    }
   }
 
   int bestDay = 1;
@@ -717,16 +774,24 @@ final performanceDaysProvider = Provider<PerformanceSummary>((ref) {
     }
   });
 
+  double getRate(int day) {
+    final total = weekdayTotal[day] ?? 0;
+    if (total == 0) return 0.0;
+    return (weekdayCompletions[day] ?? 0) / total;
+  }
+
   return PerformanceSummary(
     best: PerformanceDay(
       dayName: weekdayNames[bestDay - 1],
       completedCount: bestCount == -1 ? 0 : bestCount,
       label: 'Highest Productivity',
+      completionRate: getRate(bestDay),
     ),
     worst: PerformanceDay(
       dayName: weekdayNames[worstDay - 1],
       completedCount: worstCount == 999999 ? 0 : worstCount,
       label: 'Lowest Productivity',
+      completionRate: getRate(worstDay),
     ),
   );
 });

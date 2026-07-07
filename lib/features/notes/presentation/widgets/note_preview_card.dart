@@ -173,7 +173,7 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
                             color: context.colors.primary,
                             backgroundColor: primaryContainerColor,
                           ),
-                          maxLines: 1,
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -259,11 +259,15 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
                     ),
                   ],
                   const SizedBox(height: 12),
-                  // Bottom relative time
-                  Text(
-                    widget.note.relativeTime,
-                    style: context.typography.labelSmall.copyWith(
-                      color: context.colors.textSecondary.withValues(alpha: 0.8),
+                  // Bottom relative time — FittedBox prevents overflow on narrow cards.
+                  FittedBox(
+                    alignment: Alignment.centerLeft,
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      widget.note.relativeTime,
+                      style: context.typography.labelSmall.copyWith(
+                        color: context.colors.textSecondary.withValues(alpha: 0.8),
+                      ),
                     ),
                   ),
                 ],

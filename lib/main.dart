@@ -65,13 +65,22 @@ Future<void> main() async {
     Hive.openBox<FocusSessionModel>(AppStrings.focusBoxName),
   ]);
 
-  // Step 5 — Initialise notification engine.
+  // Step 5 — Initialise notification engine (timezone + callbacks).
   await PlannerNotificationService.init();
+
+  // Step 5b — Request notification & exact alarm permissions asynchronously.
+  // Non-blocking: does NOT gate app startup. Permissions dialog shows after
+  // first frame is rendered if the user hasn't granted them yet.
+  PlannerNotificationService.requestPermission();
+
+  final container = ProviderContainer();
+  PlannerNotificationService.container = container;
 
   // Step 6 — Launch the app.
   runApp(
-    const ProviderScope(
-      child: OryntaApp(),
+    UncontrolledProviderScope(
+      container: container,
+      child: const OryntaApp(),
     ),
   );
 }

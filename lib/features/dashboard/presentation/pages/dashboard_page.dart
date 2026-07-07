@@ -2,9 +2,11 @@
 //
 // Orynta 2.0 — Redesigned Dashboard Page
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../workspace/presentation/widgets/workspace_avatar.dart';
 import '../../../../core/design_system/design_tokens.dart';
@@ -37,6 +39,12 @@ class DashboardPage extends ConsumerWidget {
     final stats = ref.watch(plannerStatsProvider);
     final scoreData = ref.watch(todayStatsProvider);
 
+    final upcomingCount = tasks.where((t) {
+      final reminderMs = t.reminderMs;
+      if (reminderMs == null) return false;
+      return !t.isCompleted && !t.isArchived && reminderMs > DateTime.now().millisecondsSinceEpoch;
+    }).length;
+
     return Scaffold(
       backgroundColor: theme.surfaceDim,
       body: SafeArea(
@@ -50,11 +58,39 @@ class DashboardPage extends ConsumerWidget {
             slivers: [
               SliverPadding(
                 padding: context.spacing.paddingScreen,
-                sliver: const SliverToBoxAdapter(
+                sliver: SliverToBoxAdapter(
                   child: PremiumHeader(
                     title: 'Dashboard',
                     subtitle: 'Your personal productivity hub',
-                    actions: [WorkspaceAvatar()],
+                    actions: [
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.notifications_outlined),
+                            onPressed: () => context.push('/notifications'),
+                          ),
+                          if (upcomingCount > 0)
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 8,
+                                  minHeight: 8,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 8),
+                      const WorkspaceAvatar(),
+                    ],
                   ),
                 ),
               ),
@@ -93,8 +129,9 @@ class DashboardPage extends ConsumerWidget {
                                     const SizedBox(height: 16),
                                     _buildTodaysMission(context, tasks),
                                     const SizedBox(height: 16),
-                                    _buildNextReminder(context, tasks),
+                                    _buildNextReminder(context),
                                   ],
+
                                 ),
                               ),
                               const SizedBox(width: 20),
@@ -117,7 +154,7 @@ class DashboardPage extends ConsumerWidget {
                               const SizedBox(height: 16),
                               _buildTodaysMission(context, tasks),
                               const SizedBox(height: 16),
-                              _buildNextReminder(context, tasks),
+                              const NextReminderWidget(),
                               const SizedBox(height: 16),
                               _buildTodayAtAGlance(context, scoreData, stats),
                               const SizedBox(height: 20),
@@ -281,9 +318,129 @@ class DashboardPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildNextReminder(BuildContext context, List<TaskEntity> tasks) {
+  Widget _buildTodayAtAGlance(
+    BuildContext context,
+    DailyStats scoreData,
+    PlannerStatsData stats,
+  ) {
     final theme = context.appTheme;
     final colors = context.colors;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4.0, bottom: 12.0),
+          child: Row(
+            children: [
+              const Text('📊', style: TextStyle(fontSize: 18)),
+              const SizedBox(width: 8),
+              Text(
+                'Today at a Glance',
+                style: context.typography.titleMedium.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: colors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 2.1,
+          children: [
+            _GlanceCard(
+              title: 'Tasks',
+              value: scoreData.tasksCompleted,
+              icon: Icons.check_circle_outline_rounded,
+              color: theme.primary,
+            ),
+            _GlanceCard(
+              title: 'Notes',
+              value: scoreData.notesCreated,
+              icon: Icons.article_outlined,
+              color: Colors.blue,
+            ),
+            _GlanceCard(
+              title: 'Streak',
+              value: stats.currentStreak,
+              icon: Icons.local_fire_department_rounded,
+              color: Colors.orange,
+            ),
+            _GlanceCard(
+              title: 'Score',
+              value: scoreData.productivityScore.round(),
+              icon: Icons.speed_rounded,
+              color: Colors.teal,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNextReminder(BuildContext context) {
+    return const NextReminderWidget();
+  }
+}
+
+
+class NextReminderWidget extends ConsumerStatefulWidget {
+  const NextReminderWidget({super.key});
+
+  @override
+  ConsumerState<NextReminderWidget> createState() => _NextReminderWidgetState();
+}
+
+class _NextReminderWidgetState extends ConsumerState<NextReminderWidget> with WidgetsBindingObserver {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _startTimer();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _stopTimer();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _startTimer();
+    } else {
+      _stopTimer();
+    }
+  }
+
+  void _startTimer() {
+    _stopTimer();
+    _timer = Timer.periodic(const Duration(seconds: 30), (timer) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  void _stopTimer() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = context.appTheme;
+    final colors = context.colors;
+    final tasks = ref.watch(tasksProvider);
     final nowMs = DateTime.now().millisecondsSinceEpoch;
 
     final upcomingReminders = tasks.where((t) {
@@ -317,14 +474,16 @@ class DashboardPage extends ConsumerWidget {
     final timeStr = DateFormat('h:mm a').format(reminderDateTime);
 
     String remainingStr;
-    if (remaining.inDays > 0) {
-      final hours = remaining.inHours % 24;
-      remainingStr = hours > 0 ? '${remaining.inDays}d ${hours}h left' : '${remaining.inDays}d left';
-    } else if (remaining.inHours > 0) {
-      final minutes = remaining.inMinutes % 60;
-      remainingStr = '${remaining.inHours}h ${minutes}m left';
+    final totalMinutes = remaining.inMinutes;
+    if (totalMinutes < 60) {
+      remainingStr = '$totalMinutes min left';
+    } else if (remaining.inDays > 0) {
+      final days = remaining.inDays;
+      remainingStr = days == 1 ? '1 day left' : '$days days left';
     } else {
-      remainingStr = '${remaining.inMinutes}m left';
+      final hours = remaining.inHours;
+      final minutes = remaining.inMinutes % 60;
+      remainingStr = minutes > 0 ? '${hours}h ${minutes}m left' : '${hours}h left';
     }
 
     return Card(
@@ -390,71 +549,6 @@ class DashboardPage extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildTodayAtAGlance(
-    BuildContext context,
-    DailyStats scoreData,
-    PlannerStatsData stats,
-  ) {
-    final theme = context.appTheme;
-    final colors = context.colors;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4.0, bottom: 12.0),
-          child: Row(
-            children: [
-              const Text('📊', style: TextStyle(fontSize: 18)),
-              const SizedBox(width: 8),
-              Text(
-                'Today at a Glance',
-                style: context.typography.titleMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          mainAxisSpacing: 12,
-          crossAxisSpacing: 12,
-          childAspectRatio: 2.1,
-          children: [
-            _GlanceCard(
-              title: 'Tasks',
-              value: scoreData.tasksCompleted,
-              icon: Icons.check_circle_outline_rounded,
-              color: theme.primary,
-            ),
-            _GlanceCard(
-              title: 'Notes',
-              value: scoreData.notesCreated,
-              icon: Icons.article_outlined,
-              color: Colors.blue,
-            ),
-            _GlanceCard(
-              title: 'Streak',
-              value: stats.currentStreak,
-              icon: Icons.local_fire_department_rounded,
-              color: Colors.orange,
-            ),
-            _GlanceCard(
-              title: 'Score',
-              value: scoreData.productivityScore.round(),
-              icon: Icons.speed_rounded,
-              color: Colors.teal,
-            ),
-          ],
-        ),
-      ],
     );
   }
 }

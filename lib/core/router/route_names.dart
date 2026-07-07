@@ -28,6 +28,7 @@ abstract final class RouteNames {
   static const String createTask = 'create-task';
   static const String taskDetail = 'task-detail';
   static const String taskEdit = 'task-edit';
+  static const String notifications = 'notifications';
 
   // ─── Habits Routes ────────────────────────────────────────────────────────
   static const String habits = 'habits';

@@ -27,7 +27,7 @@ class TodaySection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(todayControllerProvider);
+    final state = ref.watch(todayStateProvider);
     final screenWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = _calculateCrossAxisCount(screenWidth);
 

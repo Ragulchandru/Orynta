@@ -45,15 +45,43 @@ final todayStateProvider = Provider.autoDispose<TodayState>((ref) {
   final total     = tasks.where((t) => !t.isArchived).length;
 
   // ── Next reminder ──────────────────────────────────────────────────────────
-  final upcoming = active
-      .where((t) => t.dueDate != null && t.dueDate!.isAfter(now))
-      .toList()
-    ..sort((a, b) => a.dueDate!.compareTo(b.dueDate!));
+  final upcomingReminders = active.where((t) {
+    final reminderMs = t.reminderMs;
+    if (reminderMs == null) return false;
+    final reminderDateTime = DateTime.fromMillisecondsSinceEpoch(reminderMs);
+    return reminderDateTime.isAfter(now);
+  }).toList()
+    ..sort((a, b) => (a.reminderMs ?? 0).compareTo(b.reminderMs ?? 0));
 
-  String? nextTitle, nextTime;
-  if (upcoming.isNotEmpty) {
-    nextTitle = upcoming.first.title;
-    nextTime  = DateFormat('h:mm a').format(upcoming.first.dueDate!);
+  String? nextTitle, nextTime, nextPriority;
+  if (upcomingReminders.isNotEmpty) {
+    final task = upcomingReminders.first;
+    nextTitle = task.title;
+    nextPriority = task.priority;
+
+    final reminderDateTime = DateTime.fromMillisecondsSinceEpoch(task.reminderMs!);
+    final remainingMs = task.reminderMs! - now.millisecondsSinceEpoch;
+    final remaining = Duration(milliseconds: remainingMs);
+
+    // Format: strict spec — always based on reminderMs, never dueDate.
+    // < 60 min  → "X min left"
+    // today     → "Today HH:MM AM/PM"
+    // tomorrow  → "Tomorrow HH:MM AM/PM"
+    // other     → "X days left"
+    final startOfToday = DateTime(now.year, now.month, now.day);
+    final reminderDay = DateTime(reminderDateTime.year, reminderDateTime.month, reminderDateTime.day);
+    final timeStr = DateFormat('h:mm a').format(reminderDateTime);
+
+    if (remaining.inMinutes < 60) {
+      nextTime = '${remaining.inMinutes} min left';
+    } else if (reminderDay.isAtSameMomentAs(startOfToday)) {
+      nextTime = 'Today $timeStr';
+    } else if (reminderDay.isAtSameMomentAs(startOfToday.add(const Duration(days: 1)))) {
+      nextTime = 'Tomorrow $timeStr';
+    } else {
+      final days = reminderDay.difference(startOfToday).inDays;
+      nextTime = '$days days left';
+    }
   }
 
   // ── Notes ──────────────────────────────────────────────────────────────────
@@ -90,10 +118,11 @@ final todayStateProvider = Provider.autoDispose<TodayState>((ref) {
     reminderSummary: ReminderSummaryData(
       title: nextTitle,
       time: nextTime,
+      priority: nextPriority,
     ),
     plannerSummary: PlannerSummaryData(
       eventsTodayCount: habitsCompletedToday,
-      upcomingEventsCount: upcoming.length,
+      upcomingEventsCount: upcomingReminders.length,
     ),
   );
 });

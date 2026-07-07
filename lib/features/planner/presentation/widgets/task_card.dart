@@ -58,6 +58,49 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
     super.dispose();
   }
 
+  Future<void> _confirmDelete(BuildContext context) async {
+    final theme = context.appTheme;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: theme.surface,
+        title: Text(
+          'Delete Task',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to permanently delete "${widget.task.title}"?',
+          style: TextStyle(
+            color: theme.isDark ? const Color(0xFFC5C5D3) : const Color(0xFF4E4E68),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(
+                color: theme.isDark ? const Color(0xFF8E8EA8) : const Color(0xFF8E8EA8),
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: theme.error),
+            child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      widget.onDelete();
+    }
+  }
+
   Color _getPriorityColor(String priority, AppThemeData theme) {
     return switch (priority.toLowerCase()) {
       'high' => theme.error,
@@ -213,6 +256,46 @@ class _TaskCardState extends State<TaskCard> with SingleTickerProviderStateMixin
                                 ),
                               ),
                             ),
+                            if (!widget.isSelectionMode) ...[
+                              const SizedBox(width: 4),
+                              PopupMenuButton<String>(
+                                icon: const Icon(Icons.more_vert_rounded, size: 20),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                style: const ButtonStyle(
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onSelected: (val) {
+                                  if (val == 'delete') {
+                                    _confirmDelete(context);
+                                  } else if (val == 'edit') {
+                                    widget.onTapDetail();
+                                  }
+                                },
+                                itemBuilder: (context) => [
+                                  const PopupMenuItem(
+                                    value: 'edit',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit_rounded, size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Edit Details'),
+                                      ],
+                                    ),
+                                  ),
+                                  PopupMenuItem(
+                                    value: 'delete',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.delete_outline_rounded, size: 18, color: theme.error),
+                                        const SizedBox(width: 8),
+                                        Text('Delete Task', style: TextStyle(color: theme.error)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
 

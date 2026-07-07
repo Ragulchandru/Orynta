@@ -278,7 +278,17 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                             .map((p) => DropdownMenuItem(value: p, child: Text(p.toUpperCase())))
                             .toList(),
                         onChanged: (val) {
-                          if (val != null) setState(() => _priority = val);
+                          if (val != null) {
+                            setState(() {
+                              _priority = val;
+                              _earlyReminderMinutes = switch (_priority.toLowerCase()) {
+                                'high' => 30,
+                                'medium' => 15,
+                                'low' => 10,
+                                _ => null,
+                              };
+                            });
+                          }
                         },
                       ),
                     ],
@@ -347,17 +357,17 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               leading: Icon(Icons.notifications_active_rounded, color: theme.primary),
               title: const Text('Reminder Alert'),
               subtitle: Text(ReminderOffset.fromMinutes(_earlyReminderMinutes).label),
-              trailing: DropdownButton<int>(
-                value: _earlyReminderMinutes ?? 15,
+              trailing: DropdownButton<int?>(
+                value: _earlyReminderMinutes,
                 underline: const SizedBox(),
                 items: ReminderOffset.values.map((offset) {
-                  return DropdownMenuItem<int>(
+                  return DropdownMenuItem<int?>(
                     value: offset.minutes,
                     child: Text(offset.label),
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) setState(() => _earlyReminderMinutes = val);
+                  setState(() => _earlyReminderMinutes = val);
                 },
               ),
             ),

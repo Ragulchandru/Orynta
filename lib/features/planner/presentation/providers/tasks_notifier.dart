@@ -14,7 +14,6 @@ import '../../domain/services/recurrence_engine.dart';
 import '../../domain/services/notification_service.dart';
 import '../../domain/services/planner_notification_service.dart';
 
-
 final taskRepositoryProvider = Provider<TaskRepository>((ref) {
   final box = Hive.box<TaskModel>(AppStrings.tasksBoxName);
   return TaskRepositoryImpl(box);
@@ -26,13 +25,11 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
   TasksNotifier(
     this._repository, {
     NotificationService? notificationService,
-  })  : _notificationService = notificationService ?? PlannerNotificationService.instance,
-        super([]) {
+  }) : super([]) {
     loadTasks();
   }
 
   final TaskRepository _repository;
-  final NotificationService _notificationService;
 
   Future<void> loadTasks() async {
     final tasks = await _repository.getAllTasks();
@@ -44,7 +41,11 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
   }
 
   Future<void> addTask(TaskEntity task) async {
-    final updatedTask = _setTaskReminderFields(task);
+    // Generate a stable FNV-1a notification ID ONCE at creation time.
+    // Existing tasks that already have a notificationId keep their stored value.
+    final notifId = task.notificationId ?? fnv1a32(task.id);
+    final taskWithId = task.copyWith(notificationId: notifId);
+    final updatedTask = _setTaskReminderFields(taskWithId);
     await _repository.saveTask(updatedTask);
     state = [...state, updatedTask];
     _syncTaskReminder(updatedTask);
@@ -55,9 +56,10 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
     final now = DateTime.now();
     final box = Hive.box<String>(AppStrings.settingsBoxName);
     final defaultCat = category ?? box.get('default_category_id') ?? 'Personal';
+    final newId = DateTime.now().millisecondsSinceEpoch.toString();
 
     final task = TaskEntity(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: newId,
       title: title.trim(),
       description: '',
       priority: 'medium',
@@ -69,6 +71,8 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
       estimatedMinutes: 15,
       tagIds: const [],
       category: defaultCat,
+      earlyReminderMinutes: 15,
+      notificationId: fnv1a32(newId),
     );
     await addTask(task);
   }
@@ -97,19 +101,32 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
 
       await updateTask(updated);
 
-      // Offline-first recurrence generation
+      // Recurring task: generate next occurrence when completing
       if (newStatus && current.recurrenceRule != null && current.dueDate != null) {
-        final nextDue = RecurrenceEngine.computeNextDueDate(current.dueDate!, current.recurrenceRule);
+        final nextDue = RecurrenceEngine.computeNextDueDate(
+          current.dueDate!, current.recurrenceRule,
+        );
         if (nextDue != null) {
+          final nextId = '${DateTime.now().millisecondsSinceEpoch}_r';
+          // Recalculate reminder time preserving the original offset.
+          final nextReminderMs = current.earlyReminderMinutes != null
+              ? nextDue
+                  .subtract(Duration(minutes: current.earlyReminderMinutes!))
+                  .millisecondsSinceEpoch
+              : null;
           final recurringCopy = current.copyWith(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            id: nextId,
+            notificationId: fnv1a32(nextId), // new stable ID for the new task
             dueDate: nextDue,
+            reminderMs: nextReminderMs,
             isCompleted: false,
             createdAt: now,
             updatedAt: now,
-            subtasks: current.subtasks.map((s) => s.copyWith(isCompleted: false)).toList(),
+            subtasks: current.subtasks
+                .map((s) => s.copyWith(isCompleted: false))
+                .toList(),
           );
-          await addTask(recurringCopy);
+          await addTask(recurringCopy); // addTask calls _syncTaskReminder internally
         }
       }
     }
@@ -163,15 +180,37 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
   }
 
   Future<void> deleteTask(String id) async {
+    final task = state.firstWhere(
+      (t) => t.id == id,
+      orElse: () => TaskEntity(
+        id: id, title: '', description: '', priority: 'low',
+        dueDate: null, createdAt: DateTime.now(), updatedAt: DateTime.now(),
+        isCompleted: false, timelineSection: 0, estimatedMinutes: 0, tagIds: const [],
+      ),
+    );
     await _repository.deleteTask(id);
     state = state.where((t) => t.id != id).toList();
-    _notificationService.cancelTaskReminder(id);
+    await PlannerNotificationService.cancelTaskReminderStatic(
+      id,
+      storedNotificationId: task.notificationId,
+    );
   }
 
   Future<void> bulkDeleteTasks(List<String> ids) async {
     for (final id in ids) {
+      final task = state.firstWhere(
+        (t) => t.id == id,
+        orElse: () => TaskEntity(
+          id: id, title: '', description: '', priority: 'low',
+          dueDate: null, createdAt: DateTime.now(), updatedAt: DateTime.now(),
+          isCompleted: false, timelineSection: 0, estimatedMinutes: 0, tagIds: const [],
+        ),
+      );
       await _repository.deleteTask(id);
-      _notificationService.cancelTaskReminder(id);
+      await PlannerNotificationService.cancelTaskReminderStatic(
+        id,
+        storedNotificationId: task.notificationId,
+      );
     }
     state = state.where((t) => !ids.contains(t.id)).toList();
   }
@@ -231,47 +270,44 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
   }
 
   void _syncTaskReminder(TaskEntity task) {
-    _notificationService.cancelTaskReminder(task.id);
+    // Cancel existing first — always use the stored stable ID.
+    PlannerNotificationService.cancelTaskReminderStatic(
+      task.id,
+      storedNotificationId: task.notificationId,
+    );
 
-    if (task.isCompleted || task.isArchived || task.dueDate == null) {
+    if (task.isCompleted ||
+        task.isArchived ||
+        task.reminderStatus == 'cancelled' ||
+        task.dueDate == null ||
+        task.earlyReminderMinutes == null) {
       return;
     }
 
-    final offsetMinutes = task.earlyReminderMinutes ?? _getDefaultOffset(task.priority);
+    final offsetMinutes = task.earlyReminderMinutes!;
     final reminderTime = task.dueDate!.subtract(Duration(minutes: offsetMinutes));
 
     if (reminderTime.isAfter(DateTime.now())) {
-      _notificationService.scheduleTaskReminder(
+      PlannerNotificationService.scheduleTaskReminderStatic(
         taskId: task.id,
         taskTitle: task.title,
-        reminderTime: reminderTime,
+        reminderTime: task.dueDate!,
         earlyMinutes: offsetMinutes,
-        repeatInterval: task.repeatReminderInterval ?? 'none',
+        repeatInterval: task.repeatReminderInterval ?? 'never',
+        storedNotificationId: task.notificationId,
       );
     }
   }
 
-  int _getDefaultOffset(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return 30;
-      case 'medium':
-        return 15;
-      case 'low':
-        return 5;
-      default:
-        return 15;
-    }
-  }
+
 
   TaskEntity _setTaskReminderFields(TaskEntity task) {
-    if (task.dueDate == null || task.isCompleted || task.isArchived) {
+    if (task.dueDate == null || task.isCompleted || task.isArchived || task.earlyReminderMinutes == null) {
       return task.copyWith(reminderMs: null);
     }
-    final offset = task.earlyReminderMinutes ?? _getDefaultOffset(task.priority);
+    final offset = task.earlyReminderMinutes!;
     final reminderTime = task.dueDate!.subtract(Duration(minutes: offset));
     return task.copyWith(
-      earlyReminderMinutes: offset,
       reminderMs: reminderTime.millisecondsSinceEpoch,
     );
   }
