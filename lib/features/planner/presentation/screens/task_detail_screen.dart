@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../domain/entities/subtask_entity.dart';
 import '../../domain/entities/task_entity.dart';
+import '../../domain/entities/reminder_offset.dart';
 import '../providers/categories_notifier.dart';
 import '../providers/tasks_notifier.dart';
 
@@ -40,6 +41,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   late TimeOfDay? _dueTime;
   late String? _recurrenceRule;
   late int? _reminderMs;
+  late int? _earlyReminderMinutes;
+  late String? _repeatReminderInterval;
   late int _estimatedMinutes;
   late List<SubtaskEntity> _subtasks;
   late List<String> _linkedNoteIds;
@@ -77,6 +80,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
     _dueTime = t.dueDate != null ? TimeOfDay.fromDateTime(t.dueDate!) : null;
     _recurrenceRule = t.recurrenceRule;
     _reminderMs = t.reminderMs;
+    _earlyReminderMinutes = t.earlyReminderMinutes;
+    _repeatReminderInterval = t.repeatReminderInterval ?? 'never';
     _estimatedMinutes = t.estimatedMinutes;
     _subtasks = List.from(t.subtasks);
     _linkedNoteIds = List.from(t.linkedNoteIds.isNotEmpty
@@ -116,6 +121,8 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
       dueDate: finalDueDate,
       recurrenceRule: _recurrenceRule,
       reminderMs: _reminderMs,
+      earlyReminderMinutes: _earlyReminderMinutes,
+      repeatReminderInterval: _repeatReminderInterval,
       estimatedMinutes: _estimatedMinutes,
       subtasks: _subtasks,
       linkedNoteIds: _linkedNoteIds,
@@ -335,6 +342,48 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
               ),
             ),
 
+            // Reminder Offset dropdown
+            ListTile(
+              leading: Icon(Icons.notifications_active_rounded, color: theme.primary),
+              title: const Text('Reminder Alert'),
+              subtitle: Text(ReminderOffset.fromMinutes(_earlyReminderMinutes).label),
+              trailing: DropdownButton<int>(
+                value: _earlyReminderMinutes ?? 15,
+                underline: const SizedBox(),
+                items: ReminderOffset.values.map((offset) {
+                  return DropdownMenuItem<int>(
+                    value: offset.minutes,
+                    child: Text(offset.label),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _earlyReminderMinutes = val);
+                },
+              ),
+            ),
+
+            // Repeat Alert dropdown
+            ListTile(
+              leading: Icon(Icons.snooze_rounded, color: theme.secondary),
+              title: const Text('Repeat Reminder'),
+              subtitle: Text(_getRepeatAlertLabel(_repeatReminderInterval)),
+              trailing: DropdownButton<String>(
+                value: _repeatReminderInterval ?? 'never',
+                underline: const SizedBox(),
+                items: const [
+                  DropdownMenuItem(value: 'never', child: Text('Never')),
+                  DropdownMenuItem(value: '5m', child: Text('Every 5 min')),
+                  DropdownMenuItem(value: '10m', child: Text('Every 10 min')),
+                  DropdownMenuItem(value: '15m', child: Text('Every 15 min')),
+                  DropdownMenuItem(value: '30m', child: Text('Every 30 min')),
+                  DropdownMenuItem(value: 'untilCompleted', child: Text('Until completed')),
+                ],
+                onChanged: (val) {
+                  if (val != null) setState(() => _repeatReminderInterval = val);
+                },
+              ),
+            ),
+
             const SizedBox(height: 16),
             const Divider(),
 
@@ -497,5 +546,22 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
         ),
       ),
     );
+  }
+
+  String _getRepeatAlertLabel(String? val) {
+    switch (val) {
+      case '5m':
+        return 'Every 5 min';
+      case '10m':
+        return 'Every 10 min';
+      case '15m':
+        return 'Every 15 min';
+      case '30m':
+        return 'Every 30 min';
+      case 'untilCompleted':
+        return 'Until completed';
+      default:
+        return 'Never';
+    }
   }
 }

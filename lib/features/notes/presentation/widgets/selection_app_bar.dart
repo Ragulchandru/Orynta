@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../providers/notes_notifier.dart';
 import 'bulk_actions_sheet.dart';
+import 'archive_helper.dart';
 
 class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
   const SelectionAppBar({
@@ -133,7 +134,7 @@ class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
           ),
           tooltip: 'Archive',
           onPressed: () {
-            ref.read(notesProvider.notifier).bulkToggleArchive(selectedIds, true);
+            ArchiveHelper.archiveWithUndo(context: context, ref: ref, ids: selectedIds);
             onCancel();
           },
         ),

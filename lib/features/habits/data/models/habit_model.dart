@@ -16,6 +16,8 @@ class HabitModel {
     required this.createdAtMs,
     required this.updatedAtMs,
     required this.completionHistory,
+    this.reminderType,
+    this.customReminderTime,
   });
 
   final String id;
@@ -32,6 +34,8 @@ class HabitModel {
   final int createdAtMs;
   final int updatedAtMs;
   final Map<String, int> completionHistory;
+  final String? reminderType;
+  final String? customReminderTime;
 
   factory HabitModel.fromEntity(HabitEntity entity) {
     return HabitModel(
@@ -49,6 +53,8 @@ class HabitModel {
       createdAtMs: entity.createdAt.millisecondsSinceEpoch,
       updatedAtMs: entity.updatedAt.millisecondsSinceEpoch,
       completionHistory: entity.completionHistory,
+      reminderType: entity.reminderType,
+      customReminderTime: entity.customReminderTime,
     );
   }
 
@@ -68,6 +74,8 @@ class HabitModel {
       createdAt: DateTime.fromMillisecondsSinceEpoch(createdAtMs),
       updatedAt: DateTime.fromMillisecondsSinceEpoch(updatedAtMs),
       completionHistory: Map<String, int>.from(completionHistory),
+      reminderType: reminderType,
+      customReminderTime: customReminderTime,
     );
   }
 }

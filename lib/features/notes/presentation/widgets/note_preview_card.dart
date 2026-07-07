@@ -13,6 +13,7 @@ import '../providers/notes_notifier.dart';
 import '../providers/notes_home_providers.dart';
 import 'note_context_menu.dart';
 import 'search_highlight_text.dart';
+import 'archive_helper.dart';
 
 class NotePreviewCard extends ConsumerStatefulWidget {
   const NotePreviewCard({
@@ -327,12 +328,10 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
           } else if (direction == DismissDirection.endToStart) {
             // Swipe Left -> Archive
             HapticFeedback.lightImpact();
-            ref.read(notesProvider.notifier).bulkToggleArchive({widget.note.id}, true);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Note moved to Archive'),
-                duration: Duration(seconds: 2),
-              ),
+            ArchiveHelper.archiveWithUndo(
+              context: context,
+              ref: ref,
+              ids: {widget.note.id},
             );
             return true; // Dismiss note card visually
           }

@@ -8,6 +8,8 @@ import '../../data/models/habit_model.dart';
 import '../../data/repositories/habit_repository_impl.dart';
 import '../../domain/entities/habit_entity.dart';
 import '../../domain/repositories/habit_repository.dart';
+import '../../../planner/domain/services/notification_service.dart';
+import '../../../planner/domain/services/planner_notification_service.dart';
 
 final habitRepositoryProvider = Provider<HabitRepository>((ref) {
   final Box<HabitModel> box = Hive.box<HabitModel>(AppStrings.habitsBoxName);
@@ -18,20 +20,52 @@ final habitRepositoryProvider = Provider<HabitRepository>((ref) {
 // ─── Habits Notifier ─────────────────────────────────────────────────────────
 
 class HabitsNotifier extends StateNotifier<List<HabitEntity>> {
-  HabitsNotifier(this._repository) : super([]) {
+  HabitsNotifier(
+    this._repository, {
+    NotificationService? notificationService,
+  })  : _notificationService = notificationService ?? PlannerNotificationService.instance,
+        super([]) {
     loadHabits();
   }
 
   final HabitRepository _repository;
+  final NotificationService _notificationService;
 
   Future<void> loadHabits() async {
     final habits = await _repository.getAllHabits();
-    state = habits;
+    
+    // Check if any habit needs today's count/completion reset because a new day has started
+    final todayKey = _formatKey(DateTime.now());
+    final updatedList = <HabitEntity>[];
+    
+    for (final h in habits) {
+      final countForToday = h.completionHistory[todayKey] ?? 0;
+      final completedToday = countForToday >= h.targetCount;
+      if (h.currentCount != countForToday || h.completedToday != completedToday) {
+        final updated = h.copyWith(
+          currentCount: countForToday,
+          completedToday: completedToday,
+          updatedAt: DateTime.now(),
+        );
+        await _repository.updateHabit(updated);
+        updatedList.add(updated);
+      } else {
+        updatedList.add(h);
+      }
+    }
+    
+    state = updatedList;
+
+    // Reschedule all active future habit reminders
+    for (final h in state) {
+      _syncHabitReminder(h);
+    }
   }
 
   Future<void> addHabit(HabitEntity habit) async {
     await _repository.saveHabit(habit);
     state = [...state, habit];
+    _syncHabitReminder(habit);
   }
 
   Future<void> editHabit(HabitEntity habit) async {
@@ -41,11 +75,13 @@ class HabitsNotifier extends StateNotifier<List<HabitEntity>> {
       for (final h in state)
         if (h.id == habit.id) updated else h,
     ];
+    _syncHabitReminder(updated);
   }
 
   Future<void> deleteHabit(String id) async {
     await _repository.deleteHabit(id);
     state = state.where((h) => h.id != id).toList();
+    _notificationService.cancelHabitReminder(id);
   }
 
   Future<void> incrementHabit(String id, [DateTime? date]) async {
@@ -78,6 +114,7 @@ class HabitsNotifier extends StateNotifier<List<HabitEntity>> {
       for (final h in state)
         if (h.id == id) updated else h,
     ];
+    _syncHabitReminder(updated);
   }
 
   Future<void> decrementHabit(String id, [DateTime? date]) async {
@@ -109,6 +146,23 @@ class HabitsNotifier extends StateNotifier<List<HabitEntity>> {
       for (final h in state)
         if (h.id == id) updated else h,
     ];
+    _syncHabitReminder(updated);
+  }
+
+  void _syncHabitReminder(HabitEntity habit) {
+    _notificationService.cancelHabitReminder(habit.id);
+
+    // If completed today or no reminderType is set, do not schedule
+    if (habit.completedToday || habit.reminderType == null) {
+      return;
+    }
+
+    _notificationService.scheduleHabitReminder(
+      habitId: habit.id,
+      habitTitle: habit.title,
+      reminderType: habit.reminderType!,
+      customTime: habit.customReminderTime,
+    );
   }
 
   String _formatKey(DateTime dt) {

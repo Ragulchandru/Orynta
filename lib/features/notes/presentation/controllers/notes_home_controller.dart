@@ -243,18 +243,18 @@ class NotesHomeController extends StateNotifier<NotesHomeState> {
         case SmartFilter.allNotes:
           result = result.where((n) => !n.isArchived).toList();
         case SmartFilter.favorites:
-          result = result.where((n) => n.isFavorite).toList();
+          result = result.where((n) => n.isFavorite && !n.isArchived).toList();
         case SmartFilter.pinned:
-          result = result.where((n) => n.isPinned).toList();
+          result = result.where((n) => n.isPinned && !n.isArchived).toList();
         case SmartFilter.archived:
           result = result.where((n) => n.isArchived).toList();
         case SmartFilter.attachments:
-          result = result.where((n) => n.hasAttachments).toList();
+          result = result.where((n) => n.hasAttachments && !n.isArchived).toList();
         case SmartFilter.checklists:
-          result = result.where((n) => n.hasChecklists).toList();
+          result = result.where((n) => n.hasChecklists && !n.isArchived).toList();
         case SmartFilter.recentlyEdited:
           final oneDayAgo = DateTime.now().subtract(const Duration(hours: 24));
-          result = result.where((n) => n.updatedAt.isAfter(oneDayAgo)).toList();
+          result = result.where((n) => n.updatedAt.isAfter(oneDayAgo) && !n.isArchived).toList();
       }
     }
 

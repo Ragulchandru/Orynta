@@ -4,8 +4,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_system.dart';
+import '../../../../core/router/route_names.dart';
 import '../../../workspace/presentation/widgets/workspace_avatar.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/models/category_model.dart';
@@ -49,6 +51,46 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     );
   }
 
+  void _showArchiveAllCompletedConfirmDialog(BuildContext context, List<TaskEntity> completedTasks) {
+    final theme = context.appTheme;
+    final ids = completedTasks.map((t) => t.id).toList();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: theme.surface,
+          title: Text(
+            'Archive Completed Tasks?',
+            style: context.typography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Archive ${ids.length} completed tasks? This will remove them from the Completed tab.',
+            style: context.typography.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                ref.read(tasksNotifierProvider.notifier).bulkArchiveTasks(ids);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('${ids.length} tasks archived'),
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Archive', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _createNewTask() {
     final now = DateTime.now();
     final defaultCat = ref.read(categoriesProvider.notifier).defaultCategoryId;
@@ -74,6 +116,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
     final theme = context.appTheme;
     final stats = ref.watch(plannerStatsProvider);
     final sortedTasks = ref.watch(sortedTasksProvider);
+    final activeFilter = ref.watch(taskFilterProvider);
     final width = MediaQuery.of(context).size.width;
 
     return Scaffold(
@@ -116,6 +159,27 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
               });
             },
           ),
+          if (activeFilter == 'completed' && sortedTasks.isNotEmpty)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert_rounded),
+              onSelected: (val) {
+                if (val == 'archive_all') {
+                  _showArchiveAllCompletedConfirmDialog(context, sortedTasks);
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'archive_all',
+                  child: Row(
+                    children: [
+                      Icon(Icons.archive_outlined, size: 20),
+                      SizedBox(width: 8),
+                      Text('Archive All Completed'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           IconButton(
             icon: const Icon(Icons.calendar_month_rounded),
             onPressed: () => _showCalendar(context),
@@ -576,6 +640,13 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
                         final isDefault = c.id == defaultId;
                         return ListTile(
                           key: ValueKey(c.id),
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.pushNamed(
+                              RouteNames.categoryDetail,
+                              pathParameters: {'name': c.name},
+                            );
+                          },
                           leading: Icon(c.icon, color: c.color),
                           title: Row(
                             children: [

@@ -10,6 +10,8 @@ import 'package:orynta/features/planner/domain/entities/task_entity.dart';
 import 'package:orynta/features/planner/domain/repositories/task_repository.dart';
 import 'package:orynta/features/planner/presentation/providers/tasks_notifier.dart';
 
+import '../fakes/fake_notification_service.dart';
+
 class FakeTaskRepository implements TaskRepository {
   final Map<String, TaskEntity> _tasks = {};
 
@@ -41,11 +43,12 @@ void main() {
   late Directory tempDir;
 
   setUp(() async {
+    TestWidgetsFlutterBinding.ensureInitialized();
     tempDir = await Directory.systemTemp.createTemp('orynta_task_lifecycle_test');
     Hive.init(tempDir.path);
     await Hive.openBox<String>(AppStrings.settingsBoxName);
     repository = FakeTaskRepository();
-    notifier = TasksNotifier(repository);
+    notifier = TasksNotifier(repository, notificationService: FakeNotificationService());
   });
 
   tearDown(() async {

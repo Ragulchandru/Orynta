@@ -24,6 +24,8 @@ class SettingsState {
     required this.dailyReminderEnabled,
     required this.dailyReminderTime,
     required this.quietHoursEnabled,
+    required this.quietHoursStart,
+    required this.quietHoursEnd,
     required this.appLockEnabled,
     required this.biometricsEnabled,
     required this.richFormattingEnabled,
@@ -47,6 +49,8 @@ class SettingsState {
   final bool dailyReminderEnabled;
   final String dailyReminderTime;
   final bool quietHoursEnabled;
+  final int quietHoursStart;
+  final int quietHoursEnd;
   final bool appLockEnabled;
   final bool biometricsEnabled;
   final bool richFormattingEnabled;
@@ -71,6 +75,8 @@ class SettingsState {
       dailyReminderEnabled: true,
       dailyReminderTime: '09:00',
       quietHoursEnabled: false,
+      quietHoursStart: 22,
+      quietHoursEnd: 7,
       appLockEnabled: false,
       biometricsEnabled: false,
       richFormattingEnabled: true,
@@ -96,6 +102,8 @@ class SettingsState {
     bool? dailyReminderEnabled,
     String? dailyReminderTime,
     bool? quietHoursEnabled,
+    int? quietHoursStart,
+    int? quietHoursEnd,
     bool? appLockEnabled,
     bool? biometricsEnabled,
     bool? richFormattingEnabled,
@@ -119,6 +127,8 @@ class SettingsState {
       dailyReminderEnabled: dailyReminderEnabled ?? this.dailyReminderEnabled,
       dailyReminderTime: dailyReminderTime ?? this.dailyReminderTime,
       quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
+      quietHoursStart: quietHoursStart ?? this.quietHoursStart,
+      quietHoursEnd: quietHoursEnd ?? this.quietHoursEnd,
       appLockEnabled: appLockEnabled ?? this.appLockEnabled,
       biometricsEnabled: biometricsEnabled ?? this.biometricsEnabled,
       richFormattingEnabled: richFormattingEnabled ?? this.richFormattingEnabled,
@@ -153,6 +163,8 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       dailyReminderEnabled: _box.get('setting_dailyReminderEnabled') != 'false',
       dailyReminderTime: _box.get('setting_dailyReminderTime') ?? '09:00',
       quietHoursEnabled: _box.get('setting_quietHoursEnabled') == 'true',
+      quietHoursStart: int.tryParse(_box.get('setting_quietHoursStart') ?? '22') ?? 22,
+      quietHoursEnd: int.tryParse(_box.get('setting_quietHoursEnd') ?? '7') ?? 7,
       appLockEnabled: _box.get('app_lock_enabled') == 'true',
       biometricsEnabled: _box.get('app_lock_biometrics_enabled') == 'true',
       richFormattingEnabled: _box.get('setting_richFormattingEnabled') != 'false',
@@ -238,6 +250,31 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> updateQuietHoursEnabled(bool value) async {
     state = state.copyWith(quietHoursEnabled: value);
     await _box.put('setting_quietHoursEnabled', value.toString());
+    PlannerNotificationService.updateQuietHours(
+      enabled: value,
+      startHour: state.quietHoursStart,
+      endHour: state.quietHoursEnd,
+    );
+  }
+
+  Future<void> updateQuietHoursStart(int hour) async {
+    state = state.copyWith(quietHoursStart: hour);
+    await _box.put('setting_quietHoursStart', hour.toString());
+    PlannerNotificationService.updateQuietHours(
+      enabled: state.quietHoursEnabled,
+      startHour: hour,
+      endHour: state.quietHoursEnd,
+    );
+  }
+
+  Future<void> updateQuietHoursEnd(int hour) async {
+    state = state.copyWith(quietHoursEnd: hour);
+    await _box.put('setting_quietHoursEnd', hour.toString());
+    PlannerNotificationService.updateQuietHours(
+      enabled: state.quietHoursEnabled,
+      startHour: state.quietHoursStart,
+      endHour: hour,
+    );
   }
 
   Future<void> updateAppLockEnabled(bool value) async {

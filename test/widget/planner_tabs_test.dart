@@ -15,6 +15,8 @@ import 'package:orynta/features/planner/presentation/providers/categories_notifi
 import 'package:orynta/features/planner/presentation/providers/tasks_notifier.dart';
 import 'package:orynta/features/planner/presentation/screens/planner_screen.dart';
 
+import '../fakes/fake_notification_service.dart';
+
 class FakeTaskRepository implements TaskRepository {
   @override
   Future<List<TaskEntity>> getAllTasks() async => [];
@@ -29,7 +31,8 @@ class FakeTaskRepository implements TaskRepository {
 }
 
 class FakeTasksNotifier extends TasksNotifier {
-  FakeTasksNotifier(List<TaskEntity> initialTasks) : super(FakeTaskRepository()) {
+  FakeTasksNotifier(List<TaskEntity> initialTasks)
+      : super(FakeTaskRepository(), notificationService: FakeNotificationService()) {
     state = initialTasks;
   }
 }

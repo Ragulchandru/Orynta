@@ -28,13 +28,15 @@ class HabitTypeAdapter extends TypeAdapter<HabitModel> {
       createdAtMs: fields[11] as int,
       updatedAtMs: fields[12] as int,
       completionHistory: (fields[13] as Map?)?.cast<String, int>() ?? {},
+      reminderType: fields[14] as String?,
+      customReminderTime: fields[15] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, HabitModel obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(16)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -62,6 +64,10 @@ class HabitTypeAdapter extends TypeAdapter<HabitModel> {
       ..writeByte(12)
       ..write(obj.updatedAtMs)
       ..writeByte(13)
-      ..write(obj.completionHistory);
+      ..write(obj.completionHistory)
+      ..writeByte(14)
+      ..write(obj.reminderType)
+      ..writeByte(15)
+      ..write(obj.customReminderTime);
   }
 }

@@ -30,6 +30,8 @@ mixin _$HabitEntity {
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
   Map<String, int> get completionHistory => throw _privateConstructorUsedError;
+  String? get reminderType => throw _privateConstructorUsedError;
+  String? get customReminderTime => throw _privateConstructorUsedError;
 
   @JsonKey(ignore: true)
   $HabitEntityCopyWith<HabitEntity> get copyWith =>
@@ -56,7 +58,9 @@ abstract class $HabitEntityCopyWith<$Res> {
       int longestStreak,
       DateTime createdAt,
       DateTime updatedAt,
-      Map<String, int> completionHistory});
+      Map<String, int> completionHistory,
+      String? reminderType,
+      String? customReminderTime});
 }
 
 /// @nodoc
@@ -86,6 +90,8 @@ class _$HabitEntityCopyWithImpl<$Res, $Val extends HabitEntity>
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? completionHistory = null,
+    Object? reminderType = freezed,
+    Object? customReminderTime = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -144,6 +150,14 @@ class _$HabitEntityCopyWithImpl<$Res, $Val extends HabitEntity>
           ? _value.completionHistory
           : completionHistory // ignore: cast_nullable_to_non_nullable
               as Map<String, int>,
+      reminderType: freezed == reminderType
+          ? _value.reminderType
+          : reminderType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customReminderTime: freezed == customReminderTime
+          ? _value.customReminderTime
+          : customReminderTime // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -170,7 +184,9 @@ abstract class _$$HabitEntityImplCopyWith<$Res>
       int longestStreak,
       DateTime createdAt,
       DateTime updatedAt,
-      Map<String, int> completionHistory});
+      Map<String, int> completionHistory,
+      String? reminderType,
+      String? customReminderTime});
 }
 
 /// @nodoc
@@ -198,6 +214,8 @@ class __$$HabitEntityImplCopyWithImpl<$Res>
     Object? createdAt = null,
     Object? updatedAt = null,
     Object? completionHistory = null,
+    Object? reminderType = freezed,
+    Object? customReminderTime = freezed,
   }) {
     return _then(_$HabitEntityImpl(
       id: null == id
@@ -256,6 +274,14 @@ class __$$HabitEntityImplCopyWithImpl<$Res>
           ? _value._completionHistory
           : completionHistory // ignore: cast_nullable_to_non_nullable
               as Map<String, int>,
+      reminderType: freezed == reminderType
+          ? _value.reminderType
+          : reminderType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      customReminderTime: freezed == customReminderTime
+          ? _value.customReminderTime
+          : customReminderTime // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -277,7 +303,9 @@ class _$HabitEntityImpl implements _HabitEntity {
       required this.longestStreak,
       required this.createdAt,
       required this.updatedAt,
-      required final Map<String, int> completionHistory})
+      required final Map<String, int> completionHistory,
+      this.reminderType,
+      this.customReminderTime})
       : _completionHistory = completionHistory;
 
   @override
@@ -316,8 +344,13 @@ class _$HabitEntityImpl implements _HabitEntity {
   }
 
   @override
+  final String? reminderType;
+  @override
+  final String? customReminderTime;
+
+  @override
   String toString() {
-    return 'HabitEntity(id: $id, title: $title, description: $description, icon: $icon, color: $color, frequency: $frequency, targetCount: $targetCount, currentCount: $currentCount, completedToday: $completedToday, currentStreak: $currentStreak, longestStreak: $longestStreak, createdAt: $createdAt, updatedAt: $updatedAt, completionHistory: $completionHistory)';
+    return 'HabitEntity(id: $id, title: $title, description: $description, icon: $icon, color: $color, frequency: $frequency, targetCount: $targetCount, currentCount: $currentCount, completedToday: $completedToday, currentStreak: $currentStreak, longestStreak: $longestStreak, createdAt: $createdAt, updatedAt: $updatedAt, completionHistory: $completionHistory, reminderType: $reminderType, customReminderTime: $customReminderTime)';
   }
 
   @override
@@ -348,7 +381,11 @@ class _$HabitEntityImpl implements _HabitEntity {
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
             const DeepCollectionEquality()
-                .equals(other._completionHistory, _completionHistory));
+                .equals(other._completionHistory, _completionHistory) &&
+            (identical(other.reminderType, reminderType) ||
+                other.reminderType == reminderType) &&
+            (identical(other.customReminderTime, customReminderTime) ||
+                other.customReminderTime == customReminderTime));
   }
 
   @override
@@ -367,7 +404,9 @@ class _$HabitEntityImpl implements _HabitEntity {
       longestStreak,
       createdAt,
       updatedAt,
-      const DeepCollectionEquality().hash(_completionHistory));
+      const DeepCollectionEquality().hash(_completionHistory),
+      reminderType,
+      customReminderTime);
 
   @JsonKey(ignore: true)
   @override
@@ -391,7 +430,9 @@ abstract class _HabitEntity implements HabitEntity {
       required final int longestStreak,
       required final DateTime createdAt,
       required final DateTime updatedAt,
-      required final Map<String, int> completionHistory}) = _$HabitEntityImpl;
+      required final Map<String, int> completionHistory,
+      final String? reminderType,
+      final String? customReminderTime}) = _$HabitEntityImpl;
 
   @override
   String get id;
@@ -421,6 +462,10 @@ abstract class _HabitEntity implements HabitEntity {
   DateTime get updatedAt;
   @override
   Map<String, int> get completionHistory;
+  @override
+  String? get reminderType;
+  @override
+  String? get customReminderTime;
   @override
   @JsonKey(ignore: true)
   _$$HabitEntityImplCopyWith<_$HabitEntityImpl> get copyWith =>

@@ -38,6 +38,7 @@ import 'features/habits/data/models/habit_model.dart';
 import 'features/habits/data/models/habit_type_adapter.dart';
 import 'features/focus/data/models/focus_session_model.dart';
 import 'features/focus/data/models/focus_type_adapter.dart';
+import 'features/planner/domain/services/planner_notification_service.dart';
 
 Future<void> main() async {
   // Step 1
@@ -64,7 +65,10 @@ Future<void> main() async {
     Hive.openBox<FocusSessionModel>(AppStrings.focusBoxName),
   ]);
 
-  // Step 5 — Launch the app.
+  // Step 5 — Initialise notification engine.
+  await PlannerNotificationService.init();
+
+  // Step 6 — Launch the app.
   runApp(
     const ProviderScope(
       child: OryntaApp(),

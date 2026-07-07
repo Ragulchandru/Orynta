@@ -121,6 +121,11 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
       isArchived = reader.readBool();
     }
 
+    String repeatReminderInterval = 'never';
+    if (reader.availableBytes > 0) {
+      repeatReminderInterval = reader.readString();
+    }
+
     return TaskModel(
       id: id,
       title: title,
@@ -146,6 +151,7 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
       linkedNoteIds: linkedNoteIds,
       dueTimeMs: dueTimeMs,
       isArchived: isArchived,
+      repeatReminderInterval: repeatReminderInterval,
     );
   }
 
@@ -217,5 +223,6 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
     if (obj.dueTimeMs != null) writer.writeInt(obj.dueTimeMs!);
 
     writer.writeBool(obj.isArchived);
+    writer.writeString(obj.repeatReminderInterval ?? 'never');
   }
 }

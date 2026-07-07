@@ -28,6 +28,8 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
   int _targetCount = 1;
   String _selectedIcon = 'water';
   int _selectedColorIndex = 0;
+  String? _reminderType;
+  String? _customReminderTime;
 
   bool _isEditing = false;
   HabitEntity? _existingHabit;
@@ -66,6 +68,8 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
         _frequency = _existingHabit!.frequency;
         _targetCount = _existingHabit!.targetCount;
         _selectedIcon = _existingHabit!.icon;
+        _reminderType = _existingHabit!.reminderType;
+        _customReminderTime = _existingHabit!.customReminderTime;
         
         final colorValue = Color(_existingHabit!.color);
         final colorIdx = _colors.indexWhere((c) => c.toARGB32() == colorValue.toARGB32());
@@ -97,6 +101,8 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
         frequency: _frequency,
         targetCount: _targetCount,
         completedToday: _existingHabit!.currentCount >= _targetCount,
+        reminderType: _reminderType,
+        customReminderTime: _customReminderTime,
         updatedAt: DateTime.now(),
       );
       ref.read(habitsProvider.notifier).editHabit(habit);
@@ -113,6 +119,8 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
         completedToday: false,
         currentStreak: 0,
         longestStreak: 0,
+        reminderType: _reminderType,
+        customReminderTime: _customReminderTime,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
         completionHistory: const {},
@@ -317,6 +325,67 @@ class _CreateHabitScreenState extends ConsumerState<CreateHabitScreen> {
                   );
                 },
               ),
+              const SizedBox(height: AppSizes.lg),
+
+              // Reminder Settings
+              Text(
+                'REMINDER',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: AppSizes.sm),
+              DropdownButtonFormField<String>(
+                initialValue: _reminderType ?? 'none',
+                decoration: const InputDecoration(
+                  labelText: 'Reminder Type',
+                  prefixIcon: Icon(Icons.alarm_rounded),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'none', child: Text('No Reminder')),
+                  DropdownMenuItem(value: 'morning', child: Text('Morning (8:00 AM)')),
+                  DropdownMenuItem(value: 'afternoon', child: Text('Afternoon (1:00 PM)')),
+                  DropdownMenuItem(value: 'evening', child: Text('Evening (7:00 PM)')),
+                  DropdownMenuItem(value: 'custom', child: Text('Custom Time')),
+                ],
+                onChanged: (val) {
+                  setState(() {
+                    _reminderType = val == 'none' ? null : val;
+                    if (val != 'custom') _customReminderTime = null;
+                  });
+                },
+              ),
+              if (_reminderType == 'custom') ...[
+                const SizedBox(height: AppSizes.md),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.access_time_rounded),
+                  label: Text(
+                    _customReminderTime != null
+                        ? 'Custom: $_customReminderTime'
+                        : 'Pick Custom Time',
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: AppSizes.md),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppSizes.sm),
+                    ),
+                  ),
+                  onPressed: () async {
+                    final picked = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (picked != null) {
+                      setState(() {
+                        _customReminderTime =
+                            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+                      });
+                    }
+                  },
+                ),
+              ],
             ],
           ),
         ),

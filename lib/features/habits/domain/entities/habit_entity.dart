@@ -19,5 +19,7 @@ class HabitEntity with _$HabitEntity {
     required DateTime createdAt,
     required DateTime updatedAt,
     required Map<String, int> completionHistory,
+    String? reminderType,
+    String? customReminderTime,
   }) = _HabitEntity;
 }

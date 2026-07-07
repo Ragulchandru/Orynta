@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../domain/models/note_summary.dart';
 import '../providers/notes_notifier.dart';
+import 'archive_helper.dart';
 
 Widget _buildItem(BuildContext context, IconData icon, String label, {Color? color}) {
   final theme = context.appTheme;
@@ -134,7 +135,7 @@ Future<void> showNoteContextMenu({
       );
       break;
     case 'archive':
-      ref.read(notesProvider.notifier).bulkToggleArchive(ids, true);
+      ArchiveHelper.archiveWithUndo(context: context, ref: ref, ids: ids);
       break;
     case 'delete':
       // Show confirmation dialog before soft-deleting

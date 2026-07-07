@@ -30,6 +30,7 @@ import '../../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../../features/planner/presentation/screens/planner_screen.dart';
 import '../../features/planner/presentation/screens/create_task_screen.dart';
 import '../../features/planner/presentation/screens/task_detail_screen.dart';
+import '../../features/planner/presentation/screens/planner_category_screen.dart';
 import '../../features/analytics/presentation/screens/analytics_screen.dart';
 import '../../features/settings/presentation/screens/appearance_screen.dart';
 import '../../features/habits/presentation/screens/habits_screen.dart';
@@ -255,6 +256,17 @@ GoRouter appRouter(Ref ref) {
         builder: (BuildContext context, GoRouterState state) {
           final id = state.pathParameters['id']!;
           return CreateTaskScreen(taskId: id);
+        },
+      ),
+
+      // ── Planner Category Screen ──────────────────────────────────────────────
+      GoRoute(
+        path: '/planner/category/:name',
+        name: RouteNames.categoryDetail,
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (BuildContext context, GoRouterState state) {
+          final name = state.pathParameters['name']!;
+          return PlannerCategoryScreen(categoryName: name);
         },
       ),
 

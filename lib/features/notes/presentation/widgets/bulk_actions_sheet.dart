@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../domain/models/note_color.dart';
 import '../providers/notes_notifier.dart';
+import 'archive_helper.dart';
 
 class BulkActionsSheet extends ConsumerWidget {
   const BulkActionsSheet({
@@ -404,7 +405,7 @@ class BulkActionsSheet extends ConsumerWidget {
                 icon: Icons.archive_rounded,
                 label: 'Archive Notes',
                 onTap: () {
-                  ref.read(notesProvider.notifier).bulkToggleArchive(selectedIds, true);
+                  ArchiveHelper.archiveWithUndo(context: context, ref: ref, ids: selectedIds);
                   onActionCompleted();
                 },
               ),

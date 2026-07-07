@@ -6,6 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/constants/app_sizes.dart';
 import '../../domain/entities/task_entity.dart';
+import '../../domain/entities/reminder_offset.dart';
 import '../providers/tasks_notifier.dart';
 
 class CreateTaskScreen extends ConsumerStatefulWidget {
@@ -28,6 +29,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
   String _priority = 'medium'; // high, medium, low
   int _timelineSection = 0;    // 0 = Morning, 1 = Afternoon, 2 = Evening, 3 = Night
   int _estimatedMinutes = 30;
+  int? _earlyReminderMinutes = 15;
+  String? _repeatReminderInterval = 'never';
 
   DateTime? _dueDate;
   TimeOfDay? _dueTime;
@@ -51,6 +54,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
         _priority = _existingTask!.priority;
         _timelineSection = _existingTask!.timelineSection;
         _estimatedMinutes = _existingTask!.estimatedMinutes;
+        _earlyReminderMinutes = _existingTask!.earlyReminderMinutes;
+        _repeatReminderInterval = _existingTask!.repeatReminderInterval ?? 'never';
         if (_existingTask!.dueDate != null) {
           _dueDate = _existingTask!.dueDate;
           _dueTime = TimeOfDay.fromDateTime(_existingTask!.dueDate!);
@@ -117,6 +122,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
         updatedAt: DateTime.now(),
         timelineSection: _timelineSection,
         estimatedMinutes: _estimatedMinutes,
+        earlyReminderMinutes: _earlyReminderMinutes,
+        repeatReminderInterval: _repeatReminderInterval,
       );
       ref.read(tasksProvider.notifier).updateTask(task);
     } else {
@@ -133,6 +140,8 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
         estimatedMinutes: _estimatedMinutes,
         tagIds: const [],
         linkedNoteId: null,
+        earlyReminderMinutes: _earlyReminderMinutes,
+        repeatReminderInterval: _repeatReminderInterval,
       );
       ref.read(tasksProvider.notifier).addTask(task);
     }
@@ -444,6 +453,61 @@ class _CreateTaskScreenState extends ConsumerState<CreateTaskScreen> {
                     );
                   }).toList(),
                 ),
+              ),
+              const SizedBox(height: AppSizes.xl),
+
+              // Reminder Settings
+              Text(
+                'REMINDER SETTINGS',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: AppSizes.sm),
+              DropdownButtonFormField<int>(
+                initialValue: _earlyReminderMinutes ?? 15,
+                decoration: const InputDecoration(
+                  labelText: 'Reminder Alert',
+                  prefixIcon: Icon(Icons.notifications_active_rounded),
+                ),
+                items: ReminderOffset.values.map((offset) {
+                  return DropdownMenuItem<int>(
+                    value: offset.minutes,
+                    child: Text(offset.label),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _earlyReminderMinutes = val;
+                    });
+                  }
+                },
+              ),
+              const SizedBox(height: AppSizes.md),
+              DropdownButtonFormField<String>(
+                initialValue: _repeatReminderInterval ?? 'never',
+                decoration: const InputDecoration(
+                  labelText: 'Repeat Reminder',
+                  prefixIcon: Icon(Icons.snooze_rounded),
+                ),
+                items: const [
+                  DropdownMenuItem(value: 'never', child: Text('Never')),
+                  DropdownMenuItem(value: '5m', child: Text('Every 5 min')),
+                  DropdownMenuItem(value: '10m', child: Text('Every 10 min')),
+                  DropdownMenuItem(value: '15m', child: Text('Every 15 min')),
+                  DropdownMenuItem(value: '30m', child: Text('Every 30 min')),
+                  DropdownMenuItem(value: 'untilCompleted', child: Text('Until completed')),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    setState(() {
+                      _repeatReminderInterval = val;
+                    });
+                  }
+                },
               ),
               const SizedBox(height: AppSizes.xl),
 

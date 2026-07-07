@@ -32,6 +32,7 @@ class TaskModel {
     this.linkedNoteIds = const [],
     this.dueTimeMs,
     this.isArchived = false,
+    this.repeatReminderInterval = 'never',
   });
 
   final String id;
@@ -58,6 +59,7 @@ class TaskModel {
   final List<String> linkedNoteIds;
   final int? dueTimeMs;
   final bool isArchived;
+  final String? repeatReminderInterval;
 
   factory TaskModel.fromEntity(TaskEntity entity) {
     return TaskModel(
@@ -99,6 +101,7 @@ class TaskModel {
       linkedNoteIds: entity.linkedNoteIds,
       dueTimeMs: entity.dueTimeMs,
       isArchived: entity.isArchived,
+      repeatReminderInterval: entity.repeatReminderInterval,
     );
   }
 
@@ -144,6 +147,7 @@ class TaskModel {
           : (linkedNoteId != null ? [linkedNoteId!] : const []),
       dueTimeMs: dueTimeMs,
       isArchived: isArchived,
+      repeatReminderInterval: repeatReminderInterval,
     );
   }
 }

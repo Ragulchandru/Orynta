@@ -34,6 +34,7 @@ class TaskEntity {
     this.linkedNoteIds = const [],
     this.dueTimeMs,
     this.isArchived = false,
+    this.repeatReminderInterval = 'never',
   });
 
   final String id;
@@ -60,6 +61,7 @@ class TaskEntity {
   final List<String> linkedNoteIds;
   final int? dueTimeMs;
   final bool isArchived;
+  final String? repeatReminderInterval;
 
   TaskEntity copyWith({
     String? id,
@@ -86,6 +88,7 @@ class TaskEntity {
     List<String>? linkedNoteIds,
     int? dueTimeMs,
     bool? isArchived,
+    String? repeatReminderInterval,
   }) {
     return TaskEntity(
       id: id ?? this.id,
@@ -112,6 +115,7 @@ class TaskEntity {
       linkedNoteIds: linkedNoteIds ?? this.linkedNoteIds,
       dueTimeMs: dueTimeMs ?? this.dueTimeMs,
       isArchived: isArchived ?? this.isArchived,
+      repeatReminderInterval: repeatReminderInterval ?? this.repeatReminderInterval,
     );
   }
 

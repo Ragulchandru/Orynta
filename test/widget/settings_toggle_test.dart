@@ -64,7 +64,7 @@ void main() {
       // Find the PremiumSwitch for Autosave Notes
       // The first tile is Autosave Notes
       final switchFinder = find.byType(PremiumSwitch);
-      expect(switchFinder, findsNWidgets(5)); // Autosave, Markdown, Rich formatting, Preview, Focus
+      expect(switchFinder, findsNWidgets(6)); // Autosave, Markdown, Rich formatting, Preview, Focus, Animations
 
       final autosaveSwitch = tester.widget<PremiumSwitch>(switchFinder.first);
       expect(autosaveSwitch.value, true);
