@@ -1,45 +1,34 @@
 // lib/features/analytics/presentation/widgets/weekly_line_chart.dart
-//
-// Orynta 2.0 — Premium Line/Bar Morphing Chart with Responsive M3 Motion
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
+import 'dart:async';
+import 'dart:ui' as ui;
 
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/design_system/design_system.dart';
+import '../providers/insights_time_filter_provider.dart';
+import '../providers/analytics_provider.dart';
+import 'analytics_axis_formatter.dart';
 
 enum ChartMode {
   line,
   bar,
 }
 
-class WeeklyLineChart extends StatefulWidget {
-  const WeeklyLineChart({
-    super.key,
-    required this.createdTrendWeekly,
-    required this.completedTrendWeekly,
-    required this.datesWeekly,
-    required this.createdTrendMonthly,
-    required this.completedTrendMonthly,
-    required this.datesMonthly,
-  });
-
-  final List<int> createdTrendWeekly;
-  final List<int> completedTrendWeekly;
-  final List<DateTime> datesWeekly;
-
-  final List<int> createdTrendMonthly;
-  final List<int> completedTrendMonthly;
-  final List<DateTime> datesMonthly;
+class WeeklyLineChart extends ConsumerStatefulWidget {
+  const WeeklyLineChart({super.key});
 
   @override
-  State<WeeklyLineChart> createState() => _WeeklyLineChartState();
+  ConsumerState<WeeklyLineChart> createState() => _WeeklyLineChartState();
 }
 
-class _WeeklyLineChartState extends State<WeeklyLineChart> with TickerProviderStateMixin {
-  int _selectedTab = 0; // 0 = Weekly, 1 = Monthly
+class _WeeklyLineChartState extends ConsumerState<WeeklyLineChart> with SingleTickerProviderStateMixin {
   ChartMode _chartMode = ChartMode.line;
+  int? _selectedIndex;
+  Timer? _tooltipTimer;
 
   late AnimationController _drawController;
   late Animation<double> _drawAnimation;
@@ -68,38 +57,34 @@ class _WeeklyLineChartState extends State<WeeklyLineChart> with TickerProviderSt
   @override
   void dispose() {
     _drawController.dispose();
+    _tooltipTimer?.cancel();
     super.dispose();
+  }
+
+  void _selectIndex(int index) {
+    _tooltipTimer?.cancel();
+    setState(() {
+      _selectedIndex = index;
+    });
+    _tooltipTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _selectedIndex = null;
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final activeRange = ref.watch(insightsTimeRangeProvider);
+    final trendPoints = ref.watch(activeTrendProvider);
 
-    final List<int> created;
-    final List<int> completed;
-    final List<String> labels;
-
-    if (_selectedTab == 0) {
-      created = widget.createdTrendWeekly;
-      completed = widget.completedTrendWeekly;
-      labels = widget.datesWeekly.map((d) => DateFormat('E').format(d).substring(0, 1)).toList();
-    } else if (_selectedTab == 1) {
-      created = widget.createdTrendMonthly;
-      completed = widget.completedTrendMonthly;
-      labels = List.generate(widget.datesMonthly.length, (idx) {
-        final d = widget.datesMonthly[idx];
-        if (idx == 0 || idx == widget.datesMonthly.length - 1 || idx % 5 == 0) {
-          return DateFormat('d').format(d);
-        }
-        return '';
-      });
-    } else {
-      // Yearly trend
-      created = [15, 24, 30, 45, 38, 50, 62, 55, 48, 60, 75, 90];
-      completed = [12, 20, 25, 38, 30, 45, 55, 48, 42, 52, 68, 85];
-      labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    }
+    final created = trendPoints.map((p) => p.created).toList();
+    final completed = trendPoints.map((p) => p.completed).toList();
+    final dates = trendPoints.map((p) => p.date).toList();
 
     return Card(
       elevation: 0,
@@ -113,63 +98,32 @@ class _WeeklyLineChartState extends State<WeeklyLineChart> with TickerProviderSt
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 450;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: isNarrow ? constraints.maxWidth : null,
-                      child: Text(
-                        'Productivity Trends',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        IconButton.filledTonal(
-                          icon: Icon(
-                            _chartMode == ChartMode.line ? Icons.show_chart_rounded : Icons.bar_chart_rounded,
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _chartMode = _chartMode == ChartMode.line ? ChartMode.bar : ChartMode.line;
-                            });
-                            _drawController.reset();
-                            _drawController.forward();
-                          },
-                        ),
-                        SegmentedButton<int>(
-                          segments: const [
-                            ButtonSegment(value: 0, label: FittedBox(fit: BoxFit.scaleDown, child: Text('Wk', maxLines: 1))),
-                            ButtonSegment(value: 1, label: FittedBox(fit: BoxFit.scaleDown, child: Text('Mo', maxLines: 1))),
-                            ButtonSegment(value: 2, label: FittedBox(fit: BoxFit.scaleDown, child: Text('Yr', maxLines: 1))),
-                          ],
-                          selected: {_selectedTab},
-                          onSelectionChanged: (val) {
-                            setState(() => _selectedTab = val.first);
-                            _drawController.reset();
-                            _drawController.forward();
-                          },
-                        ),
-                      ],
-                    ),
-                  ],
-                );
-              },
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Productivity Trends',
+                  style: context.typography.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                IconButton.filledTonal(
+                  icon: Icon(
+                    _chartMode == ChartMode.line ? Icons.show_chart_rounded : Icons.bar_chart_rounded,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _chartMode = _chartMode == ChartMode.line ? ChartMode.bar : ChartMode.line;
+                    });
+                    _drawController.reset();
+                    _drawController.forward();
+                  },
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 12,
               runSpacing: 6,
@@ -179,40 +133,68 @@ class _WeeklyLineChartState extends State<WeeklyLineChart> with TickerProviderSt
               ],
             ),
             const SizedBox(height: AppSizes.xl),
-            AnimatedBuilder(
-              animation: _drawAnimation,
-              builder: (context, child) {
-                return SizedBox(
-                  height: 160,
-                  width: double.infinity,
-                  child: CustomPaint(
-                    painter: _DynamicChartPainter(
-                      createdPoints: created,
-                      completedPoints: completed,
-                      primaryColor: colorScheme.primary,
-                      secondaryColor: context.appTheme.success,
-                      gridColor: colorScheme.outlineVariant.withValues(alpha: 0.15),
-                      drawProgress: _drawAnimation.value,
-                      mode: _chartMode,
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final labels = AnalyticsAxisFormatter.getLabels(
+                  dates: dates,
+                  range: activeRange,
+                  availableWidth: width,
+                );
+
+                return Column(
+                  children: [
+                    GestureDetector(
+                      onTapDown: (details) {
+                        if (trendPoints.isEmpty) return;
+                        final localX = details.localPosition.dx;
+                        final stepX = trendPoints.length > 1 ? width / (trendPoints.length - 1) : width;
+                        final tappedIndex = (localX / stepX).round().clamp(0, trendPoints.length - 1);
+                        _selectIndex(tappedIndex);
+                      },
+                      child: RepaintBoundary(
+                        child: SizedBox(
+                          height: 160,
+                          width: double.infinity,
+                          child: CustomPaint(
+                            painter: _DynamicChartPainter(
+                              trendPoints: trendPoints,
+                              createdPoints: created,
+                              completedPoints: completed,
+                              primaryColor: colorScheme.primary,
+                              secondaryColor: context.appTheme.success,
+                              gridColor: colorScheme.outlineVariant.withValues(alpha: 0.15),
+                              drawProgress: _drawAnimation.value,
+                              mode: _chartMode,
+                              selectedIndex: _selectedIndex,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: AppSizes.md),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(labels.length, (idx) {
+                        final label = labels[idx];
+                        return Expanded(
+                          child: Center(
+                            child: Text(
+                              label,
+                              softWrap: false,
+                              maxLines: 1,
+                              overflow: TextOverflow.fade,
+                              style: context.typography.labelSmall.copyWith(
+                                color: colorScheme.outline,
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
                 );
               },
-            ),
-            const SizedBox(height: AppSizes.md),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: List.generate(labels.length, (idx) {
-                final label = labels[idx];
-                return Expanded(
-                  child: Center(
-                    child: Text(
-                      label,
-                      style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
-                    ),
-                  ),
-                );
-              }),
             ),
           ],
         ),
@@ -238,6 +220,7 @@ class _WeeklyLineChartState extends State<WeeklyLineChart> with TickerProviderSt
 
 class _DynamicChartPainter extends CustomPainter {
   _DynamicChartPainter({
+    required this.trendPoints,
     required this.createdPoints,
     required this.completedPoints,
     required this.primaryColor,
@@ -245,8 +228,10 @@ class _DynamicChartPainter extends CustomPainter {
     required this.gridColor,
     required this.drawProgress,
     required this.mode,
+    required this.selectedIndex,
   });
 
+  final List<TrendPoint> trendPoints;
   final List<int> createdPoints;
   final List<int> completedPoints;
   final Color primaryColor;
@@ -254,12 +239,14 @@ class _DynamicChartPainter extends CustomPainter {
   final Color gridColor;
   final double drawProgress;
   final ChartMode mode;
+  final int? selectedIndex;
 
   @override
   void paint(Canvas canvas, Size size) {
     final width = size.width;
     final height = size.height;
 
+    // Draw horizontal grid lines at 25%, 50%, 75%, 100%
     final gridPaint = Paint()
       ..color = gridColor
       ..strokeWidth = 1.0;
@@ -268,6 +255,8 @@ class _DynamicChartPainter extends CustomPainter {
       final y = height * (i / 4);
       canvas.drawLine(Offset(0, y), Offset(width, y), gridPaint);
     }
+
+    if (createdPoints.isEmpty) return;
 
     final maxVal = [
       ...createdPoints,
@@ -280,11 +269,13 @@ class _DynamicChartPainter extends CustomPainter {
     } else {
       _drawBarChart(canvas, width, height, maxVal);
     }
+
+    _drawTooltip(canvas, width, height, maxVal);
   }
 
   void _drawLineChart(Canvas canvas, double width, double height, double maxVal) {
     void drawLine(List<int> points, Color color, double progress) {
-      if (points.isEmpty) return;
+      if (points.length < 2) return;
 
       final path = Path();
       final linePaint = Paint()
@@ -308,7 +299,21 @@ class _DynamicChartPainter extends CustomPainter {
           } else {
             path.lineTo(x, y);
           }
-          canvas.drawCircle(Offset(x, y), 4.0, Paint()..color = color);
+          canvas.drawCircle(
+            Offset(x, y),
+            4.0,
+            Paint()..color = selectedIndex == i ? Colors.white : color,
+          );
+          if (selectedIndex == i) {
+            canvas.drawCircle(
+              Offset(x, y),
+              6.0,
+              Paint()
+                ..color = color
+                ..style = PaintingStyle.stroke
+                ..strokeWidth = 2.0,
+            );
+          }
         }
       }
       canvas.drawPath(path, linePaint);
@@ -323,7 +328,7 @@ class _DynamicChartPainter extends CustomPainter {
 
   void _drawBarChart(Canvas canvas, double width, double height, double maxVal) {
     final count = completedPoints.length;
-    final double spacing = width / count;
+    final double spacing = count > 1 ? width / count : width;
     final double barWidth = (spacing * 0.4).clamp(3.0, 16.0);
 
     for (int i = 0; i < count; i++) {
@@ -334,7 +339,7 @@ class _DynamicChartPainter extends CustomPainter {
       final val = completedPoints[i];
       final barHeight = (val / maxVal) * height * scale;
 
-      final x = i * spacing + (spacing - barWidth) / 2;
+      final x = count > 1 ? i * spacing + (spacing - barWidth) / 2 : (width - barWidth) / 2;
       final y = height - barHeight;
 
       final rect = Rect.fromLTWH(x, y, barWidth, barHeight);
@@ -344,8 +349,70 @@ class _DynamicChartPainter extends CustomPainter {
         topRight: const Radius.circular(4),
       );
 
-      canvas.drawRRect(rrect, Paint()..color = primaryColor);
+      final isSelected = selectedIndex == i;
+      canvas.drawRRect(
+        rrect,
+        Paint()..color = isSelected ? secondaryColor : primaryColor,
+      );
     }
+  }
+
+  void _drawTooltip(Canvas canvas, double width, double height, double maxVal) {
+    if (selectedIndex == null || selectedIndex! >= trendPoints.length) return;
+
+    final stepX = trendPoints.length > 1 ? width / (trendPoints.length - 1) : width;
+    final x = selectedIndex! * stepX;
+
+    // Draw vertical guideline
+    canvas.drawLine(
+      Offset(x, 0),
+      Offset(x, height),
+      Paint()
+        ..color = primaryColor.withValues(alpha: 0.3)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke,
+    );
+
+    final point = trendPoints[selectedIndex!];
+    final dateStr = DateFormat('MMM d, yyyy').format(point.date);
+    final rate = point.created > 0 ? (point.completed / point.created * 100).toInt() : 0;
+
+    final tooltipText = '$dateStr\nCreated: ${point.created} Tasks\nCompleted: ${point.completed} Tasks\nRate: $rate%';
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: tooltipText,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          height: 1.3,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+
+    double tooltipX = x + 10;
+    if (tooltipX + textPainter.width + 16 > width) {
+      tooltipX = x - textPainter.width - 26;
+    }
+    tooltipX = tooltipX.clamp(4.0, width - textPainter.width - 20);
+
+    const double tooltipY = 8.0;
+
+    final bgRect = Rect.fromLTWH(
+      tooltipX,
+      tooltipY,
+      textPainter.width + 16,
+      textPainter.height + 12,
+    );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(bgRect, const Radius.circular(8)),
+      Paint()..color = Colors.black.withValues(alpha: 0.85),
+    );
+
+    textPainter.paint(canvas, Offset(tooltipX + 8, tooltipY + 6));
   }
 
   @override
@@ -353,6 +420,7 @@ class _DynamicChartPainter extends CustomPainter {
     return oldDelegate.createdPoints != createdPoints ||
         oldDelegate.completedPoints != completedPoints ||
         oldDelegate.drawProgress != drawProgress ||
-        oldDelegate.mode != mode;
+        oldDelegate.mode != mode ||
+        oldDelegate.selectedIndex != selectedIndex;
   }
 }

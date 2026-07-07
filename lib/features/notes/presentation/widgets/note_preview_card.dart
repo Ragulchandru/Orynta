@@ -9,7 +9,6 @@ import '../../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/note_summary.dart';
 import '../../domain/models/notes_view_mode.dart';
 import '../providers/note_selection_provider.dart';
-import '../providers/notes_notifier.dart';
 import '../providers/notes_home_providers.dart';
 import 'note_context_menu.dart';
 import 'search_highlight_text.dart';
@@ -288,21 +287,12 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
       child: cardContent,
     );
 
-    // Gestures configuration: Swipe Right to Favorite, Swipe Left to Archive
+    // Gestures configuration: Swipe Left to Archive
     if (!inSelectionMode) {
       cardContent = Dismissible(
-        key: ValueKey('dismiss_${widget.note.id}'),
-        direction: DismissDirection.horizontal,
+        key: ValueKey(widget.note.id),
+        direction: DismissDirection.endToStart,
         background: Container(
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.only(left: 20.0),
-          decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.8),
-            borderRadius: context.radius.borderRadiusLg,
-          ),
-          child: const Icon(Icons.star_rounded, color: Colors.white, size: 28),
-        ),
-        secondaryBackground: Container(
           alignment: Alignment.centerRight,
           padding: const EdgeInsets.only(right: 20.0),
           decoration: BoxDecoration(
@@ -312,30 +302,17 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
           child: const Icon(Icons.archive_rounded, color: Colors.white, size: 28),
         ),
         confirmDismiss: (direction) async {
-          if (direction == DismissDirection.startToEnd) {
-            // Swipe Right -> Favorite
+          return direction == DismissDirection.endToStart;
+        },
+        onDismissed: (direction) {
+          if (direction == DismissDirection.endToStart) {
             HapticFeedback.lightImpact();
-            ref.read(notesProvider.notifier).toggleFavorite(widget.note.id);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  widget.note.isFavorite ? 'Removed from favorites' : 'Added to favorites',
-                ),
-                duration: const Duration(seconds: 2),
-              ),
-            );
-            return false; // Do not dismiss note card visually from list
-          } else if (direction == DismissDirection.endToStart) {
-            // Swipe Left -> Archive
-            HapticFeedback.lightImpact();
-            ArchiveHelper.archiveWithUndo(
+            ArchiveHelper.archiveNote(
               context: context,
               ref: ref,
               ids: {widget.note.id},
             );
-            return true; // Dismiss note card visually
           }
-          return false;
         },
         child: cardContent,
       );

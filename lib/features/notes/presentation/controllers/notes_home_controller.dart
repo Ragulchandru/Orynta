@@ -16,10 +16,14 @@ import '../../domain/models/sort_option.dart';
 import '../../domain/models/notes_view_mode.dart';
 import '../../domain/models/notes_group_by.dart';
 import '../../domain/repositories/notes_home_repository.dart';
+import '../../domain/entities/note_entity.dart';
+import '../../domain/entities/note_status.dart';
+import '../providers/notes_notifier.dart';
 
 class NotesHomeController extends StateNotifier<NotesHomeState> {
   NotesHomeController(
     this._repository,
+    this._ref,
   ) : super(
           const NotesHomeState(
             notes: [],
@@ -33,6 +37,7 @@ class NotesHomeController extends StateNotifier<NotesHomeState> {
   }
 
   final NotesHomeRepository _repository;
+  final Ref _ref;
 
   Future<void> initialize() async {
     _loadRecentSearches();
@@ -40,7 +45,69 @@ class NotesHomeController extends StateNotifier<NotesHomeState> {
     _loadGroupBy();
     _loadSortOption();
     _loadFilters();
-    await loadNotes();
+    
+    // Listen to notesProvider changes and automatically sync notes
+    _ref.listen<AsyncValue<List<NoteEntity>>>(
+      notesProvider,
+      (previous, next) {
+        next.when(
+          data: (notes) {
+            final summaries = notes
+                .where((e) => e.status != NoteStatus.trashed)
+                .map(_mapToSummary)
+                .toList();
+
+            // Sort: Pinned notes first, then by updatedAt descending
+            summaries.sort((a, b) {
+              if (a.isPinned && !b.isPinned) return -1;
+              if (!a.isPinned && b.isPinned) return 1;
+              return b.updatedAt.compareTo(a.updatedAt);
+            });
+
+            state = state.copyWith(
+              loading: false,
+              notes: summaries,
+              error: null,
+            );
+            _applyFilterSortSearch();
+          },
+          loading: () {
+            state = state.copyWith(loading: true);
+          },
+          error: (err, stack) {
+            state = state.copyWith(
+              loading: false,
+              error: err.toString(),
+            );
+          },
+        );
+      },
+      fireImmediately: true,
+    );
+  }
+
+  NoteSummary _mapToSummary(NoteEntity entity) {
+    final hexColor = entity.color != null
+        ? '#${entity.color!.toRadixString(16).padLeft(8, '0').toUpperCase()}'
+        : null;
+
+    final attachmentsBox = Hive.box<NoteAttachmentModel>(AppStrings.attachmentsBoxName);
+    final hasAttachments = attachmentsBox.values.any((a) => a.noteId == entity.id);
+    final hasChecklists = entity.body.contains('- [ ]') || entity.body.contains('- [x]');
+
+    return NoteSummary(
+      id: entity.id,
+      title: entity.title,
+      preview: entity.body,
+      updatedAt: entity.updatedAt,
+      colorHex: hexColor,
+      isPinned: entity.isPinned,
+      isFavorite: entity.isFavorite,
+      isArchived: entity.status == NoteStatus.archived,
+      tagIds: entity.tagIds,
+      hasAttachments: hasAttachments,
+      hasChecklists: hasChecklists,
+    );
   }
 
   void _loadViewMode() {
@@ -230,6 +297,12 @@ class NotesHomeController extends StateNotifier<NotesHomeState> {
   void _applyFilterSortSearch() {
     final nonNullNotes = state.notes.whereType<NoteSummary>().toList();
     var result = List<NoteSummary>.from(nonNullNotes);
+
+    // Exclude archived notes unless the archive filter is active
+    final containsArchivedFilter = state.activeFilters.contains(SmartFilter.archived);
+    if (!containsArchivedFilter) {
+      result = result.where((n) => !n.isArchived).toList();
+    }
 
     // 1. Tag Browser Selection
     final tag = state.selectedTag;

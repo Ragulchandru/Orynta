@@ -112,10 +112,10 @@ flutter_launcher_icons:
 
 flutter_native_splash:
   color: "#000000"
-  image: assets/images/orynta_logo.png
+  image: assets/images/orynta_icon.png
   android: true
   ios: true
-  fullscreen: true
+  fullscreen: false
   android_12:
     color: "#000000"
-    image: assets/images/orynta_logo.png
+    image: assets/images/orynta_icon.png

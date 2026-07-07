@@ -5,7 +5,7 @@ import '../../domain/models/note_color.dart';
 import '../../domain/models/note_editor_state.dart';
 import '../../domain/repositories/note_editor_repository.dart';
 import '../../../settings/presentation/providers/settings_provider.dart';
-import '../providers/notes_home_providers.dart';
+import '../providers/notes_notifier.dart';
 
 class NoteEditorController extends StateNotifier<NoteEditorState> {
   NoteEditorController(
@@ -156,7 +156,7 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
       },
       (note) {
         state = state.copyWith(saving: false, saved: true, dirty: false);
-        _ref.read(notesHomeControllerProvider.notifier).loadNotes();
+        _ref.read(notesProvider.notifier).addOrUpdateNoteInMemory(note);
       },
     );
   }
@@ -165,7 +165,7 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
     final currentId = state.noteId;
     if (currentId != null && state.isEmpty) {
       await _repository.deleteDraft(currentId);
-      _ref.read(notesHomeControllerProvider.notifier).loadNotes();
+      _ref.read(notesProvider.notifier).removeNoteInMemory(currentId);
     }
   }
 

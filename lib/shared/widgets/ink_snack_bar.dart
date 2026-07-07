@@ -154,31 +154,31 @@ abstract final class InkSnackBar {
     required Color foregroundColor,
     SnackBarAction? action,
   }) {
-    // Dismiss any currently visible SnackBar before showing the new one.
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        // Row with icon + text — the theme handles float, shape, and font.
-        content: Row(
-          children: [
-            Icon(icon, color: foregroundColor, size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                message,
-                style: TextStyle(color: foregroundColor),
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          // Row with icon + text — the theme handles float, shape, and font.
+          content: Row(
+            children: [
+              Icon(icon, color: foregroundColor, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(color: foregroundColor),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
+          backgroundColor: backgroundColor,
+          action: action,
+          // Dismiss after 5 seconds if action is present, otherwise 3s for error, 2s for others.
+          duration: action != null
+              ? const Duration(seconds: 5)
+              : (icon == Icons.error_outline_rounded ? const Duration(seconds: 3) : const Duration(seconds: 2)),
         ),
-        backgroundColor: backgroundColor,
-        action: action,
-        // Dismiss after 3 seconds for errors, 2 seconds for success/info.
-        duration: action != null
-            ? const Duration(seconds: 5)
-            : const Duration(seconds: 3),
-      ),
-    );
+      );
   }
 }

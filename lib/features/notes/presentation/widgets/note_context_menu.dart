@@ -135,7 +135,7 @@ Future<void> showNoteContextMenu({
       );
       break;
     case 'archive':
-      ArchiveHelper.archiveWithUndo(context: context, ref: ref, ids: ids);
+      ArchiveHelper.archiveNote(context: context, ref: ref, ids: ids);
       break;
     case 'delete':
       // Show confirmation dialog before soft-deleting

@@ -34,11 +34,21 @@ class FakeNotesHomeRepository implements NotesHomeRepository {
   ) async => const Right([]);
 }
 
+class FakeRef implements Ref {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 class FakeNotesHomeController extends NotesHomeController {
   FakeNotesHomeController(
     NotesHomeState initialState,
-  ) : super(FakeNotesHomeRepository()) {
+  ) : super(FakeNotesHomeRepository(), FakeRef()) {
     state = initialState;
+  }
+
+  @override
+  Future<void> initialize() async {
+    // Override to prevent using Riverpod listeners in widget tests
   }
 
   @override

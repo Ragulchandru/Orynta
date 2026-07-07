@@ -1,6 +1,4 @@
 // lib/features/analytics/presentation/widgets/category_pie_chart.dart
-//
-// Orynta 2.0 — Task Status Distribution Pie Chart Widget (CustomPainter)
 
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
@@ -59,7 +57,7 @@ class CategoryPieChart extends StatelessWidget {
               Icon(Icons.pie_chart_outline_rounded, size: 48, color: theme.secondary.withValues(alpha: 0.4)),
               const SizedBox(height: 16),
               Text(
-                'No analytics yet',
+                'No Analytics Yet',
                 style: context.typography.titleMedium.copyWith(
                   fontWeight: FontWeight.bold,
                   color: theme.isDark ? Colors.white70 : Colors.black87,
@@ -67,7 +65,7 @@ class CategoryPieChart extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Analytics will appear as you use Orynta.',
+                'Complete tasks to generate insights.',
                 textAlign: TextAlign.center,
                 style: context.typography.bodySmall.copyWith(color: theme.secondary),
               ),
@@ -77,11 +75,10 @@ class CategoryPieChart extends StatelessWidget {
       );
     }
 
-    // Colors mapping
-    final Color completedColor = theme.success; // Green
-    const Color pendingColor = Colors.orange; // Orange
-    final Color overdueColor = theme.error; // Red
-    const Color archivedColor = Colors.blue; // Blue
+    final Color completedColor = theme.success;
+    const Color pendingColor = Colors.orange;
+    final Color overdueColor = theme.error;
+    const Color archivedColor = Colors.blue;
 
     final List<MapEntry<String, double>> segments = [];
     final List<Color> sliceColors = [];
@@ -98,8 +95,8 @@ class CategoryPieChart extends StatelessWidget {
             child: Row(
               children: [
                 Container(
-                  width: 10,
-                  height: 10,
+                  width: 8,
+                  height: 8,
                   decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 ),
                 const SizedBox(width: 8),
@@ -147,17 +144,43 @@ class CategoryPieChart extends StatelessWidget {
                 color: colors.textPrimary,
               ),
             ),
-            const SizedBox(height: AppSizes.md),
+            const SizedBox(height: AppSizes.lg),
             Row(
               children: [
-                SizedBox(
-                  width: 100,
-                  height: 100,
-                  child: CustomPaint(
-                    painter: _PieChartPainter(segments: segments, colors: sliceColors),
-                  ),
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    SizedBox(
+                      width: 110,
+                      height: 110,
+                      child: RepaintBoundary(
+                        child: CustomPaint(
+                          painter: _DonutChartPainter(segments: segments, colors: sliceColors),
+                        ),
+                      ),
+                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$total',
+                          style: context.typography.titleLarge.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Total Tasks',
+                          style: context.typography.labelSmall.copyWith(
+                            color: theme.secondary,
+                            fontSize: 8,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 24),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -174,8 +197,8 @@ class CategoryPieChart extends StatelessWidget {
   }
 }
 
-class _PieChartPainter extends CustomPainter {
-  _PieChartPainter({
+class _DonutChartPainter extends CustomPainter {
+  _DonutChartPainter({
     required this.segments,
     required this.colors,
   });
@@ -185,9 +208,14 @@ class _PieChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height);
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - 16.0) / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
     final paint = Paint()
-      ..style = PaintingStyle.fill
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 12.0
+      ..strokeCap = StrokeCap.round
       ..isAntiAlias = true;
 
     double startAngle = -math.pi / 2;
@@ -195,13 +223,13 @@ class _PieChartPainter extends CustomPainter {
     for (int i = 0; i < segments.length; i++) {
       final sweepAngle = segments[i].value * 2 * math.pi;
       paint.color = colors[i % colors.length];
-      canvas.drawArc(rect, startAngle, sweepAngle, true, paint);
+      canvas.drawArc(rect, startAngle, sweepAngle, false, paint);
       startAngle += sweepAngle;
     }
   }
 
   @override
-  bool shouldRepaint(covariant _PieChartPainter oldDelegate) {
+  bool shouldRepaint(covariant _DonutChartPainter oldDelegate) {
     return oldDelegate.segments != segments || oldDelegate.colors != colors;
   }
 }

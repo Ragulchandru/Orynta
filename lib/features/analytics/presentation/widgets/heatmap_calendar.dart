@@ -1,15 +1,12 @@
-// lib/features/analytics/presentation/widgets/heatmap_calendar.dart
-//
-// Orynta 2.0 — Premium Day-Numbered Interactive Calendar Heatmap with Daily Activity Summaries
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/design_system/design_tokens.dart';
 import '../providers/analytics_provider.dart';
 
-class HeatmapCalendar extends StatefulWidget {
+class HeatmapCalendar extends ConsumerStatefulWidget {
   const HeatmapCalendar({
     super.key,
     required this.monthlyStats,
@@ -18,10 +15,10 @@ class HeatmapCalendar extends StatefulWidget {
   final List<DailyStats> monthlyStats;
 
   @override
-  State<HeatmapCalendar> createState() => _HeatmapCalendarState();
+  ConsumerState<HeatmapCalendar> createState() => _HeatmapCalendarState();
 }
 
-class _HeatmapCalendarState extends State<HeatmapCalendar> {
+class _HeatmapCalendarState extends ConsumerState<HeatmapCalendar> {
   int _viewMode = 0; // 0 = Month, 1 = Year
   DateTime? _selectedDate;
 
@@ -185,30 +182,28 @@ class _HeatmapCalendarState extends State<HeatmapCalendar> {
     );
   }
 
+  List<String> _getWeekdayHeaders() {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    return List.generate(7, (i) {
+      final date = monday.add(Duration(days: i));
+      return DateFormat.E().format(date);
+    });
+  }
+
   Widget _buildMonthGrid(ThemeData theme, ColorScheme colorScheme) {
     final now = DateTime.now();
-    final List<DailyStats> cellStats = List.generate(35, (i) {
-      final date = DateTime(now.year, now.month, now.day).subtract(Duration(days: 34 - i));
-      return widget.monthlyStats.firstWhere(
-        (s) => s.date.year == date.year && s.date.month == date.month && s.date.day == date.day,
-        orElse: () => DailyStats(
-          date: date,
-          tasksCompleted: 0,
-          tasksPending: 0,
-          habitsCompleted: 0,
-          habitsTotal: 0,
-          focusMinutes: 0,
-          notesCreated: 0,
-          notesEdited: 0,
-          productivityScore: 0.0,
-        ),
-      );
-    });
+    
+    final firstDay = DateTime(now.year, now.month, 1);
+    final firstWeekday = firstDay.weekday; // 1 = Monday, 7 = Sunday
+    final paddingCells = firstWeekday - 1;
+    final totalDays = DateTime(now.year, now.month + 1, 0).day;
+    final gridCount = ((paddingCells + totalDays) / 7).ceil() * 7;
 
     return Column(
       children: [
         Row(
-          children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+          children: _getWeekdayHeaders()
               .map((d) => Expanded(
                     child: Center(
                       child: Text(
@@ -226,14 +221,15 @@ class _HeatmapCalendarState extends State<HeatmapCalendar> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: 35,
+          itemCount: gridCount,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
             crossAxisSpacing: 6,
             mainAxisSpacing: 6,
           ),
           itemBuilder: (context, idx) {
-            final stat = cellStats[idx];
+            final date = firstDay.add(Duration(days: idx - paddingCells));
+            final stat = ref.watch(dailyStatsProvider(date));
             final total = stat.tasksCompleted + stat.notesCreated + stat.focusMinutes ~/ 15;
             final color = _getHeatmapColor(total, colorScheme);
 
@@ -242,6 +238,7 @@ class _HeatmapCalendarState extends State<HeatmapCalendar> {
                 stat.date.year == _selectedDate!.year &&
                 stat.date.month == _selectedDate!.month &&
                 stat.date.day == _selectedDate!.day;
+            final isCurrentMonth = date.month == now.month;
 
             return GestureDetector(
               onTap: () {
@@ -256,7 +253,7 @@ class _HeatmapCalendarState extends State<HeatmapCalendar> {
                   duration: MotionTokens.normal,
                   curve: MotionTokens.emphasized,
                   decoration: BoxDecoration(
-                    color: color,
+                    color: isCurrentMonth ? color : color.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(6),
                     boxShadow: isSelected
                         ? [
@@ -281,7 +278,9 @@ class _HeatmapCalendarState extends State<HeatmapCalendar> {
                       '${stat.date.day}',
                       style: theme.textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.bold,
-                        color: total > 2 ? Colors.white : colorScheme.onSurface,
+                        color: !isCurrentMonth 
+                            ? colorScheme.onSurface.withValues(alpha: 0.4)
+                            : (total > 2 ? Colors.white : colorScheme.onSurface),
                       ),
                     ),
                   ),
@@ -297,23 +296,6 @@ class _HeatmapCalendarState extends State<HeatmapCalendar> {
   Widget _buildYearGrid(ThemeData theme, ColorScheme colorScheme) {
     final now = DateTime.now();
     const cellCount = 140;
-    final List<DailyStats> yearStats = List.generate(cellCount, (i) {
-      final date = DateTime(now.year, now.month, now.day).subtract(Duration(days: (cellCount - 1) - i));
-      return widget.monthlyStats.firstWhere(
-        (s) => s.date.year == date.year && s.date.month == date.month && s.date.day == date.day,
-        orElse: () => DailyStats(
-          date: date,
-          tasksCompleted: 0,
-          tasksPending: 0,
-          habitsCompleted: 0,
-          habitsTotal: 0,
-          focusMinutes: 0,
-          notesCreated: 0,
-          notesEdited: 0,
-          productivityScore: 0.0,
-        ),
-      );
-    });
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -329,7 +311,8 @@ class _HeatmapCalendarState extends State<HeatmapCalendar> {
             mainAxisSpacing: 4,
           ),
           itemBuilder: (context, idx) {
-            final stat = yearStats[idx];
+            final date = DateTime(now.year, now.month, now.day).subtract(Duration(days: (cellCount - 1) - idx));
+            final stat = ref.watch(dailyStatsProvider(date));
             final total = stat.tasksCompleted + stat.notesCreated + stat.focusMinutes ~/ 15;
             final color = _getHeatmapColor(total, colorScheme);
 

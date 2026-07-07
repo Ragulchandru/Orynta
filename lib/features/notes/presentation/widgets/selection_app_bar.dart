@@ -132,9 +132,8 @@ class SelectionAppBar extends ConsumerWidget implements PreferredSizeWidget {
             Icons.archive_outlined,
             color: theme.isDark ? const Color(0xFFC5C5D3) : const Color(0xFF4E4E68),
           ),
-          tooltip: 'Archive',
           onPressed: () {
-            ArchiveHelper.archiveWithUndo(context: context, ref: ref, ids: selectedIds);
+            ArchiveHelper.archiveNote(context: context, ref: ref, ids: selectedIds);
             onCancel();
           },
         ),

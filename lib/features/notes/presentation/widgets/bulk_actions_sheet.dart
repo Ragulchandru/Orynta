@@ -405,7 +405,7 @@ class BulkActionsSheet extends ConsumerWidget {
                 icon: Icons.archive_rounded,
                 label: 'Archive Notes',
                 onTap: () {
-                  ArchiveHelper.archiveWithUndo(context: context, ref: ref, ids: selectedIds);
+                  ArchiveHelper.archiveNote(context: context, ref: ref, ids: selectedIds);
                   onActionCompleted();
                 },
               ),

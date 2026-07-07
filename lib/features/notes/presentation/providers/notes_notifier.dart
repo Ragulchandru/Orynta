@@ -73,18 +73,53 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
 
   // ─── Private Helper ──────────────────────────────────────────────────────
 
-  /// Executes [action], refreshes on success, and returns the [Either].
-  ///
-  /// Consolidates the three-line pattern shared by all 9 mutation methods:
-  ///   1. Await the use case result.
-  ///   2. Invalidate self on [Right] to trigger a re-fetch.
-  ///   3. Return the [Either] to the UI for error handling.
-  Future<Either<Failure, T>> _mutate<T>(
-    Future<Either<Failure, T>> Function() action,
+  /// Executes [action] with optimistic in-memory update and handles revert on failure.
+  Future<Either<Failure, NoteEntity>> _updateInMemoryAndExecute(
+    String id,
+    Future<Either<Failure, NoteEntity>> Function() action,
+    NoteEntity Function(NoteEntity) updateFn,
   ) async {
+    final currentState = state.valueOrNull;
+    NoteEntity? originalNote;
+    if (currentState != null) {
+      final index = currentState.indexWhere((n) => n.id == id);
+      if (index != -1) {
+        originalNote = currentState[index];
+        final updatedList = List<NoteEntity>.from(currentState);
+        updatedList[index] = updateFn(originalNote);
+        state = AsyncData(updatedList);
+      }
+    }
+
     final result = await action();
-    if (result.isRight()) ref.invalidateSelf();
-    return result;
+    
+    return result.fold(
+      (failure) {
+        // Revert on failure
+        if (currentState != null && originalNote != null) {
+          final index = currentState.indexWhere((n) => n.id == id);
+          if (index != -1) {
+            final updatedList = List<NoteEntity>.from(state.valueOrNull ?? currentState);
+            updatedList[index] = originalNote;
+            state = AsyncData(updatedList);
+          }
+        }
+        return Left(failure);
+      },
+      (updatedNote) {
+        // Apply returned note on success
+        final current = state.valueOrNull;
+        if (current != null) {
+          final index = current.indexWhere((n) => n.id == id);
+          if (index != -1) {
+            final updatedList = List<NoteEntity>.from(current);
+            updatedList[index] = updatedNote;
+            state = AsyncData(updatedList);
+          }
+        }
+        return Right(updatedNote);
+      },
+    );
   }
 
   // ─── Write Operations ─────────────────────────────────────────────────────
@@ -95,14 +130,63 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
   /// Returns [NoteStorageFailure] if the write fails.
   Future<Either<Failure, NoteEntity>> createNote(
     CreateNoteParams params,
-  ) =>
-      _mutate(() => ref.read(createNoteUseCaseProvider)(params));
+  ) async {
+    final result = await ref.read(createNoteUseCaseProvider)(params);
+    return result.fold(
+      (failure) => Left(failure),
+      (note) {
+        final current = state.valueOrNull;
+        if (current != null) {
+          state = AsyncData([...current, note]);
+        }
+        return Right(note);
+      },
+    );
+  }
 
   /// Updates an existing note's content, trimming fields and stamping updatedAt.
   ///
   /// Returns [NoteNotFoundFailure] if the note no longer exists.
-  Future<Either<Failure, NoteEntity>> updateNote(NoteEntity entity) =>
-      _mutate(() => ref.read(updateNoteUseCaseProvider)(entity));
+  Future<Either<Failure, NoteEntity>> updateNote(NoteEntity entity) async {
+    final currentState = state.valueOrNull;
+    NoteEntity? originalNote;
+    if (currentState != null) {
+      final index = currentState.indexWhere((n) => n.id == entity.id);
+      if (index != -1) {
+        originalNote = currentState[index];
+        final updatedList = List<NoteEntity>.from(currentState);
+        updatedList[index] = entity;
+        state = AsyncData(updatedList);
+      }
+    }
+
+    final result = await ref.read(updateNoteUseCaseProvider)(entity);
+    return result.fold(
+      (failure) {
+        if (currentState != null && originalNote != null) {
+          final index = currentState.indexWhere((n) => n.id == entity.id);
+          if (index != -1) {
+            final updatedList = List<NoteEntity>.from(state.valueOrNull ?? currentState);
+            updatedList[index] = originalNote;
+            state = AsyncData(updatedList);
+          }
+        }
+        return Left(failure);
+      },
+      (note) {
+        final current = state.valueOrNull;
+        if (current != null) {
+          final index = current.indexWhere((n) => n.id == note.id);
+          if (index != -1) {
+            final updatedList = List<NoteEntity>.from(current);
+            updatedList[index] = note;
+            state = AsyncData(updatedList);
+          }
+        }
+        return Right(note);
+      },
+    );
+  }
 
   /// Soft-deletes a note by moving it to the trash.
   ///
@@ -110,43 +194,109 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
   /// [trashedNotesProvider] after the next re-fetch — with a single
   /// [ref.invalidateSelf()] call.
   Future<Either<Failure, NoteEntity>> deleteNote(String id) =>
-      _mutate(() => ref.read(deleteNoteUseCaseProvider)(id));
+      _updateInMemoryAndExecute(
+        id,
+        () => ref.read(deleteNoteUseCaseProvider)(id),
+        (note) => note.copyWith(
+          status: NoteStatus.trashed,
+          trashedAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
 
   /// Archives a note.
   ///
   /// After [ref.invalidateSelf()], the note vanishes from [activeNotesProvider]
   /// and appears in [archivedNotesProvider] — no cross-invalidation needed.
   Future<Either<Failure, NoteEntity>> archiveNote(String id) =>
-      _mutate(() => ref.read(archiveNoteUseCaseProvider)(id));
+      _updateInMemoryAndExecute(
+        id,
+        () => ref.read(archiveNoteUseCaseProvider)(id),
+        (note) => note.copyWith(
+          status: NoteStatus.archived,
+          updatedAt: DateTime.now(),
+        ),
+      );
 
   /// Returns an archived note to the active list.
   Future<Either<Failure, NoteEntity>> unarchiveNote(String id) =>
-      _mutate(() => ref.read(unarchiveNoteUseCaseProvider)(id));
+      _updateInMemoryAndExecute(
+        id,
+        () => ref.read(unarchiveNoteUseCaseProvider)(id),
+        (note) => note.copyWith(
+          status: NoteStatus.active,
+          updatedAt: DateTime.now(),
+        ),
+      );
 
   /// Restores a trashed note to the active list.
   Future<Either<Failure, NoteEntity>> restoreNote(String id) =>
-      _mutate(() => ref.read(restoreNoteUseCaseProvider)(id));
+      _updateInMemoryAndExecute(
+        id,
+        () => ref.read(restoreNoteUseCaseProvider)(id),
+        (note) => note.copyWith(
+          status: NoteStatus.active,
+          trashedAt: null,
+          updatedAt: DateTime.now(),
+        ),
+      );
 
   /// Pins a note to the top of the active list.
   ///
   /// No-op (returns [Right]) if the note is already pinned.
   Future<Either<Failure, NoteEntity>> pinNote(String id) =>
-      _mutate(() => ref.read(pinNoteUseCaseProvider)(id));
+      _updateInMemoryAndExecute(
+        id,
+        () => ref.read(pinNoteUseCaseProvider)(id),
+        (note) => note.copyWith(
+          isPinned: true,
+          updatedAt: DateTime.now(),
+        ),
+      );
 
   /// Unpins a note.
   ///
   /// No-op (returns [Right]) if the note is already unpinned.
   Future<Either<Failure, NoteEntity>> unpinNote(String id) =>
-      _mutate(() => ref.read(unpinNoteUseCaseProvider)(id));
+      _updateInMemoryAndExecute(
+        id,
+        () => ref.read(unpinNoteUseCaseProvider)(id),
+        (note) => note.copyWith(
+          isPinned: false,
+          updatedAt: DateTime.now(),
+        ),
+      );
 
   /// Toggles the favorite state of a note.
   Future<Either<Failure, NoteEntity>> toggleFavorite(String id) =>
-      _mutate(() => ref.read(toggleFavoriteUseCaseProvider)(id));
+      _updateInMemoryAndExecute(
+        id,
+        () => ref.read(toggleFavoriteUseCaseProvider)(id),
+        (note) => note.copyWith(
+          isFavorite: !note.isFavorite,
+          updatedAt: DateTime.now(),
+        ),
+      );
 
   // ─── Bulk Operations ──────────────────────────────────────────────────────
 
   /// Favorites or unfavorites a batch of notes.
   Future<void> bulkToggleFavorite(Set<String> ids, bool favorite) async {
+    final currentState = state.valueOrNull;
+    if (currentState != null) {
+      final updatedList = List<NoteEntity>.from(currentState);
+      for (final id in ids) {
+        final index = updatedList.indexWhere((n) => n.id == id);
+        if (index != -1) {
+          updatedList[index] = updatedList[index].copyWith(
+            isFavorite: favorite,
+            updatedAt: DateTime.now(),
+          );
+        }
+      }
+      state = AsyncData(updatedList);
+    }
+
     final repo = ref.read(noteRepositoryProvider);
     for (final id in ids) {
       final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
@@ -161,11 +311,25 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
         },
       );
     }
-    ref.invalidateSelf();
   }
 
   /// Pins or unpins a batch of notes.
   Future<void> bulkTogglePin(Set<String> ids, bool pin) async {
+    final currentState = state.valueOrNull;
+    if (currentState != null) {
+      final updatedList = List<NoteEntity>.from(currentState);
+      for (final id in ids) {
+        final index = updatedList.indexWhere((n) => n.id == id);
+        if (index != -1) {
+          updatedList[index] = updatedList[index].copyWith(
+            isPinned: pin,
+            updatedAt: DateTime.now(),
+          );
+        }
+      }
+      state = AsyncData(updatedList);
+    }
+
     final repo = ref.read(noteRepositoryProvider);
     for (final id in ids) {
       final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
@@ -180,11 +344,25 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
         },
       );
     }
-    ref.invalidateSelf();
   }
 
   /// Archives or unarchives a batch of notes.
   Future<void> bulkToggleArchive(Set<String> ids, bool archive) async {
+    final currentState = state.valueOrNull;
+    if (currentState != null) {
+      final updatedList = List<NoteEntity>.from(currentState);
+      for (final id in ids) {
+        final index = updatedList.indexWhere((n) => n.id == id);
+        if (index != -1) {
+          updatedList[index] = updatedList[index].copyWith(
+            status: archive ? NoteStatus.archived : NoteStatus.active,
+            updatedAt: DateTime.now(),
+          );
+        }
+      }
+      state = AsyncData(updatedList);
+    }
+
     final repo = ref.read(noteRepositoryProvider);
     for (final id in ids) {
       if (archive) {
@@ -193,21 +371,36 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
         await repo.unarchiveNote(id);
       }
     }
-    ref.invalidateSelf();
   }
 
   /// Moves a batch of notes to trash (soft delete).
   Future<void> bulkDelete(Set<String> ids) async {
+    final currentState = state.valueOrNull;
+    if (currentState != null) {
+      final updatedList = List<NoteEntity>.from(currentState);
+      for (final id in ids) {
+        final index = updatedList.indexWhere((n) => n.id == id);
+        if (index != -1) {
+          updatedList[index] = updatedList[index].copyWith(
+            status: NoteStatus.trashed,
+            trashedAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+        }
+      }
+      state = AsyncData(updatedList);
+    }
+
     final repo = ref.read(noteRepositoryProvider);
     for (final id in ids) {
       await repo.deleteNote(id);
     }
-    ref.invalidateSelf();
   }
 
   /// Duplicates a batch of notes.
   Future<void> bulkDuplicate(Set<String> ids) async {
     final repo = ref.read(noteRepositoryProvider);
+    final List<NoteEntity> duplicatedNotes = [];
     for (final id in ids) {
       final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
       await noteResult.fold(
@@ -227,14 +420,35 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
             isFavorite: note.isFavorite,
           );
           await repo.createNote(duplicated);
+          duplicatedNotes.add(duplicated);
         },
       );
     }
-    ref.invalidateSelf();
+    if (duplicatedNotes.isNotEmpty) {
+      final current = state.valueOrNull;
+      if (current != null) {
+        state = AsyncData([...current, ...duplicatedNotes]);
+      }
+    }
   }
 
   /// Assigns a category/folder ID to a batch of notes.
   Future<void> bulkMoveToCategory(Set<String> ids, String? categoryId) async {
+    final currentState = state.valueOrNull;
+    if (currentState != null) {
+      final updatedList = List<NoteEntity>.from(currentState);
+      for (final id in ids) {
+        final index = updatedList.indexWhere((n) => n.id == id);
+        if (index != -1) {
+          updatedList[index] = updatedList[index].copyWith(
+            categoryId: categoryId,
+            updatedAt: DateTime.now(),
+          );
+        }
+      }
+      state = AsyncData(updatedList);
+    }
+
     final repo = ref.read(noteRepositoryProvider);
     for (final id in ids) {
       final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
@@ -249,11 +463,25 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
         },
       );
     }
-    ref.invalidateSelf();
   }
 
   /// Changes the color of a batch of notes.
   Future<void> bulkChangeColor(Set<String> ids, int? color) async {
+    final currentState = state.valueOrNull;
+    if (currentState != null) {
+      final updatedList = List<NoteEntity>.from(currentState);
+      for (final id in ids) {
+        final index = updatedList.indexWhere((n) => n.id == id);
+        if (index != -1) {
+          updatedList[index] = updatedList[index].copyWith(
+            color: color,
+            updatedAt: DateTime.now(),
+          );
+        }
+      }
+      state = AsyncData(updatedList);
+    }
+
     final repo = ref.read(noteRepositoryProvider);
     for (final id in ids) {
       final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
@@ -268,15 +496,36 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
         },
       );
     }
-    ref.invalidateSelf();
   }
 
   /// Adds a tag to a batch of notes.
   Future<void> bulkAddTag(Set<String> ids, String tag) async {
-    final repo = ref.read(noteRepositoryProvider);
     final cleanTag = tag.trim().replaceAll('#', '');
     if (cleanTag.isEmpty) return;
 
+    final currentState = state.valueOrNull;
+    if (currentState != null) {
+      final updatedList = List<NoteEntity>.from(currentState);
+      for (final id in ids) {
+        final index = updatedList.indexWhere((n) => n.id == id);
+        if (index != -1) {
+          final note = updatedList[index];
+          final currentTags = List<String>.from(note.tagIds);
+          if (!currentTags.contains(cleanTag)) {
+            final newBody = note.body.isEmpty ? '#$cleanTag' : '${note.body}\n#$cleanTag';
+            final newTags = [...currentTags, cleanTag];
+            updatedList[index] = note.copyWith(
+              body: newBody,
+              tagIds: newTags,
+              updatedAt: DateTime.now(),
+            );
+          }
+        }
+      }
+      state = AsyncData(updatedList);
+    }
+
+    final repo = ref.read(noteRepositoryProvider);
     for (final id in ids) {
       final noteResult = await ref.read(getNoteByIdUseCaseProvider)(id);
       await noteResult.fold(
@@ -296,7 +545,6 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
         },
       );
     }
-    ref.invalidateSelf();
   }
 
   /// Copies note contents to the clipboard as plain text to share.
@@ -345,14 +593,40 @@ class NotesNotifier extends AsyncNotifier<List<NoteEntity>> {
         .map((m) => m.id)
         .toList();
     await box.deleteAll(trashedKeys);
-    ref.invalidateSelf();
+    final current = state.valueOrNull;
+    if (current != null) {
+      state = AsyncData(current.where((n) => n.status != NoteStatus.trashed).toList());
+    }
   }
 
   /// Permanently erases all notes from the local storage.
   Future<void> clearAllNotes() async {
     final box = ref.read(notesBoxProvider);
     await box.clear();
-    ref.invalidateSelf();
+    state = const AsyncData([]);
+  }
+
+  /// Helper to synchronously update a note in memory.
+  void addOrUpdateNoteInMemory(NoteEntity note) {
+    final current = state.valueOrNull;
+    if (current != null) {
+      final index = current.indexWhere((n) => n.id == note.id);
+      final updated = List<NoteEntity>.from(current);
+      if (index != -1) {
+        updated[index] = note;
+      } else {
+        updated.add(note);
+      }
+      state = AsyncData(updated);
+    }
+  }
+
+  /// Helper to synchronously remove a note from memory.
+  void removeNoteInMemory(String id) {
+    final current = state.valueOrNull;
+    if (current != null) {
+      state = AsyncData(current.where((n) => n.id != id).toList());
+    }
   }
 }
 

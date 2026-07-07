@@ -17,5 +17,5 @@ final notesHomeRepositoryProvider = Provider<NotesHomeRepository>((ref) {
 final notesHomeControllerProvider = StateNotifierProvider.autoDispose<
     NotesHomeController, NotesHomeState>((ref) {
   final repository = ref.watch(notesHomeRepositoryProvider);
-  return NotesHomeController(repository);
+  return NotesHomeController(repository, ref);
 });

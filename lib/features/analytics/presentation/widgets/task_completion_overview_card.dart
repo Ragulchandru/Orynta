@@ -1,37 +1,30 @@
 // lib/features/analytics/presentation/widgets/task_completion_overview_card.dart
-//
-// Orynta 2.0 — Custom Bar Chart showing Task Completion Trends (Responsive Headers)
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'dart:math' as math;
+import 'dart:async';
+import 'dart:ui' as ui;
 
 import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/design_system/motion/motion_tokens.dart';
+import '../../../../core/design_system/design_system.dart';
+import '../providers/insights_time_filter_provider.dart';
+import '../providers/analytics_provider.dart';
+import 'analytics_axis_formatter.dart';
 
-class TaskCompletionOverviewCard extends StatefulWidget {
-  const TaskCompletionOverviewCard({
-    super.key,
-    required this.completedWeekly,
-    required this.datesWeekly,
-    required this.completedMonthly,
-    required this.datesMonthly,
-  });
-
-  final List<int> completedWeekly;
-  final List<DateTime> datesWeekly;
-
-  final List<int> completedMonthly;
-  final List<DateTime> datesMonthly;
+class TaskCompletionOverviewCard extends ConsumerStatefulWidget {
+  const TaskCompletionOverviewCard({super.key});
 
   @override
-  State<TaskCompletionOverviewCard> createState() => _TaskCompletionOverviewCardState();
+  ConsumerState<TaskCompletionOverviewCard> createState() => _TaskCompletionOverviewCardState();
 }
 
-class _TaskCompletionOverviewCardState extends State<TaskCompletionOverviewCard> with SingleTickerProviderStateMixin {
-  int _selectedTab = 0; // 0 = Weekly, 1 = Monthly
+class _TaskCompletionOverviewCardState extends ConsumerState<TaskCompletionOverviewCard> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _animation;
+  int? _selectedIndex;
+  Timer? _tooltipTimer;
 
   @override
   void initState() {
@@ -57,21 +50,33 @@ class _TaskCompletionOverviewCardState extends State<TaskCompletionOverviewCard>
   @override
   void dispose() {
     _animationController.dispose();
+    _tooltipTimer?.cancel();
     super.dispose();
+  }
+
+  void _selectIndex(int index) {
+    _tooltipTimer?.cancel();
+    setState(() {
+      _selectedIndex = index;
+    });
+    _tooltipTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        setState(() {
+          _selectedIndex = null;
+        });
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final activeRange = ref.watch(insightsTimeRangeProvider);
+    final trendPoints = ref.watch(activeTrendProvider);
 
-    final completed = _selectedTab == 0 ? widget.completedWeekly : widget.completedMonthly;
-    final dates = _selectedTab == 0 ? widget.datesWeekly : widget.datesMonthly;
-
-    final maxVal = [
-      ...completed,
-      3, // Minimum baseline height
-    ].reduce((a, b) => a > b ? a : b);
+    final completed = trendPoints.map((p) => p.completed).toList();
+    final dates = trendPoints.map((p) => p.date).toList();
 
     return Card(
       elevation: 0,
@@ -85,94 +90,83 @@ class _TaskCompletionOverviewCardState extends State<TaskCompletionOverviewCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Responsive Wrap Header
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final isNarrow = constraints.maxWidth < 450;
-                return Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  alignment: WrapAlignment.spaceBetween,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: isNarrow ? constraints.maxWidth : null,
-                      child: Text(
-                        'Task Completion Overview',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                    SegmentedButton<int>(
-                      segments: const [
-                        ButtonSegment(value: 0, label: FittedBox(fit: BoxFit.scaleDown, child: Text('Wk', maxLines: 1))),
-                        ButtonSegment(value: 1, label: FittedBox(fit: BoxFit.scaleDown, child: Text('Mo', maxLines: 1))),
-                      ],
-                      selected: {_selectedTab},
-                      onSelectionChanged: (val) {
-                        setState(() {
-                          _selectedTab = val.first;
-                        });
-                        _animationController.reset();
-                        _animationController.forward();
-                      },
-                    ),
-                  ],
-                );
-              },
+            Text(
+              'Task Completion Overview',
+              style: context.typography.titleMedium.copyWith(
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 6),
             Text(
               'Completed tasks counts distribution',
-              style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.outline),
+              style: context.typography.bodySmall.copyWith(color: colorScheme.outline),
             ),
             const SizedBox(height: AppSizes.xl),
-            AnimatedBuilder(
-              animation: _animation,
-              builder: (context, child) {
-                return SizedBox(
-                  height: 140,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: List.generate(completed.length, (idx) {
-                      final startDelay = (idx * 0.04).clamp(0.0, 0.4);
-                      final progress = ((_animation.value - startDelay) / 0.6).clamp(0.0, 1.0);
-                      final scale = progress == 1.0 ? 1.0 : progress * 1.15 - 0.15 * math.pow(progress, 3);
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+                final labels = AnalyticsAxisFormatter.getLabels(
+                  dates: dates,
+                  range: activeRange,
+                  availableWidth: width,
+                );
 
-                      final val = completed[idx];
-                      final ratio = val / maxVal;
-                      final height = (ratio * 120.0 * scale).clamp(4.0, 120.0);
-
-                      return Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Tooltip(
-                              message: '$val completed',
-                              child: Container(
-                                margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                                height: height,
-                                decoration: BoxDecoration(
-                                  color: colorScheme.primary.withValues(alpha: 0.8),
-                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                return Column(
+                  children: [
+                    GestureDetector(
+                      onTapDown: (details) {
+                        if (trendPoints.isEmpty) return;
+                        final localX = details.localPosition.dx;
+                        final count = trendPoints.length;
+                        final double spacing = count > 1 ? width / count : width;
+                        final tappedIndex = (localX / spacing).floor().clamp(0, count - 1);
+                        _selectIndex(tappedIndex);
+                      },
+                      child: RepaintBoundary(
+                        child: SizedBox(
+                          height: 140,
+                          width: double.infinity,
+                          child: AnimatedBuilder(
+                            animation: _animation,
+                            builder: (context, child) {
+                              return CustomPaint(
+                                painter: _OverviewBarPainter(
+                                  trendPoints: trendPoints,
+                                  completedPoints: completed,
+                                  primaryColor: colorScheme.primary,
+                                  accentColor: colorScheme.secondary,
+                                  gridColor: colorScheme.outlineVariant.withValues(alpha: 0.15),
+                                  progress: _animation.value,
+                                  selectedIndex: _selectedIndex,
                                 ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSizes.md),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: List.generate(labels.length, (idx) {
+                        final label = labels[idx];
+                        return Expanded(
+                          child: Center(
+                            child: Text(
+                              label,
+                              softWrap: false,
+                              maxLines: 1,
+                              overflow: TextOverflow.fade,
+                              style: context.typography.labelSmall.copyWith(
+                                color: colorScheme.outline,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              _selectedTab == 0
-                                  ? DateFormat('E').format(dates[idx]).substring(0, 1)
-                                  : DateFormat('d').format(dates[idx]),
-                              style: theme.textTheme.labelSmall?.copyWith(color: colorScheme.outline),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ),
+                          ),
+                        );
+                      }),
+                    ),
+                  ],
                 );
               },
             ),
@@ -180,5 +174,143 @@ class _TaskCompletionOverviewCardState extends State<TaskCompletionOverviewCard>
         ),
       ),
     );
+  }
+}
+
+class _OverviewBarPainter extends CustomPainter {
+  final List<TrendPoint> trendPoints;
+  final List<int> completedPoints;
+  final Color primaryColor;
+  final Color accentColor;
+  final Color gridColor;
+  final double progress;
+  final int? selectedIndex;
+
+  _OverviewBarPainter({
+    required this.trendPoints,
+    required this.completedPoints,
+    required this.primaryColor,
+    required this.accentColor,
+    required this.gridColor,
+    required this.progress,
+    required this.selectedIndex,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final width = size.width;
+    final height = size.height;
+
+    // Draw horizontal grid lines at 25%, 50%, 75%, 100%
+    final gridPaint = Paint()
+      ..color = gridColor
+      ..strokeWidth = 1.0;
+
+    for (int i = 0; i <= 4; i++) {
+      final y = height * (i / 4);
+      canvas.drawLine(Offset(0, y), Offset(width, y), gridPaint);
+    }
+
+    if (completedPoints.isEmpty) return;
+
+    final maxVal = [
+      ...completedPoints,
+      3,
+    ].reduce((a, b) => a > b ? a : b).toDouble();
+
+    final count = completedPoints.length;
+    final double spacing = count > 1 ? width / count : width;
+    final double barWidth = (spacing * 0.45).clamp(3.0, 16.0);
+
+    for (int i = 0; i < count; i++) {
+      final startDelay = (i * 0.04).clamp(0.0, 0.4);
+      final double progressScale = ((progress - startDelay) / 0.6).clamp(0.0, 1.0);
+      final double scale = progressScale == 1.0 ? 1.0 : progressScale * 1.15 - 0.15 * math.pow(progressScale, 3);
+
+      final val = completedPoints[i];
+      final barHeight = (val / maxVal) * (height - 10) * scale;
+
+      final x = count > 1 ? i * spacing + (spacing - barWidth) / 2 : (width - barWidth) / 2;
+      final y = height - barHeight;
+
+      final rect = Rect.fromLTWH(x, y, barWidth, barHeight);
+      final rrect = RRect.fromRectAndCorners(
+        rect,
+        topLeft: const Radius.circular(4),
+        topRight: const Radius.circular(4),
+      );
+
+      final isSelected = selectedIndex == i;
+      canvas.drawRRect(
+        rrect,
+        Paint()..color = isSelected ? accentColor : primaryColor.withValues(alpha: 0.8),
+      );
+    }
+
+    _drawTooltip(canvas, width, height, maxVal);
+  }
+
+  void _drawTooltip(Canvas canvas, double width, double height, double maxVal) {
+    if (selectedIndex == null || selectedIndex! >= trendPoints.length) return;
+
+    final count = trendPoints.length;
+    final double spacing = count > 1 ? width / count : width;
+    final x = count > 1 ? selectedIndex! * spacing + spacing / 2 : width / 2;
+
+    // Draw vertical line guide
+    canvas.drawLine(
+      Offset(x, 0),
+      Offset(x, height),
+      Paint()
+        ..color = primaryColor.withValues(alpha: 0.25)
+        ..strokeWidth = 1.0
+        ..style = PaintingStyle.stroke,
+    );
+
+    final point = trendPoints[selectedIndex!];
+    final dateStr = DateFormat('MMM d, yyyy').format(point.date);
+    final tooltipText = '$dateStr\nCompleted: ${point.completed} Tasks';
+
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: tooltipText,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          height: 1.3,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+
+    double tooltipX = x + 10;
+    if (tooltipX + textPainter.width + 16 > width) {
+      tooltipX = x - textPainter.width - 26;
+    }
+    tooltipX = tooltipX.clamp(4.0, width - textPainter.width - 20);
+
+    const double tooltipY = 6.0;
+
+    final bgRect = Rect.fromLTWH(
+      tooltipX,
+      tooltipY,
+      textPainter.width + 16,
+      textPainter.height + 10,
+    );
+
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(bgRect, const Radius.circular(8)),
+      Paint()..color = Colors.black.withValues(alpha: 0.85),
+    );
+
+    textPainter.paint(canvas, Offset(tooltipX + 8, tooltipY + 5));
+  }
+
+  @override
+  bool shouldRepaint(covariant _OverviewBarPainter oldDelegate) {
+    return oldDelegate.completedPoints != completedPoints ||
+        oldDelegate.progress != progress ||
+        oldDelegate.selectedIndex != selectedIndex;
   }
 }

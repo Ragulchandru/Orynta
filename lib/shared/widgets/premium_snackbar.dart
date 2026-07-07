@@ -13,21 +13,24 @@ class PremiumSnackBar {
   }) {
     final theme = context.appTheme;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: context.typography.bodyMedium.copyWith(
-            color: Colors.white,
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            message,
+            style: context.typography.bodyMedium.copyWith(
+              color: Colors.white,
+            ),
           ),
+          backgroundColor: isError ? theme.error : theme.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.0),
+          ),
+          duration: const Duration(seconds: 3),
         ),
-        backgroundColor: isError ? theme.error : theme.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        duration: const Duration(seconds: 3),
-      ),
-    );
+      );
   }
 }
