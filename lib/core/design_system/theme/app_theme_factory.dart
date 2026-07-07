@@ -25,6 +25,22 @@ abstract final class AppThemeFactory {
         return _lightTheme();
       case AppThemeType.sepia:
         return _sepia();
+      case AppThemeType.amoled:
+        return _amoled();
+      case AppThemeType.graphite:
+        return _graphite();
+      case AppThemeType.whiteMinimal:
+        return _whiteMinimal();
+      case AppThemeType.arctic:
+        return _arctic();
+      case AppThemeType.rose:
+        return _rose();
+      case AppThemeType.emerald:
+        return _emerald();
+      case AppThemeType.crimson:
+        return _crimson();
+      case AppThemeType.indigo:
+        return _indigo();
     }
   }
 
@@ -832,6 +848,822 @@ abstract final class AppThemeFactory {
         headerBackground: Color(0xFFFDFBF7),
         cardBackground: Color(0xFFFDFBF7),
         cardBorder: Color(0xFFEDE3CB),
+      ),
+    );
+  }
+
+  static AppThemeData _amoled() {
+    const primary = Color(0xFFFFFFFF);
+    const secondary = Color(0xFFE0E0E0);
+    const tertiary = Color(0xFF8E8EA8);
+    const background = Color(0xFF000000);
+    const surface = Color(0xFF000000);
+    const outline = Color(0xFF1F1F1F);
+    const outlineVariant = Color(0xFF121212);
+
+    return const AppThemeData(
+      id: 'amoled',
+      displayName: 'AMOLED Black',
+      description: 'Infinite contrast with pure black backgrounds',
+      previewAsset: 'assets/themes/amoled_preview.png',
+      brightness: Brightness.dark,
+      isDark: true,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      surface: surface,
+      surfaceContainer: Color(0xFF000000),
+      surfaceBright: Color(0xFF161616),
+      surfaceDim: Color(0xFF000000),
+      outline: outline,
+      outlineVariant: outlineVariant,
+      success: Color(0xFF4ADE80),
+      warning: Color(0xFFFBBF24),
+      error: Color(0xFFF87171),
+      navigation: AppThemeNavigationColors(
+        active: primary,
+        inactive: Color(0xFF8E8EA8),
+        background: background,
+        indicator: Color(0xFF1A1A1A),
+      ),
+      planner: AppThemePlannerColors(
+        highPriority: Color(0xFFF87171),
+        mediumPriority: Color(0xFFFBBF24),
+        lowPriority: Color(0xFF4ADE80),
+        progressDone: primary,
+        progressTodo: Color(0xFF1A1A1A),
+      ),
+      analytics: AppThemeAnalyticsColors(
+        chartPrimary: primary,
+        chartSecondary: secondary,
+        chartTertiary: Color(0xFF4F46E5),
+        ringActive: primary,
+        ringInactive: Color(0xFF1A1A1A),
+        heatmapLow: Color(0xFF0A0A0A),
+        heatmapMedium: primary,
+        heatmapHigh: secondary,
+        legendText: Color(0xFF8E8EA8),
+        cardBackground: Color(0xFF0A0A0A),
+        cardBorder: Color(0xFF1A1A1A),
+        progressRingActive: primary,
+        progressRingInactive: Color(0xFF1A1A1A),
+      ),
+      editor: AppThemeEditorColors(
+        selection: Color(0xFF333333),
+        markdownHeader: primary,
+        markdownQuote: secondary,
+        markdownCode: Color(0xFF0A0A0A),
+        attachmentBackground: Color(0xFF0A0A0A),
+      ),
+      notes: AppThemeNotesColors(
+        card: Color(0xFF000000),
+        cardBorder: Color(0xFF1F1F1F),
+        searchBackground: Color(0xFF0A0A0A),
+        searchBorder: outline,
+        tagBackground: Color(0xFF1F1F1F),
+        tagText: primary,
+        highlightBackground: Color(0x66FFFFFF),
+        chipBackground: Color(0xFF0A0A0A),
+        chipSelected: primary,
+        chipText: Color(0xFF8E8EA8),
+        chipTextSelected: Colors.black,
+        fabBackground: primary,
+        fabForeground: Colors.black,
+        selectionBackground: Color(0x33FFFFFF),
+        contextMenuBackground: Color(0xFF0A0A0A),
+      ),
+      dashboard: AppThemeDashboardColors(
+        heroBackground: Color(0xFF000000),
+        heroText: primary,
+        quoteBackground: Color(0xFF000000),
+        quoteBorder: Color(0xFF1F1F1F),
+        missionCard: Color(0xFF000000),
+        reminderCard: Color(0xFF000000),
+        glanceCard: Color(0xFF000000),
+        glanceBorder: Color(0xFF1F1F1F),
+        productivityBg: Color(0xFF0A0A0A),
+      ),
+      profile: AppThemeProfileColors(
+        avatarBackground: Color(0xFF1A1A1A),
+        avatarBorder: primary,
+        avatarText: primary,
+        headerBackground: Color(0xFF000000),
+        cardBackground: Color(0xFF000000),
+        cardBorder: Color(0xFF1F1F1F),
+      ),
+    );
+  }
+
+  static AppThemeData _graphite() {
+    const primary = Color(0xFF9E9E9E);
+    const secondary = Color(0xFFCCCCCC);
+    const tertiary = Color(0xFF666666);
+    const background = Color(0xFF121212);
+    const surface = Color(0xFF1E1E1E);
+    const outline = Color(0xFF2C2C2C);
+    const outlineVariant = Color(0xFF3C3C3C);
+
+    return const AppThemeData(
+      id: 'graphite',
+      displayName: 'Graphite',
+      description: 'Sleek carbon gray tones for minimalists',
+      previewAsset: 'assets/themes/graphite_preview.png',
+      brightness: Brightness.dark,
+      isDark: true,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      surface: surface,
+      surfaceContainer: Color(0xFF1E1E1E),
+      surfaceBright: Color(0xFF2C2C2C),
+      surfaceDim: Color(0xFF121212),
+      outline: outline,
+      outlineVariant: outlineVariant,
+      success: Color(0xFF34D399),
+      warning: Color(0xFFFBBF24),
+      error: Color(0xFFF87171),
+      navigation: AppThemeNavigationColors(
+        active: primary,
+        inactive: Color(0xFF8E8EA8),
+        background: background,
+        indicator: Color(0xFF2C2C2C),
+      ),
+      planner: AppThemePlannerColors(
+        highPriority: Color(0xFFF87171),
+        mediumPriority: Color(0xFFFBBF24),
+        lowPriority: Color(0xFF34D399),
+        progressDone: primary,
+        progressTodo: Color(0xFF2C2C2C),
+      ),
+      analytics: AppThemeAnalyticsColors(
+        chartPrimary: primary,
+        chartSecondary: secondary,
+        chartTertiary: Color(0xFF6366F1),
+        ringActive: primary,
+        ringInactive: Color(0xFF2C2C2C),
+        heatmapLow: Color(0xFF1A1A1A),
+        heatmapMedium: primary,
+        heatmapHigh: secondary,
+        legendText: Color(0xFF8E8EA8),
+        cardBackground: Color(0xFF242424),
+        cardBorder: Color(0xFF2C2C2C),
+        progressRingActive: primary,
+        progressRingInactive: Color(0xFF2C2C2C),
+      ),
+      editor: AppThemeEditorColors(
+        selection: Color(0xFF444444),
+        markdownHeader: primary,
+        markdownQuote: secondary,
+        markdownCode: Color(0xFF1A1A1A),
+        attachmentBackground: Color(0xFF1A1A1A),
+      ),
+      notes: AppThemeNotesColors(
+        card: Color(0xFF242424),
+        cardBorder: Color(0xFF2C2C2C),
+        searchBackground: Color(0xFF242424),
+        searchBorder: outline,
+        tagBackground: Color(0xFF2C2C2C),
+        tagText: primary,
+        highlightBackground: Color(0x66FFFFFF),
+        chipBackground: Color(0xFF242424),
+        chipSelected: primary,
+        chipText: Color(0xFF8E8EA8),
+        chipTextSelected: Colors.black,
+        fabBackground: primary,
+        fabForeground: Colors.black,
+        selectionBackground: Color(0x33FFFFFF),
+        contextMenuBackground: Color(0xFF242424),
+      ),
+      dashboard: AppThemeDashboardColors(
+        heroBackground: Color(0xFF1E1E1E),
+        heroText: primary,
+        quoteBackground: Color(0xFF242424),
+        quoteBorder: Color(0xFF2C2C2C),
+        missionCard: Color(0xFF242424),
+        reminderCard: Color(0xFF242424),
+        glanceCard: Color(0xFF242424),
+        glanceBorder: Color(0xFF2C2C2C),
+        productivityBg: Color(0xFF242424),
+      ),
+      profile: AppThemeProfileColors(
+        avatarBackground: Color(0xFF2C2C2C),
+        avatarBorder: primary,
+        avatarText: primary,
+        headerBackground: Color(0xFF1E1E1E),
+        cardBackground: Color(0xFF242424),
+        cardBorder: Color(0xFF2C2C2C),
+      ),
+    );
+  }
+
+  static AppThemeData _whiteMinimal() {
+    const primary = Color(0xFF000000);
+    const secondary = Color(0xFF333333);
+    const tertiary = Color(0xFF777777);
+    const background = Color(0xFFF9F9F9);
+    const surface = Color(0xFFFFFFFF);
+    const outline = Color(0xFFEAEAEA);
+    const outlineVariant = Color(0xFFF2F2F2);
+
+    return const AppThemeData(
+      id: 'whiteMinimal',
+      displayName: 'White Minimal',
+      description: 'Crisp layout on pure white surfaces',
+      previewAsset: 'assets/themes/white_preview.png',
+      brightness: Brightness.light,
+      isDark: false,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      surface: surface,
+      surfaceContainer: Color(0xFFFFFFFF),
+      surfaceBright: Color(0xFFF0F0F0),
+      surfaceDim: Color(0xFFF5F5F5),
+      outline: outline,
+      outlineVariant: outlineVariant,
+      success: Color(0xFF059669),
+      warning: Color(0xFFD97706),
+      error: Color(0xFFDC2626),
+      navigation: AppThemeNavigationColors(
+        active: primary,
+        inactive: Color(0xFF888888),
+        background: background,
+        indicator: Color(0xFFEAEAEA),
+      ),
+      planner: AppThemePlannerColors(
+        highPriority: Color(0xFFDC2626),
+        mediumPriority: Color(0xFFD97706),
+        lowPriority: Color(0xFF059669),
+        progressDone: primary,
+        progressTodo: Color(0xFFEAEAEA),
+      ),
+      analytics: AppThemeAnalyticsColors(
+        chartPrimary: primary,
+        chartSecondary: secondary,
+        chartTertiary: Color(0xFF2563EB),
+        ringActive: primary,
+        ringInactive: Color(0xFFEAEAEA),
+        heatmapLow: Color(0xFFF3F4F6),
+        heatmapMedium: primary,
+        heatmapHigh: secondary,
+        legendText: Color(0xFF888888),
+        cardBackground: Color(0xFFFFFFFF),
+        cardBorder: Color(0xFFEAEAEA),
+        progressRingActive: primary,
+        progressRingInactive: Color(0xFFEAEAEA),
+      ),
+      editor: AppThemeEditorColors(
+        selection: Color(0xFFE0E0E0),
+        markdownHeader: primary,
+        markdownQuote: secondary,
+        markdownCode: Color(0xFFF3F4F6),
+        attachmentBackground: Color(0xFFF3F4F6),
+      ),
+      notes: AppThemeNotesColors(
+        card: Color(0xFFFFFFFF),
+        cardBorder: Color(0xFFEAEAEA),
+        searchBackground: Color(0xFFFFFFFF),
+        searchBorder: outline,
+        tagBackground: Color(0xFFF3F4F6),
+        tagText: primary,
+        highlightBackground: Color(0x66000000),
+        chipBackground: Color(0xFFFFFFFF),
+        chipSelected: primary,
+        chipText: Color(0xFF888888),
+        chipTextSelected: Colors.white,
+        fabBackground: primary,
+        fabForeground: Colors.white,
+        selectionBackground: Color(0x33000000),
+        contextMenuBackground: Color(0xFFFFFFFF),
+      ),
+      dashboard: AppThemeDashboardColors(
+        heroBackground: Color(0xFFFFFFFF),
+        heroText: primary,
+        quoteBackground: Color(0xFFFFFFFF),
+        quoteBorder: Color(0xFFEAEAEA),
+        missionCard: Color(0xFFFFFFFF),
+        reminderCard: Color(0xFFFFFFFF),
+        glanceCard: Color(0xFFFFFFFF),
+        glanceBorder: Color(0xFFEAEAEA),
+        productivityBg: Color(0xFFFFFFFF),
+      ),
+      profile: AppThemeProfileColors(
+        avatarBackground: Color(0xFFF3F4F6),
+        avatarBorder: primary,
+        avatarText: primary,
+        headerBackground: Color(0xFFFFFFFF),
+        cardBackground: Color(0xFFFFFFFF),
+        cardBorder: Color(0xFFEAEAEA),
+      ),
+    );
+  }
+
+  static AppThemeData _arctic() {
+    const primary = Color(0xFF0077E6);
+    const secondary = Color(0xFF3399FF);
+    const tertiary = Color(0xFF66B2FF);
+    const background = Color(0xFFF0F8FF);
+    const surface = Color(0xFFFFFFFF);
+    const outline = Color(0xFFC2DFFF);
+    const outlineVariant = Color(0xFFD9E9FF);
+
+    return const AppThemeData(
+      id: 'arctic',
+      displayName: 'Arctic Ice',
+      description: 'Cool blue highlights on frosty ice surfaces',
+      previewAsset: 'assets/themes/arctic_preview.png',
+      brightness: Brightness.light,
+      isDark: false,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      surface: surface,
+      surfaceContainer: Color(0xFFFFFFFF),
+      surfaceBright: Color(0xFFEBF5FF),
+      surfaceDim: Color(0xFFE6F2FF),
+      outline: outline,
+      outlineVariant: outlineVariant,
+      success: Color(0xFF059669),
+      warning: Color(0xFFD97706),
+      error: Color(0xFFDC2626),
+      navigation: AppThemeNavigationColors(
+        active: primary,
+        inactive: Color(0xFF88A2C4),
+        background: background,
+        indicator: Color(0xFFC2DFFF),
+      ),
+      planner: AppThemePlannerColors(
+        highPriority: Color(0xFFDC2626),
+        mediumPriority: Color(0xFFD97706),
+        lowPriority: Color(0xFF059669),
+        progressDone: primary,
+        progressTodo: Color(0xFFC2DFFF),
+      ),
+      analytics: AppThemeAnalyticsColors(
+        chartPrimary: primary,
+        chartSecondary: secondary,
+        chartTertiary: Color(0xFF7C3AED),
+        ringActive: primary,
+        ringInactive: Color(0xFFC2DFFF),
+        heatmapLow: Color(0xFFE6F2FF),
+        heatmapMedium: primary,
+        heatmapHigh: secondary,
+        legendText: Color(0xFF88A2C4),
+        cardBackground: Color(0xFFFFFFFF),
+        cardBorder: Color(0xFFC2DFFF),
+        progressRingActive: primary,
+        progressRingInactive: Color(0xFFC2DFFF),
+      ),
+      editor: AppThemeEditorColors(
+        selection: Color(0xFFCCE6FF),
+        markdownHeader: primary,
+        markdownQuote: secondary,
+        markdownCode: Color(0xFFEBF5FF),
+        attachmentBackground: Color(0xFFEBF5FF),
+      ),
+      notes: AppThemeNotesColors(
+        card: Color(0xFFFFFFFF),
+        cardBorder: Color(0xFFC2DFFF),
+        searchBackground: Color(0xFFFFFFFF),
+        searchBorder: outline,
+        tagBackground: Color(0xFFEBF5FF),
+        tagText: primary,
+        highlightBackground: Color(0x660077E6),
+        chipBackground: Color(0xFFFFFFFF),
+        chipSelected: primary,
+        chipText: Color(0xFF88A2C4),
+        chipTextSelected: Colors.white,
+        fabBackground: primary,
+        fabForeground: Colors.white,
+        selectionBackground: Color(0x330077E6),
+        contextMenuBackground: Color(0xFFFFFFFF),
+      ),
+      dashboard: AppThemeDashboardColors(
+        heroBackground: Color(0xFFFFFFFF),
+        heroText: primary,
+        quoteBackground: Color(0xFFFFFFFF),
+        quoteBorder: Color(0xFFC2DFFF),
+        missionCard: Color(0xFFFFFFFF),
+        reminderCard: Color(0xFFFFFFFF),
+        glanceCard: Color(0xFFFFFFFF),
+        glanceBorder: Color(0xFFC2DFFF),
+        productivityBg: Color(0xFFFFFFFF),
+      ),
+      profile: AppThemeProfileColors(
+        avatarBackground: Color(0xFFEBF5FF),
+        avatarBorder: primary,
+        avatarText: primary,
+        headerBackground: Color(0xFFFFFFFF),
+        cardBackground: Color(0xFFFFFFFF),
+        cardBorder: Color(0xFFC2DFFF),
+      ),
+    );
+  }
+
+  static AppThemeData _rose() {
+    const primary = Color(0xFFC71585);
+    const secondary = Color(0xFFFF69B4);
+    const tertiary = Color(0xFFFFB6C1);
+    const background = Color(0xFF1A0A10);
+    const surface = Color(0xFF2D161F);
+    const outline = Color(0xFF4C2A38);
+    const outlineVariant = Color(0xFF3A1F2B);
+
+    return const AppThemeData(
+      id: 'rose',
+      displayName: 'Rose Wine',
+      description: 'Warm burgundy tones with bright magenta highlights',
+      previewAsset: 'assets/themes/rose_preview.png',
+      brightness: Brightness.dark,
+      isDark: true,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      surface: surface,
+      surfaceContainer: Color(0xFF2D161F),
+      surfaceBright: Color(0xFF3D232E),
+      surfaceDim: Color(0xFF1A0A10),
+      outline: outline,
+      outlineVariant: outlineVariant,
+      success: Color(0xFF10B981),
+      warning: Color(0xFFF59E0B),
+      error: Color(0xFFEF4444),
+      navigation: AppThemeNavigationColors(
+        active: primary,
+        inactive: Color(0xFFB08C9D),
+        background: background,
+        indicator: Color(0xFF3A1F2B),
+      ),
+      planner: AppThemePlannerColors(
+        highPriority: Color(0xFFEF4444),
+        mediumPriority: Color(0xFFF59E0B),
+        lowPriority: Color(0xFF10B981),
+        progressDone: primary,
+        progressTodo: Color(0xFF3A1F2B),
+      ),
+      analytics: AppThemeAnalyticsColors(
+        chartPrimary: primary,
+        chartSecondary: secondary,
+        chartTertiary: Color(0xFFF59E0B),
+        ringActive: primary,
+        ringInactive: Color(0xFF3A1F2B),
+        heatmapLow: Color(0xFF2D161F),
+        heatmapMedium: primary,
+        heatmapHigh: secondary,
+        legendText: Color(0xFFB08C9D),
+        cardBackground: Color(0xFF251119),
+        cardBorder: Color(0xFF3A1F2B),
+        progressRingActive: primary,
+        progressRingInactive: Color(0xFF3A1F2B),
+      ),
+      editor: AppThemeEditorColors(
+        selection: Color(0xFF5E1736),
+        markdownHeader: primary,
+        markdownQuote: secondary,
+        markdownCode: Color(0xFF251119),
+        attachmentBackground: Color(0xFF251119),
+      ),
+      notes: AppThemeNotesColors(
+        card: Color(0xFF251119),
+        cardBorder: Color(0xFF3A1F2B),
+        searchBackground: Color(0xFF251119),
+        searchBorder: outline,
+        tagBackground: Color(0xFF3A1F2B),
+        tagText: primary,
+        highlightBackground: Color(0x66C71585),
+        chipBackground: Color(0xFF251119),
+        chipSelected: primary,
+        chipText: Color(0xFFB08C9D),
+        chipTextSelected: Colors.white,
+        fabBackground: primary,
+        fabForeground: Colors.white,
+        selectionBackground: Color(0x33C71585),
+        contextMenuBackground: Color(0xFF251119),
+      ),
+      dashboard: AppThemeDashboardColors(
+        heroBackground: Color(0xFF2D161F),
+        heroText: primary,
+        quoteBackground: Color(0xFF251119),
+        quoteBorder: Color(0xFF3A1F2B),
+        missionCard: Color(0xFF251119),
+        reminderCard: Color(0xFF251119),
+        glanceCard: Color(0xFF251119),
+        glanceBorder: Color(0xFF3A1F2B),
+        productivityBg: Color(0xFF251119),
+      ),
+      profile: AppThemeProfileColors(
+        avatarBackground: Color(0xFF3D232E),
+        avatarBorder: primary,
+        avatarText: primary,
+        headerBackground: Color(0xFF2D161F),
+        cardBackground: Color(0xFF251119),
+        cardBorder: Color(0xFF3A1F2B),
+      ),
+    );
+  }
+
+  static AppThemeData _emerald() {
+    const primary = Color(0xFF2ECC71);
+    const secondary = Color(0xFF27AE60);
+    const tertiary = Color(0xFF1ABC9C);
+    const background = Color(0xFF04120A);
+    const surface = Color(0xFF0A2416);
+    const outline = Color(0xFF15442A);
+    const outlineVariant = Color(0xFF0E331E);
+
+    return const AppThemeData(
+      id: 'emerald',
+      displayName: 'Emerald Forest',
+      description: 'Lush green hues on deep forest backgrounds',
+      previewAsset: 'assets/themes/emerald_preview.png',
+      brightness: Brightness.dark,
+      isDark: true,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      surface: surface,
+      surfaceContainer: Color(0xFF0A2416),
+      surfaceBright: Color(0xFF133822),
+      surfaceDim: Color(0xFF04120A),
+      outline: outline,
+      outlineVariant: outlineVariant,
+      success: Color(0xFF2ECC71),
+      warning: Color(0xFFF1C40F),
+      error: Color(0xFFE74C3C),
+      navigation: AppThemeNavigationColors(
+        active: primary,
+        inactive: Color(0xFF7FA892),
+        background: background,
+        indicator: Color(0xFF0E331E),
+      ),
+      planner: AppThemePlannerColors(
+        highPriority: Color(0xFFE74C3C),
+        mediumPriority: Color(0xFFF1C40F),
+        lowPriority: Color(0xFF2ECC71),
+        progressDone: primary,
+        progressTodo: Color(0xFF0E331E),
+      ),
+      analytics: AppThemeAnalyticsColors(
+        chartPrimary: primary,
+        chartSecondary: secondary,
+        chartTertiary: Color(0xFFE67E22),
+        ringActive: primary,
+        ringInactive: Color(0xFF0E331E),
+        heatmapLow: Color(0xFF0A2416),
+        heatmapMedium: primary,
+        heatmapHigh: secondary,
+        legendText: Color(0xFF7FA892),
+        cardBackground: Color(0xFF061A0F),
+        cardBorder: Color(0xFF0E331E),
+        progressRingActive: primary,
+        progressRingInactive: Color(0xFF0E331E),
+      ),
+      editor: AppThemeEditorColors(
+        selection: Color(0xFF0A4E2C),
+        markdownHeader: primary,
+        markdownQuote: secondary,
+        markdownCode: Color(0xFF061A0F),
+        attachmentBackground: Color(0xFF061A0F),
+      ),
+      notes: AppThemeNotesColors(
+        card: Color(0xFF061A0F),
+        cardBorder: Color(0xFF0E331E),
+        searchBackground: Color(0xFF061A0F),
+        searchBorder: outline,
+        tagBackground: Color(0xFF0E331E),
+        tagText: primary,
+        highlightBackground: Color(0x662ECC71),
+        chipBackground: Color(0xFF061A0F),
+        chipSelected: primary,
+        chipText: Color(0xFF7FA892),
+        chipTextSelected: Colors.black,
+        fabBackground: primary,
+        fabForeground: Colors.black,
+        selectionBackground: Color(0x332ECC71),
+        contextMenuBackground: Color(0xFF061A0F),
+      ),
+      dashboard: AppThemeDashboardColors(
+        heroBackground: Color(0xFF0A2416),
+        heroText: primary,
+        quoteBackground: Color(0xFF061A0F),
+        quoteBorder: Color(0xFF0E331E),
+        missionCard: Color(0xFF061A0F),
+        reminderCard: Color(0xFF061A0F),
+        glanceCard: Color(0xFF061A0F),
+        glanceBorder: Color(0xFF0E331E),
+        productivityBg: Color(0xFF061A0F),
+      ),
+      profile: AppThemeProfileColors(
+        avatarBackground: Color(0xFF133822),
+        avatarBorder: primary,
+        avatarText: primary,
+        headerBackground: Color(0xFF0A2416),
+        cardBackground: Color(0xFF061A0F),
+        cardBorder: Color(0xFF0E331E),
+      ),
+    );
+  }
+
+  static AppThemeData _crimson() {
+    const primary = Color(0xFFE74C3C);
+    const secondary = Color(0xFFC0392B);
+    const tertiary = Color(0xFFD35400);
+    const background = Color(0xFF150406);
+    const surface = Color(0xFF2D0A0F);
+    const outline = Color(0xFF4C151B);
+    const outlineVariant = Color(0xFF380E13);
+
+    return const AppThemeData(
+      id: 'crimson',
+      displayName: 'Crimson Ruby',
+      description: 'Striking red highlights on royal ruby borders',
+      previewAsset: 'assets/themes/crimson_preview.png',
+      brightness: Brightness.dark,
+      isDark: true,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      surface: surface,
+      surfaceContainer: Color(0xFF2D0A0F),
+      surfaceBright: Color(0xFF3E1319),
+      surfaceDim: Color(0xFF150406),
+      outline: outline,
+      outlineVariant: outlineVariant,
+      success: Color(0xFF2ECC71),
+      warning: Color(0xFFF1C40F),
+      error: Color(0xFFE74C3C),
+      navigation: AppThemeNavigationColors(
+        active: primary,
+        inactive: Color(0xFFB08488),
+        background: background,
+        indicator: Color(0xFF380E13),
+      ),
+      planner: AppThemePlannerColors(
+        highPriority: Color(0xFFE74C3C),
+        mediumPriority: Color(0xFFF1C40F),
+        lowPriority: Color(0xFF2ECC71),
+        progressDone: primary,
+        progressTodo: Color(0xFF380E13),
+      ),
+      analytics: AppThemeAnalyticsColors(
+        chartPrimary: primary,
+        chartSecondary: secondary,
+        chartTertiary: Color(0xFF9B59B6),
+        ringActive: primary,
+        ringInactive: Color(0xFF380E13),
+        heatmapLow: Color(0xFF2D0A0F),
+        heatmapMedium: primary,
+        heatmapHigh: secondary,
+        legendText: Color(0xFFB08488),
+        cardBackground: Color(0xFF210609),
+        cardBorder: Color(0xFF380E13),
+        progressRingActive: primary,
+        progressRingInactive: Color(0xFF380E13),
+      ),
+      editor: AppThemeEditorColors(
+        selection: Color(0xFF5E171E),
+        markdownHeader: primary,
+        markdownQuote: secondary,
+        markdownCode: Color(0xFF210609),
+        attachmentBackground: Color(0xFF210609),
+      ),
+      notes: AppThemeNotesColors(
+        card: Color(0xFF210609),
+        cardBorder: Color(0xFF380E13),
+        searchBackground: Color(0xFF210609),
+        searchBorder: outline,
+        tagBackground: Color(0xFF380E13),
+        tagText: primary,
+        highlightBackground: Color(0x66E74C3C),
+        chipBackground: Color(0xFF210609),
+        chipSelected: primary,
+        chipText: Color(0xFFB08488),
+        chipTextSelected: Colors.white,
+        fabBackground: primary,
+        fabForeground: Colors.white,
+        selectionBackground: Color(0x33E74C3C),
+        contextMenuBackground: Color(0xFF210609),
+      ),
+      dashboard: AppThemeDashboardColors(
+        heroBackground: Color(0xFF2D0A0F),
+        heroText: primary,
+        quoteBackground: Color(0xFF210609),
+        quoteBorder: Color(0xFF380E13),
+        missionCard: Color(0xFF210609),
+        reminderCard: Color(0xFF210609),
+        glanceCard: Color(0xFF210609),
+        glanceBorder: Color(0xFF380E13),
+        productivityBg: Color(0xFF210609),
+      ),
+      profile: AppThemeProfileColors(
+        avatarBackground: Color(0xFF3E1319),
+        avatarBorder: primary,
+        avatarText: primary,
+        headerBackground: Color(0xFF2D0A0F),
+        cardBackground: Color(0xFF210609),
+        cardBorder: Color(0xFF380E13),
+      ),
+    );
+  }
+
+  static AppThemeData _indigo() {
+    const primary = Color(0xFF9F7AEA);
+    const secondary = Color(0xFFB794F4);
+    const tertiary = Color(0xFF805AD5);
+    const background = Color(0xFF0B071A);
+    const surface = Color(0xFF170F33);
+    const outline = Color(0xFF2A1F4C);
+    const outlineVariant = Color(0xFF1E163B);
+
+    return const AppThemeData(
+      id: 'indigo',
+      displayName: 'Indigo Royal',
+      description: 'Vibrant indigo violet shades on royal night surfaces',
+      previewAsset: 'assets/themes/indigo_preview.png',
+      brightness: Brightness.dark,
+      isDark: true,
+      primary: primary,
+      secondary: secondary,
+      tertiary: tertiary,
+      surface: surface,
+      surfaceContainer: Color(0xFF170F33),
+      surfaceBright: Color(0xFF23174C),
+      surfaceDim: Color(0xFF0B071A),
+      outline: outline,
+      outlineVariant: outlineVariant,
+      success: Color(0xFF48BB78),
+      warning: Color(0xFFECC94B),
+      error: Color(0xFFF56565),
+      navigation: AppThemeNavigationColors(
+        active: primary,
+        inactive: Color(0xFF908AA6),
+        background: background,
+        indicator: Color(0xFF1E163B),
+      ),
+      planner: AppThemePlannerColors(
+        highPriority: Color(0xFFF56565),
+        mediumPriority: Color(0xFFECC94B),
+        lowPriority: Color(0xFF48BB78),
+        progressDone: primary,
+        progressTodo: Color(0xFF1E163B),
+      ),
+      analytics: AppThemeAnalyticsColors(
+        chartPrimary: primary,
+        chartSecondary: secondary,
+        chartTertiary: Color(0xFFED64A6),
+        ringActive: primary,
+        ringInactive: Color(0xFF1E163B),
+        heatmapLow: Color(0xFF170F33),
+        heatmapMedium: primary,
+        heatmapHigh: secondary,
+        legendText: Color(0xFF908AA6),
+        cardBackground: Color(0xFF110A26),
+        cardBorder: Color(0xFF1E163B),
+        progressRingActive: primary,
+        progressRingInactive: Color(0xFF1E163B),
+      ),
+      editor: AppThemeEditorColors(
+        selection: Color(0xFF4A2B8C),
+        markdownHeader: primary,
+        markdownQuote: secondary,
+        markdownCode: Color(0xFF110A26),
+        attachmentBackground: Color(0xFF110A26),
+      ),
+      notes: AppThemeNotesColors(
+        card: Color(0xFF110A26),
+        cardBorder: Color(0xFF1E163B),
+        searchBackground: Color(0xFF110A26),
+        searchBorder: outline,
+        tagBackground: Color(0xFF1E163B),
+        tagText: primary,
+        highlightBackground: Color(0x669F7AEA),
+        chipBackground: Color(0xFF110A26),
+        chipSelected: primary,
+        chipText: Color(0xFF908AA6),
+        chipTextSelected: Colors.white,
+        fabBackground: primary,
+        fabForeground: Colors.white,
+        selectionBackground: Color(0x339F7AEA),
+        contextMenuBackground: Color(0xFF110A26),
+      ),
+      dashboard: AppThemeDashboardColors(
+        heroBackground: Color(0xFF170F33),
+        heroText: primary,
+        quoteBackground: Color(0xFF110A26),
+        quoteBorder: Color(0xFF1E163B),
+        missionCard: Color(0xFF110A26),
+        reminderCard: Color(0xFF110A26),
+        glanceCard: Color(0xFF110A26),
+        glanceBorder: Color(0xFF1E163B),
+        productivityBg: Color(0xFF110A26),
+      ),
+      profile: AppThemeProfileColors(
+        avatarBackground: Color(0xFF23174C),
+        avatarBorder: primary,
+        avatarText: primary,
+        headerBackground: Color(0xFF170F33),
+        cardBackground: Color(0xFF110A26),
+        cardBorder: Color(0xFF1E163B),
       ),
     );
   }

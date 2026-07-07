@@ -10,7 +10,15 @@ enum AppThemeType {
   lavender,
   sunset,
   light,
-  sepia;
+  sepia,
+  amoled,
+  graphite,
+  whiteMinimal,
+  arctic,
+  rose,
+  emerald,
+  crimson,
+  indigo;
 
   String get label {
     switch (this) {
@@ -30,10 +38,29 @@ enum AppThemeType {
         return 'Light';
       case AppThemeType.sepia:
         return 'Sepia';
+      case AppThemeType.amoled:
+        return 'AMOLED Black';
+      case AppThemeType.graphite:
+        return 'Graphite';
+      case AppThemeType.whiteMinimal:
+        return 'White Minimal';
+      case AppThemeType.arctic:
+        return 'Arctic Ice';
+      case AppThemeType.rose:
+        return 'Rose Wine';
+      case AppThemeType.emerald:
+        return 'Emerald Forest';
+      case AppThemeType.crimson:
+        return 'Crimson Ruby';
+      case AppThemeType.indigo:
+        return 'Indigo Royal';
     }
   }
 
   bool get isDark {
-    return this != AppThemeType.light && this != AppThemeType.sepia;
+    return this != AppThemeType.light &&
+        this != AppThemeType.sepia &&
+        this != AppThemeType.whiteMinimal &&
+        this != AppThemeType.arctic;
   }
 }

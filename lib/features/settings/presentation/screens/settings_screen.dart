@@ -11,7 +11,6 @@ import '../../../../core/design_system/design_system.dart';
 import 'appearance_screen.dart';
 import 'sub_screens/about_settings_screen.dart';
 import 'sub_screens/accessibility_settings_screen.dart';
-import 'sub_screens/analytics_settings_screen.dart';
 import 'sub_screens/backup_settings_screen.dart';
 import 'sub_screens/editor_settings_screen.dart';
 import 'sub_screens/experimental_settings_screen.dart';
@@ -26,7 +25,6 @@ enum SettingsCategory {
   appearance,
   editor,
   planner,
-  analytics,
   notifications,
   security,
   backup,
@@ -40,7 +38,6 @@ enum SettingsCategory {
         SettingsCategory.appearance => 'Appearance',
         SettingsCategory.editor => 'Editor Settings',
         SettingsCategory.planner => 'Planner Options',
-        SettingsCategory.analytics => 'Analytics Targets',
         SettingsCategory.notifications => 'Notifications',
         SettingsCategory.security => 'Privacy & Security',
         SettingsCategory.backup => 'Backup & Restore',
@@ -55,14 +52,13 @@ enum SettingsCategory {
         SettingsCategory.appearance => 'Themes, dark mode, animation speeds, corner shapes',
         SettingsCategory.editor => 'Autosave, markdown parsing, font choices, toolbar layout',
         SettingsCategory.planner => 'Week start days, default calendar views, 24h formats',
-        SettingsCategory.analytics => 'Daily focus goals and task targets',
         SettingsCategory.notifications => 'Daily reminders, time pickers, quiet hours',
         SettingsCategory.security => 'PIN lock screen, biometrics, auto-lock rules',
         SettingsCategory.backup => 'Local JSON backup export/restore, cloud sync',
         SettingsCategory.accessibility => 'Text font scaling and visual contrast options',
         SettingsCategory.language => 'App language selection and regional formats',
         SettingsCategory.experimental => 'AI suggestions labs and masonry grid experiments',
-        SettingsCategory.about => 'Build details, version information, settings reset',
+        SettingsCategory.about => 'About Orynta, reset defaults',
         SettingsCategory.themePreview => 'Developer component and typography gallery',
       };
 
@@ -70,7 +66,6 @@ enum SettingsCategory {
         SettingsCategory.appearance => Icons.palette_rounded,
         SettingsCategory.editor => Icons.edit_note_rounded,
         SettingsCategory.planner => Icons.calendar_today_rounded,
-        SettingsCategory.analytics => Icons.analytics_rounded,
         SettingsCategory.notifications => Icons.notifications_active_rounded,
         SettingsCategory.security => Icons.security_rounded,
         SettingsCategory.backup => Icons.backup_rounded,
@@ -85,7 +80,6 @@ enum SettingsCategory {
         SettingsCategory.appearance => Colors.purple,
         SettingsCategory.editor => Colors.blue,
         SettingsCategory.planner => Colors.indigo,
-        SettingsCategory.analytics => Colors.teal,
         SettingsCategory.notifications => Colors.deepOrange,
         SettingsCategory.security => Colors.green,
         SettingsCategory.backup => Colors.amber,
@@ -116,7 +110,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       SettingsCategory.appearance => const AppearanceScreen(),
       SettingsCategory.editor => const EditorSettingsScreen(),
       SettingsCategory.planner => const PlannerSettingsScreen(),
-      SettingsCategory.analytics => const AnalyticsSettingsScreen(),
       SettingsCategory.notifications => const NotificationsSettingsScreen(),
       SettingsCategory.security => const SecuritySettingsScreen(),
       SettingsCategory.backup => const BackupSettingsScreen(),
@@ -215,7 +208,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       SettingsCategory.appearance => const AppearanceScreen(),
                       SettingsCategory.editor => const EditorSettingsScreen(),
                       SettingsCategory.planner => const PlannerSettingsScreen(),
-                      SettingsCategory.analytics => const AnalyticsSettingsScreen(),
                       SettingsCategory.notifications => const NotificationsSettingsScreen(),
                       SettingsCategory.security => const SecuritySettingsScreen(),
                       SettingsCategory.backup => const BackupSettingsScreen(),

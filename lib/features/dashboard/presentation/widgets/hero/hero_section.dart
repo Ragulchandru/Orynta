@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../profile/presentation/providers/profile_provider.dart';
+import '../../../../analytics/presentation/providers/analytics_provider.dart';
+import '../../../domain/models/productivity_score.dart';
 import '../../providers/hero_providers.dart';
 import 'date_widget.dart';
 import 'greeting_widget.dart';
@@ -28,6 +30,30 @@ class HeroSection extends ConsumerWidget {
     // Watch only displayName to optimize rebuilding
     final displayName = ref.watch(profileProvider.select((p) => p.displayName));
     final effectiveName = displayName.trim().isNotEmpty ? displayName.trim() : 'Guest';
+
+    // Subscribe directly to live score updates using the existing provider
+    final scoreValue = ref.watch(productivityScoreProvider);
+    final score = scoreValue.round();
+
+    final String subtitle;
+    if (score >= 90) {
+      subtitle = 'Incredible! Peak performance today.';
+    } else if (score >= 70) {
+      subtitle = 'Great focus and productivity today!';
+    } else if (score >= 50) {
+      subtitle = 'Steady progress. Keep it up!';
+    } else if (score > 0) {
+      subtitle = 'Log some focus time to build momentum.';
+    } else {
+      subtitle = 'No productivity data yet';
+    }
+
+    final liveScore = ProductivityScore(
+      value: score,
+      hasData: score > 0,
+      label: score > 0 ? '$score' : '--',
+      subtitle: subtitle,
+    );
 
     return HeroBackground(
       style: state.backgroundStyle,
@@ -66,7 +92,7 @@ class HeroSection extends ConsumerWidget {
 
             // Productivity Score Card
             ProductivityScoreCard(
-              score: state.productivityScore,
+              score: liveScore,
             ),
           ],
         ),

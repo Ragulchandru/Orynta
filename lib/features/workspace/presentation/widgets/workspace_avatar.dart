@@ -18,8 +18,10 @@ class WorkspaceAvatar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profile = ref.watch(profileProvider);
 
-    final avatarBgColor = Color(profile.avatarColor).withValues(alpha: 0.12);
-    final textColor = Color(profile.avatarColor);
+    final profileColors = context.appTheme.profile;
+    final avatarBgColor = profileColors.avatarBackground;
+    final borderColor = profileColors.avatarBorder;
+    final textColor = profileColors.avatarText;
 
     return ScaleOnPress(
       onTap: () {
@@ -35,7 +37,7 @@ class WorkspaceAvatar extends ConsumerWidget {
             shape: BoxShape.circle,
             color: avatarBgColor,
             border: Border.all(
-              color: textColor.withValues(alpha: 0.3),
+              color: borderColor,
               width: 1.5,
             ),
           ),

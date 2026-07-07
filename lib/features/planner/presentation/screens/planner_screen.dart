@@ -9,6 +9,7 @@ import '../../../../core/design_system/design_system.dart';
 import '../../../workspace/presentation/widgets/workspace_avatar.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/models/category_model.dart';
+import '../providers/categories_notifier.dart';
 import '../providers/planner_stats_provider.dart';
 import '../providers/tasks_notifier.dart';
 import '../widgets/task_card.dart';
@@ -50,6 +51,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
 
   void _createNewTask() {
     final now = DateTime.now();
+    final defaultCat = ref.read(categoriesProvider.notifier).defaultCategoryId;
     final newTask = TaskEntity(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: 'New Task',
@@ -62,6 +64,7 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
       timelineSection: 0,
       estimatedMinutes: 15,
       tagIds: const [],
+      category: defaultCat,
     );
     _openTaskDetail(newTask);
   }
@@ -220,52 +223,62 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
   Widget _buildFiltersAndCategories(BuildContext context, AppThemeData theme) {
     final activeFilter = ref.watch(taskFilterProvider);
     final activeCategory = ref.watch(taskCategoryFilterProvider);
+    final categories = ref.watch(categoriesProvider);
 
     final filters = [
-      {'id': 'all', 'label': 'All'},
       {'id': 'today', 'label': 'Today'},
       {'id': 'tomorrow', 'label': 'Tomorrow'},
-      {'id': 'week', 'label': 'This Week'},
-      {'id': 'overdue', 'label': 'Overdue'},
-      {'id': 'high', 'label': 'High Priority'},
+      {'id': 'upcoming', 'label': 'Upcoming'},
       {'id': 'completed', 'label': 'Completed'},
-      {'id': 'favorites', 'label': 'Favorites'},
-      {'id': 'repeating', 'label': 'Repeating'},
+      {'id': 'archived', 'label': 'Archived'},
+      {'id': 'all', 'label': 'All'},
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Category Pills
-        SizedBox(
-          height: 36,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            children: [
-              ChoiceChip(
-                label: const Text('All Categories'),
-                selected: activeCategory == null,
-                onSelected: (_) => ref.read(taskCategoryFilterProvider.notifier).state = null,
+        // Category Pills Row
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 36,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    ChoiceChip(
+                      label: const Text('All Categories'),
+                      selected: activeCategory == null,
+                      onSelected: (_) => ref.read(taskCategoryFilterProvider.notifier).state = null,
+                    ),
+                    const SizedBox(width: 8),
+                    ...categories.map((c) {
+                      final isSelected = activeCategory == c.name;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          avatar: Icon(c.icon, size: 14, color: isSelected ? Colors.white : c.color),
+                          label: Text(c.name),
+                          selected: isSelected,
+                          selectedColor: theme.primary,
+                          onSelected: (_) {
+                            ref.read(taskCategoryFilterProvider.notifier).state = isSelected ? null : c.name;
+                          },
+                        ),
+                      );
+                    }),
+                  ],
+                ),
               ),
-              const SizedBox(width: 8),
-              ...PlannerCategory.builtInCategories.map((c) {
-                final isSelected = activeCategory == c.name;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    avatar: Icon(c.icon, size: 14, color: isSelected ? Colors.white : c.color),
-                    label: Text(c.name),
-                    selected: isSelected,
-                    selectedColor: theme.primary,
-                    onSelected: (_) {
-                      ref.read(taskCategoryFilterProvider.notifier).state = isSelected ? null : c.name;
-                    },
-                  ),
-                );
-              }),
-            ],
-          ),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: Icon(Icons.settings_rounded, size: 20, color: theme.secondary),
+              tooltip: 'Manage Categories',
+              onPressed: () => _showManageCategoriesSheet(context),
+            ),
+          ],
         ),
 
         const SizedBox(height: 10),
@@ -503,6 +516,236 @@ class _PlannerScreenState extends ConsumerState<PlannerScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showManageCategoriesSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Consumer(
+          builder: (context, ref, _) {
+            final theme = context.appTheme;
+            final categories = ref.watch(categoriesProvider);
+            final notifier = ref.read(categoriesProvider.notifier);
+            final defaultId = notifier.defaultCategoryId;
+
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.75,
+              decoration: BoxDecoration(
+                color: theme.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.only(top: 8, left: 16, right: 16, bottom: 24),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: theme.outline,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Manage Categories',
+                        style: context.typography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle_outline_rounded),
+                        color: theme.primary,
+                        onPressed: () => _showAddEditCategoryDialog(context, null),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: ReorderableListView.builder(
+                      itemCount: categories.length,
+                      onReorderItem: (oldIdx, newIdx) {
+                        notifier.reorderCategories(oldIdx, newIdx);
+                      },
+                      itemBuilder: (context, idx) {
+                        final c = categories[idx];
+                        final isDefault = c.id == defaultId;
+                        return ListTile(
+                          key: ValueKey(c.id),
+                          leading: Icon(c.icon, color: c.color),
+                          title: Row(
+                            children: [
+                              Text(c.name, style: context.typography.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                              if (isDefault) ...[
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: theme.success.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    'Default',
+                                    style: TextStyle(color: theme.success, fontSize: 9, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: Icon(isDefault ? Icons.star_rounded : Icons.star_border_rounded),
+                                color: isDefault ? Colors.amber : theme.outline,
+                                onPressed: () => notifier.setDefaultCategoryId(c.id),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit_rounded, size: 20),
+                                onPressed: () => _showAddEditCategoryDialog(context, c),
+                              ),
+                              if (c.id != 'Personal')
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                                  color: theme.error,
+                                  onPressed: () => notifier.deleteCategory(c.id),
+                                ),
+                              const Icon(Icons.drag_handle_rounded),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddEditCategoryDialog(BuildContext context, PlannerCategory? existing) {
+    final isEdit = existing != null;
+    final nameController = TextEditingController(text: existing?.name ?? '');
+    Color selectedColor = existing?.color ?? Colors.blue;
+    IconData selectedIcon = existing?.icon ?? Icons.category_rounded;
+
+    final availableColors = [
+      Colors.blue, Colors.purple, Colors.orange, Colors.red, Colors.green,
+      Colors.teal, Colors.pink, Colors.amber, Colors.cyan, Colors.indigo,
+      Colors.brown, Colors.grey,
+    ];
+
+    final availableIcons = [
+      Icons.work_rounded, Icons.person_rounded, Icons.school_rounded,
+      Icons.favorite_rounded, Icons.shopping_cart_rounded, Icons.account_balance_wallet_rounded,
+      Icons.fitness_center_rounded, Icons.home_rounded, Icons.book_rounded,
+      Icons.brush_rounded, Icons.local_cafe_rounded, Icons.flight_rounded,
+    ];
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final theme = context.appTheme;
+            return AlertDialog(
+              backgroundColor: theme.surface,
+              title: Text(isEdit ? 'Edit Category' : 'Add Category', style: context.typography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(
+                        labelText: 'Category Name',
+                        hintText: 'e.g. Health & Fitness',
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Select Color', style: context.typography.labelSmall),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: availableColors.map((color) {
+                        final isSelected = color == selectedColor;
+                        return GestureDetector(
+                          onTap: () => setDialogState(() => selectedColor = color),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                              border: isSelected
+                                  ? Border.all(color: theme.primary, width: 3)
+                                  : null,
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('Select Icon', style: context.typography.labelSmall),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: availableIcons.map((icon) {
+                        final isSelected = icon.codePoint == selectedIcon.codePoint;
+                        return GestureDetector(
+                          onTap: () => setDialogState(() => selectedIcon = icon),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: isSelected ? theme.primary.withValues(alpha: 0.15) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: isSelected ? theme.primary : theme.outlineVariant,
+                              ),
+                            ),
+                            child: Icon(icon, color: isSelected ? theme.primary : theme.secondary, size: 20),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final name = nameController.text.trim();
+                    if (name.isEmpty) return;
+                    final notifier = ref.read(categoriesProvider.notifier);
+                    if (isEdit) {
+                      notifier.updateCategory(existing.id, name, selectedIcon, selectedColor);
+                    } else {
+                      notifier.addCategory(name, selectedIcon, selectedColor);
+                    }
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

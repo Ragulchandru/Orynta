@@ -1,13 +1,13 @@
-// lib/features/notes/presentation/pages/notes_page.dart
-//
-// Orynta 2.0 — Notes Page (Root Container with Search Suggestions, Filters, Tags, and Selection Mode)
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/note_summary.dart';
+import '../../domain/models/notes_view_mode.dart';
+import '../../domain/models/notes_group_by.dart';
+import '../../domain/models/sort_option.dart';
+import '../../domain/models/smart_filter.dart';
 import '../../../workspace/presentation/widgets/workspace_avatar.dart';
 import '../providers/note_selection_provider.dart';
 import '../providers/notes_home_providers.dart';
@@ -50,6 +50,23 @@ class _NotesPageState extends ConsumerState<NotesPage> {
 
   void _onNoteTap(BuildContext context, NoteSummary note) {
     context.push('/notes/${note.id}');
+  }
+
+  String _getSortLabel(SortOption opt) {
+    switch (opt) {
+      case SortOption.recentlyUpdated:
+        return 'Recent';
+      case SortOption.oldest:
+        return 'Oldest';
+      case SortOption.alphabetical:
+        return 'A-Z';
+      case SortOption.color:
+        return 'Color';
+      case SortOption.favorites:
+        return 'Favorites';
+      case SortOption.pinned:
+        return 'Pinned';
+    }
   }
 
   @override
@@ -209,6 +226,135 @@ class _NotesPageState extends ConsumerState<NotesPage> {
                               child: NotesFilterBar(
                                 selectedFilter: state.selectedFilter,
                                 onFilterChanged: controller.changeFilter,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+
+                // Unified Preferences Toolbelt Sliver
+                SliverToBoxAdapter(
+                  child: AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child: AnimatedOpacity(
+                      opacity: inSelectionMode ? 0.0 : 1.0,
+                      duration: const Duration(milliseconds: 200),
+                      child: inSelectionMode
+                          ? const SizedBox.shrink()
+                          : Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: [
+                                    // Sort dropdown
+                                    Row(
+                                      children: [
+                                        Icon(Icons.sort_rounded, size: 14, color: context.colors.textSecondary),
+                                        const SizedBox(width: 4),
+                                        DropdownButton<SortOption>(
+                                          value: state.sortOption,
+                                          onChanged: (val) {
+                                            if (val != null) controller.setSortOption(val);
+                                          },
+                                          underline: const SizedBox(),
+                                          style: context.typography.labelSmall.copyWith(
+                                            color: context.colors.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          icon: const Icon(Icons.arrow_drop_down_rounded, size: 16),
+                                          items: SortOption.values.map((opt) {
+                                            return DropdownMenuItem(
+                                              value: opt,
+                                              child: Text(_getSortLabel(opt)),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 16),
+                                    // View Mode dropdown
+                                    Row(
+                                      children: [
+                                        Icon(Icons.grid_view_rounded, size: 14, color: context.colors.textSecondary),
+                                        const SizedBox(width: 4),
+                                        DropdownButton<NotesViewMode>(
+                                          value: state.viewMode,
+                                          onChanged: (val) {
+                                            if (val != null) controller.setViewMode(val);
+                                          },
+                                          underline: const SizedBox(),
+                                          style: context.typography.labelSmall.copyWith(
+                                            color: context.colors.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          icon: const Icon(Icons.arrow_drop_down_rounded, size: 16),
+                                          items: NotesViewMode.values.map((mode) {
+                                            return DropdownMenuItem(
+                                              value: mode,
+                                              child: Text(mode.label),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 16),
+                                    // Group By dropdown
+                                    Row(
+                                      children: [
+                                        Icon(Icons.group_work_rounded, size: 14, color: context.colors.textSecondary),
+                                        const SizedBox(width: 4),
+                                        DropdownButton<NotesGroupBy>(
+                                          value: state.groupBy,
+                                          onChanged: (val) {
+                                            if (val != null) controller.setGroupBy(val);
+                                          },
+                                          underline: const SizedBox(),
+                                          style: context.typography.labelSmall.copyWith(
+                                            color: context.colors.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                          icon: const Icon(Icons.arrow_drop_down_rounded, size: 16),
+                                          items: NotesGroupBy.values.map((grp) {
+                                            return DropdownMenuItem(
+                                              value: grp,
+                                              child: Text(grp.label),
+                                            );
+                                          }).toList(),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 16),
+                                    // Pin Filter Toggle
+                                    ChoiceChip(
+                                      label: const Text('Pinned Only'),
+                                      selected: state.activeFilters.contains(SmartFilter.pinned),
+                                      onSelected: (selected) {
+                                        controller.toggleSmartFilter(SmartFilter.pinned);
+                                      },
+                                      showCheckmark: false,
+                                      selectedColor: context.colors.primary.withValues(alpha: 0.12),
+                                      labelStyle: context.typography.labelSmall.copyWith(
+                                        color: state.activeFilters.contains(SmartFilter.pinned)
+                                            ? context.colors.primary
+                                            : context.colors.textSecondary,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 10,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8.0),
+                                        side: BorderSide(
+                                          color: state.activeFilters.contains(SmartFilter.pinned)
+                                              ? context.colors.primary
+                                              : context.colors.outlineVariant,
+                                        ),
+                                      ),
+                                      visualDensity: VisualDensity.compact,
+                                      padding: EdgeInsets.zero,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                     ),

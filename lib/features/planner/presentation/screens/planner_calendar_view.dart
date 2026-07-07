@@ -9,8 +9,11 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/design_system/design_system.dart';
 import '../../domain/entities/task_entity.dart';
+import '../../domain/models/category_model.dart';
+import '../providers/categories_notifier.dart';
 import '../providers/tasks_notifier.dart';
 import '../widgets/task_card.dart';
+import 'task_detail_screen.dart';
 
 enum CalendarMode { month, week, day, agenda }
 
@@ -24,6 +27,36 @@ class PlannerCalendarView extends ConsumerStatefulWidget {
 class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
   CalendarMode _mode = CalendarMode.month;
   DateTime _focusedDate = DateTime.now();
+
+  void _createNewTaskAtDate(DateTime date) {
+    final now = DateTime.now();
+    final defaultCat = ref.read(categoriesProvider.notifier).defaultCategoryId;
+    final newTask = TaskEntity(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      title: 'New Task',
+      description: '',
+      priority: 'medium',
+      dueDate: DateTime(date.year, date.month, date.day, now.hour, now.minute),
+      createdAt: now,
+      updatedAt: now,
+      isCompleted: false,
+      timelineSection: 0,
+      estimatedMinutes: 15,
+      tagIds: const [],
+      category: defaultCat,
+    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => TaskDetailScreen(task: newTask)),
+    );
+  }
+
+  void _openTaskDetail(TaskEntity task) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => TaskDetailScreen(task: task)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +80,16 @@ class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
           onPressed: () => context.pop(),
         ),
         actions: [
+          // Today Button
+          IconButton(
+            icon: const Icon(Icons.today_rounded),
+            tooltip: 'Today',
+            onPressed: () {
+              setState(() {
+                _focusedDate = DateTime.now();
+              });
+            },
+          ),
           PopupMenuButton<CalendarMode>(
             initialValue: _mode,
             onSelected: (mode) => setState(() => _mode = mode),
@@ -96,6 +139,10 @@ class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
     final daysInMonth = DateTime(_focusedDate.year, _focusedDate.month + 1, 0).day;
     final firstWeekday = DateTime(_focusedDate.year, _focusedDate.month, 1).weekday;
 
+    final focusedDayTasks = tasks
+        .where((t) => t.dueDate != null && DateUtils.isSameDay(t.dueDate!, _focusedDate) && !t.isArchived)
+        .toList();
+
     return Column(
       children: [
         // Days of week header
@@ -103,17 +150,25 @@ class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
               .map((d) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Text(d, style: context.typography.labelSmall.copyWith(fontWeight: FontWeight.bold)),
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: Text(
+                      d,
+                      style: context.typography.labelSmall.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.secondary,
+                      ),
+                    ),
                   ),)
               .toList(),
         ),
-        Expanded(
+        // Month Grid View
+        SizedBox(
+          height: 280,
           child: GridView.builder(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              childAspectRatio: 0.85,
+              childAspectRatio: 1.1,
             ),
             itemCount: daysInMonth + (firstWeekday - 1),
             itemBuilder: (context, index) {
@@ -122,52 +177,199 @@ class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
               final dayNum = index - (firstWeekday - 2);
               final cellDate = DateTime(_focusedDate.year, _focusedDate.month, dayNum);
               final isToday = DateUtils.isSameDay(cellDate, DateTime.now());
+              final isFocused = DateUtils.isSameDay(cellDate, _focusedDate);
 
-              final dayTasks = tasks.where((t) => t.dueDate != null && DateUtils.isSameDay(t.dueDate!, cellDate)).toList();
-              final hasOverdue = dayTasks.any((t) => !t.isCompleted && cellDate.isBefore(DateTime.now()));
+              final dayTasks = tasks
+                  .where((t) => t.dueDate != null && DateUtils.isSameDay(t.dueDate!, cellDate) && !t.isArchived)
+                  .toList();
+              final hasReminder = dayTasks.any((t) => t.reminderMs != null);
+              final hasRecurring = dayTasks.any((t) => t.recurrenceRule != null);
 
-              return GestureDetector(
-                onTap: () => setState(() => _focusedDate = cellDate),
-                child: Container(
-                  margin: const EdgeInsets.all(2.0),
-                  decoration: BoxDecoration(
-                    color: isToday ? theme.primary.withValues(alpha: 0.15) : theme.surface,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: isToday ? theme.primary : theme.outlineVariant,
+              return DragTarget<TaskEntity>(
+                onWillAcceptWithDetails: (details) => true,
+                onAcceptWithDetails: (details) {
+                  final task = details.data;
+                  final updated = task.copyWith(
+                    dueDate: DateTime(cellDate.year, cellDate.month, cellDate.day, task.dueDate?.hour ?? 12, task.dueDate?.minute ?? 0),
+                    updatedAt: DateTime.now(),
+                  );
+                  ref.read(tasksNotifierProvider.notifier).updateTask(updated);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Moved "${task.title}" to ${DateFormat('MMM d').format(cellDate)}'),
+                      duration: const Duration(seconds: 2),
                     ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '$dayNum',
-                        style: TextStyle(
-                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                          color: isToday ? theme.primary : null,
+                  );
+                },
+                builder: (context, candidateData, rejectedData) {
+                  final isHovered = candidateData.isNotEmpty;
+                  return GestureDetector(
+                    onTap: () => setState(() => _focusedDate = cellDate),
+                    onLongPress: () => _createNewTaskAtDate(cellDate),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      margin: const EdgeInsets.all(2.0),
+                      decoration: BoxDecoration(
+                        color: isHovered
+                            ? theme.primary.withValues(alpha: 0.25)
+                            : (isFocused
+                                ? theme.primary.withValues(alpha: 0.15)
+                                : (isToday ? theme.surfaceBright : theme.surface)),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: isFocused
+                              ? theme.primary
+                              : (isToday ? theme.secondary.withValues(alpha: 0.5) : theme.outlineVariant),
+                          width: isFocused ? 2 : 1,
                         ),
                       ),
-                      if (dayTasks.isNotEmpty) ...[
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: hasOverdue ? theme.error : theme.primary,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '$dayNum',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: isToday || isFocused ? FontWeight.bold : FontWeight.normal,
+                              color: isFocused ? theme.primary : (isToday ? theme.secondary : null),
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          // Dots indicator
+                          if (dayTasks.isNotEmpty)
+                            Wrap(
+                              spacing: 2,
+                              alignment: WrapAlignment.center,
+                              children: dayTasks.take(3).map((t) {
+                                final categories = ref.read(categoriesProvider);
+                                final cat = categories.firstWhere(
+                                  (c) => c.name.toLowerCase() == t.category.toLowerCase(),
+                                  orElse: () => PlannerCategory.builtInCategories[0],
+                                );
+                                Color dotColor = cat.color;
+                                if (t.priority == 'high') {
+                                  dotColor = theme.error;
+                                } else if (t.priority == 'medium') {
+                                  dotColor = theme.warning;
+                                }
+                                return Container(
+                                  width: 4,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: t.isCompleted ? theme.success.withValues(alpha: 0.5) : dotColor,
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          // Reminder/Recurrence mini icons
+                          if (hasReminder || hasRecurring)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 1.0),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  if (hasReminder)
+                                    Icon(Icons.notifications_rounded, size: 8, color: theme.warning),
+                                  if (hasRecurring)
+                                    Icon(Icons.repeat_rounded, size: 8, color: theme.primary),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ],
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        const Divider(height: 1),
+        // Day agenda list
+        Expanded(
+          child: Container(
+            color: theme.surfaceDim,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Tasks for ${DateFormat('MMM d, yyyy').format(_focusedDate)}',
+                        style: context.typography.titleSmall.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_rounded, size: 20),
+                        onPressed: () => _createNewTaskAtDate(_focusedDate),
+                      ),
                     ],
                   ),
                 ),
-              );
-            },
+                Expanded(
+                  child: focusedDayTasks.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No tasks scheduled for this day.',
+                            style: context.typography.bodySmall.copyWith(color: theme.secondary),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                          itemCount: focusedDayTasks.length,
+                          itemBuilder: (context, idx) {
+                            final t = focusedDayTasks[idx];
+                            return Draggable<TaskEntity>(
+                              data: t,
+                              feedback: Material(
+                                elevation: 4,
+                                borderRadius: BorderRadius.circular(16),
+                                child: SizedBox(
+                                  width: MediaQuery.of(context).size.width * 0.9,
+                                  child: TaskCard(
+                                    task: t,
+                                    onToggle: () {},
+                                    onDelete: () {},
+                                    isSelected: false,
+                                    isSelectionMode: false,
+                                    onTapSelection: () {},
+                                    onLongPress: () {},
+                                    onTapDetail: () {},
+                                  ),
+                                ),
+                              ),
+                              childWhenDragging: Opacity(
+                                opacity: 0.4,
+                                child: TaskCard(
+                                  task: t,
+                                  onToggle: () {},
+                                  onDelete: () {},
+                                  isSelected: false,
+                                  isSelectionMode: false,
+                                  onTapSelection: () {},
+                                  onLongPress: () {},
+                                  onTapDetail: () {},
+                                ),
+                              ),
+                              child: TaskCard(
+                                task: t,
+                                onToggle: () => ref.read(tasksNotifierProvider.notifier).toggleTaskCompletion(t.id),
+                                onDelete: () => ref.read(tasksNotifierProvider.notifier).deleteTask(t.id),
+                                isSelected: false,
+                                isSelectionMode: false,
+                                onTapSelection: () {},
+                                onLongPress: () {},
+                                onTapDetail: () => _openTaskDetail(t),
+                              ),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -182,25 +384,42 @@ class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
       itemCount: 7,
       itemBuilder: (context, idx) {
         final day = startOfWeek.add(Duration(days: idx));
-        final dayTasks = tasks.where((t) => t.dueDate != null && DateUtils.isSameDay(t.dueDate!, day)).toList();
+        final dayTasks = tasks
+            .where((t) => t.dueDate != null && DateUtils.isSameDay(t.dueDate!, day) && !t.isArchived)
+            .toList();
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text(
-                DateFormat('EEEE, MMM d').format(day),
-                style: context.typography.titleSmall.copyWith(fontWeight: FontWeight.bold, color: theme.primary),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    DateFormat('EEEE, MMM d').format(day),
+                    style: context.typography.titleSmall.copyWith(fontWeight: FontWeight.bold, color: theme.primary),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_rounded, size: 18),
+                    onPressed: () => _createNewTaskAtDate(day),
+                  ),
+                ],
               ),
             ),
             if (dayTasks.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(left: 12.0, bottom: 8.0),
-                child: Text('No tasks scheduled', style: context.typography.bodySmall),
+                padding: const EdgeInsets.only(left: 12.0, bottom: 12.0),
+                child: Text('No tasks scheduled', style: context.typography.bodySmall.copyWith(color: theme.secondary)),
               )
             else
-              ...dayTasks.map((t) => TaskCard(
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: dayTasks.length,
+                itemBuilder: (context, tIdx) {
+                  final t = dayTasks[tIdx];
+                  return TaskCard(
                     task: t,
                     onToggle: () => ref.read(tasksNotifierProvider.notifier).toggleTaskCompletion(t.id),
                     onDelete: () => ref.read(tasksNotifierProvider.notifier).deleteTask(t.id),
@@ -208,10 +427,10 @@ class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
                     isSelectionMode: false,
                     onTapSelection: () {},
                     onLongPress: () {},
-                    onTapDetail: () {
-                      context.push('/planner/detail', extra: t);
-                    },
-                  ),),
+                    onTapDetail: () => _openTaskDetail(t),
+                  );
+                },
+              ),
           ],
         );
       },
@@ -219,20 +438,80 @@ class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
   }
 
   Widget _buildDayView(BuildContext context, List<TaskEntity> tasks, AppThemeData theme) {
-    final dayTasks = tasks.where((t) => t.dueDate != null && DateUtils.isSameDay(t.dueDate!, _focusedDate)).toList();
+    final dayTasks = tasks
+        .where((t) => t.dueDate != null && DateUtils.isSameDay(t.dueDate!, _focusedDate) && !t.isArchived)
+        .toList();
 
-    return ListView(
-      padding: const EdgeInsets.all(16.0),
+    return Column(
       children: [
-        Text(
-          DateFormat('EEEE, MMMM d, yyyy').format(_focusedDate),
-          style: context.typography.headlineSmall.copyWith(fontWeight: FontWeight.bold),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                DateFormat('EEEE, MMMM d').format(_focusedDate),
+                style: context.typography.titleMedium.copyWith(fontWeight: FontWeight.bold),
+              ),
+              IconButton(
+                icon: const Icon(Icons.add_rounded),
+                onPressed: () => _createNewTaskAtDate(_focusedDate),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
-        if (dayTasks.isEmpty)
-          const Center(child: Text('No tasks scheduled for this day.'))
-        else
-          ...dayTasks.map((t) => TaskCard(
+        Expanded(
+          child: dayTasks.isEmpty
+              ? Center(
+                  child: Text(
+                    'No tasks scheduled for this day.',
+                    style: context.typography.bodySmall.copyWith(color: theme.secondary),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  itemCount: dayTasks.length,
+                  itemBuilder: (context, idx) {
+                    final t = dayTasks[idx];
+                    return TaskCard(
+                      task: t,
+                      onToggle: () => ref.read(tasksNotifierProvider.notifier).toggleTaskCompletion(t.id),
+                      onDelete: () => ref.read(tasksNotifierProvider.notifier).deleteTask(t.id),
+                      isSelected: false,
+                      isSelectionMode: false,
+                      onTapSelection: () {},
+                      onLongPress: () {},
+                      onTapDetail: () => _openTaskDetail(t),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAgendaView(BuildContext context, List<TaskEntity> tasks, AppThemeData theme) {
+    final activeTasks = tasks.where((t) => !t.isArchived).toList();
+    final sorted = List<TaskEntity>.from(activeTasks);
+    sorted.sort((a, b) {
+      if (a.dueDate == null) return 1;
+      if (b.dueDate == null) return -1;
+      return a.dueDate!.compareTo(b.dueDate!);
+    });
+
+    return sorted.isEmpty
+        ? Center(
+            child: Text(
+              'No upcoming tasks in your agenda.',
+              style: context.typography.bodySmall.copyWith(color: theme.secondary),
+            ),
+          )
+        : ListView.builder(
+            padding: const EdgeInsets.all(16.0),
+            itemCount: sorted.length,
+            itemBuilder: (context, idx) {
+              final t = sorted[idx];
+              return TaskCard(
                 task: t,
                 onToggle: () => ref.read(tasksNotifierProvider.notifier).toggleTaskCompletion(t.id),
                 onDelete: () => ref.read(tasksNotifierProvider.notifier).deleteTask(t.id),
@@ -240,40 +519,9 @@ class _PlannerCalendarViewState extends ConsumerState<PlannerCalendarView> {
                 isSelectionMode: false,
                 onTapSelection: () {},
                 onLongPress: () {},
-                onTapDetail: () {
-                  context.push('/planner/detail', extra: t);
-                },
-              ),),
-      ],
-    );
-  }
-
-  Widget _buildAgendaView(BuildContext context, List<TaskEntity> tasks, AppThemeData theme) {
-    final sorted = List<TaskEntity>.from(tasks);
-    sorted.sort((a, b) {
-      if (a.dueDate == null) return 1;
-      if (b.dueDate == null) return -1;
-      return a.dueDate!.compareTo(b.dueDate!);
-    });
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16.0),
-      itemCount: sorted.length,
-      itemBuilder: (context, idx) {
-        final t = sorted[idx];
-        return TaskCard(
-          task: t,
-          onToggle: () => ref.read(tasksNotifierProvider.notifier).toggleTaskCompletion(t.id),
-          onDelete: () => ref.read(tasksNotifierProvider.notifier).deleteTask(t.id),
-          isSelected: false,
-          isSelectionMode: false,
-          onTapSelection: () {},
-          onLongPress: () {},
-          onTapDetail: () {
-            context.push('/planner/detail', extra: t);
-          },
-        );
-      },
-    );
+                onTapDetail: () => _openTaskDetail(t),
+              );
+            },
+          );
   }
 }

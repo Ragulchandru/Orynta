@@ -38,6 +38,14 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
         'sunset'   => AppThemeType.sunset,
         'light'    => AppThemeType.light,
         'sepia'    => AppThemeType.sepia,
+        'amoled'   => AppThemeType.amoled,
+        'graphite' => AppThemeType.graphite,
+        'whiteMinimal' => AppThemeType.whiteMinimal,
+        'arctic'   => AppThemeType.arctic,
+        'rose'     => AppThemeType.rose,
+        'emerald'  => AppThemeType.emerald,
+        'crimson'  => AppThemeType.crimson,
+        'indigo'   => AppThemeType.indigo,
         _          => AppThemeType.gold,
       };
 
@@ -50,5 +58,13 @@ class ThemeModeNotifier extends _$ThemeModeNotifier {
         AppThemeType.sunset   => 'sunset',
         AppThemeType.light    => 'light',
         AppThemeType.sepia    => 'sepia',
+        AppThemeType.amoled   => 'amoled',
+        AppThemeType.graphite => 'graphite',
+        AppThemeType.whiteMinimal => 'whiteMinimal',
+        AppThemeType.arctic   => 'arctic',
+        AppThemeType.rose     => 'rose',
+        AppThemeType.emerald  => 'emerald',
+        AppThemeType.crimson  => 'crimson',
+        AppThemeType.indigo   => 'indigo',
       };
 }

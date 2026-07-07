@@ -116,6 +116,11 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
       dueTimeMs = hasDueTime ? reader.readInt() : null;
     }
 
+    bool isArchived = false;
+    if (reader.availableBytes > 0) {
+      isArchived = reader.readBool();
+    }
+
     return TaskModel(
       id: id,
       title: title,
@@ -140,6 +145,7 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
       sortOrder: sortOrder,
       linkedNoteIds: linkedNoteIds,
       dueTimeMs: dueTimeMs,
+      isArchived: isArchived,
     );
   }
 
@@ -209,5 +215,7 @@ class TaskTypeAdapter extends TypeAdapter<TaskModel> {
 
     writer.writeBool(obj.dueTimeMs != null);
     if (obj.dueTimeMs != null) writer.writeInt(obj.dueTimeMs!);
+
+    writer.writeBool(obj.isArchived);
   }
 }

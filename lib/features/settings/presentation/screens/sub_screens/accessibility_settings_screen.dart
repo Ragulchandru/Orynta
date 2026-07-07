@@ -46,23 +46,11 @@ class AccessibilitySettingsScreen extends ConsumerWidget {
                   icon: Icons.visibility_rounded,
                   iconColor: theme.isDark ? const Color(0xFF4E4E68) : const Color(0xFF8E8EA8),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Text Font Scaling (1.0x)',
-                        style: context.typography.bodyMedium,
-                      ),
-                      const Slider(
-                        value: 1.0,
-                        min: 0.8,
-                        max: 1.5,
-                        onChanged: null,
-                      ),
-                    ],
-                  ),
+                PremiumListTile(
+                  title: 'Text Font Scaling',
+                  subtitle: 'Coming Soon',
+                  icon: Icons.text_fields_rounded,
+                  iconColor: theme.isDark ? const Color(0xFF4E4E68) : const Color(0xFF8E8EA8),
                 ),
               ],
             ),

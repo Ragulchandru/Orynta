@@ -64,6 +64,26 @@ class EditorSettingsScreen extends ConsumerWidget {
                   ),
                 ),
                 PremiumListTile(
+                  title: 'Rich Formatting',
+                  subtitle: 'Applies bold, italic, code, strike, and underline formatting',
+                  icon: Icons.format_paint_rounded,
+                  iconColor: Colors.purple,
+                  trailing: PremiumSwitch(
+                    value: settings.richFormattingEnabled,
+                    onChanged: (val) => settingsNotifier.updateRichFormattingEnabled(val),
+                  ),
+                ),
+                PremiumListTile(
+                  title: 'Preview Mode',
+                  subtitle: 'Hides markdown tags when cursor is not editing the line',
+                  icon: Icons.preview_rounded,
+                  iconColor: Colors.blueAccent,
+                  trailing: PremiumSwitch(
+                    value: settings.previewModeEnabled,
+                    onChanged: (val) => settingsNotifier.updatePreviewModeEnabled(val),
+                  ),
+                ),
+                PremiumListTile(
                   title: 'Focus Mode',
                   subtitle: 'Hides toolbars and chrome while editing notes',
                   icon: Icons.filter_center_focus_rounded,
@@ -109,6 +129,32 @@ class EditorSettingsScreen extends ConsumerWidget {
                     items: ['Inter', 'Roboto', 'Outfit', 'monospace']
                         .map((item) => DropdownMenuItem(value: item, child: Text(item)))
                         .toList(),
+                  ),
+                ),
+                PremiumListTile(
+                  title: 'Line Spacing',
+                  subtitle: '${settings.lineSpacing}x',
+                  icon: Icons.format_line_spacing_rounded,
+                  iconColor: Colors.orange,
+                  trailing: DropdownButton<double>(
+                    value: settings.lineSpacing,
+                    onChanged: (val) {
+                      if (val != null) settingsNotifier.updateLineSpacing(val);
+                    },
+                    underline: const SizedBox(),
+                    items: [1.0, 1.2, 1.5, 1.8, 2.0]
+                        .map((item) => DropdownMenuItem(value: item, child: Text('${item}x')))
+                        .toList(),
+                  ),
+                ),
+                PremiumListTile(
+                  title: 'Editor Animations',
+                  subtitle: 'Enable smooth haptic & editor layout animations',
+                  icon: Icons.animation_rounded,
+                  iconColor: Colors.teal,
+                  trailing: PremiumSwitch(
+                    value: settings.editorAnimationsEnabled,
+                    onChanged: (val) => settingsNotifier.updateEditorAnimationsEnabled(val),
                   ),
                 ),
                 Padding(

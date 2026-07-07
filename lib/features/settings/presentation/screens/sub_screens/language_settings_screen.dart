@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../../core/design_system/design_system.dart';
-import '../../widgets/settings_widgets.dart';
 
 class LanguageSettingsScreen extends ConsumerWidget {
   const LanguageSettingsScreen({super.key});
@@ -33,50 +32,47 @@ class LanguageSettingsScreen extends ConsumerWidget {
         ),
       ),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24.0),
-          physics: const BouncingScrollPhysics(),
-          children: [
-            PremiumSection(
-              title: 'LOCALIZATION',
-              children: [
-                PremiumListTile(
-                  title: 'App Language',
-                  subtitle: 'English (US)',
-                  icon: Icons.translate_rounded,
-                  iconColor: Colors.blueAccent,
-                  trailing: DropdownButton<String>(
-                    value: 'English',
-                    onChanged: (val) {},
-                    underline: const SizedBox(),
-                    items: ['English']
-                        .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-                        .toList(),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Container(
+              padding: const EdgeInsets.all(24.0),
+              decoration: BoxDecoration(
+                color: theme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: theme.outlineVariant,
+                  width: 1.0,
+                ),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.language_rounded,
+                    size: 48,
+                    color: theme.primary.withValues(alpha: 0.8),
                   ),
-                ),
-                PremiumListTile(
-                  title: 'Additional Languages',
-                  subtitle: 'Spanish, French, German (Coming Soon)',
-                  icon: Icons.language_rounded,
-                  iconColor: theme.isDark ? const Color(0xFF4E4E68) : const Color(0xFF8E8EA8),
-                ),
-                PremiumListTile(
-                  title: 'Region Formatting',
-                  subtitle: 'United States',
-                  icon: Icons.map_outlined,
-                  iconColor: Colors.green,
-                  trailing: DropdownButton<String>(
-                    value: 'United States',
-                    onChanged: (val) {},
-                    underline: const SizedBox(),
-                    items: ['United States', 'United Kingdom', 'Europe']
-                        .map((item) => DropdownMenuItem(value: item, child: Text(item)))
-                        .toList(),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Language & Region',
+                    style: context.typography.titleMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.isDark ? const Color(0xFFEFEFF8) : const Color(0xFF11111C),
+                    ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'App localization, language translations, and regional format customisations are coming soon in a future update.',
+                    textAlign: TextAlign.center,
+                    style: context.typography.bodySmall.copyWith(
+                      color: theme.isDark ? const Color(0xFF8E8EA8) : const Color(0xFF7E7E9A),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ],
+          ),
         ),
       ),
     );

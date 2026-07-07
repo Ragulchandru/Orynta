@@ -14,7 +14,7 @@ import '../../../../core/router/route_names.dart';
 import '../../../notes/presentation/providers/notes_notifier.dart';
 import '../../../planner/presentation/providers/tasks_notifier.dart';
 import '../../../planner/presentation/providers/planner_stats_provider.dart';
-import '../../../analytics/presentation/providers/productivity_score_provider.dart';
+import '../../../analytics/presentation/providers/analytics_provider.dart';
 import '../../../settings/presentation/screens/sub_screens/about_settings_screen.dart';
 import '../providers/profile_provider.dart';
 
@@ -26,19 +26,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  static const List<int> avatarColors = [
-    0xFF3A86F0, // Ocean Blue
-    0xFFD4AF37, // Elegant Gold
-    0xFF2E7D32, // Forest Green
-    0xFF7B2CBF, // Lavender Purple
-    0xFFF77F00, // Sunset Orange
-    0xFF008080, // Classic Teal
-    0xFFD81B60, // Rose Pink
-    0xFFFFB300, // Amber Yellow
-    0xFFE76F51, // Coral Clay
-    0xFF3F51B5, // Indigo Blue
-  ];
-
   void _showEditProfileSheet(BuildContext context) {
     HapticFeedback.lightImpact();
     final profile = ref.read(profileProvider);
@@ -178,133 +165,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  void _showAvatarSheet(BuildContext context) {
-    HapticFeedback.lightImpact();
-    final theme = context.appTheme;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: theme.notes.card,
-      shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-        side: BorderSide(color: theme.notes.cardBorder, width: 1.0),
-      ),
-      builder: (context) {
-        return Consumer(
-          builder: (context, ref, _) {
-            final profile = ref.watch(profileProvider);
-            final sheetTheme = context.appTheme;
-            final sheetColors = context.colors;
-            final avatarBgColor = Color(profile.avatarColor).withValues(alpha: 0.12);
-            final avatarTextColor = Color(profile.avatarColor);
-
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 36,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: sheetTheme.outlineVariant,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    'Avatar Customization',
-                    style: context.typography.titleMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: sheetColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Center(
-                    child: Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: avatarBgColor,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: avatarTextColor.withValues(alpha: 0.3),
-                          width: 2,
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        profile.initials,
-                        style: context.typography.headlineLarge.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: avatarTextColor,
-                          fontSize: 26,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Select Color Theme',
-                    style: context.typography.bodyMedium.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: sheetColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 52,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: avatarColors.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (context, idx) {
-                        final colVal = avatarColors[idx];
-                        final isSelected = profile.avatarColor == colVal;
-                        return GestureDetector(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            ref.read(profileProvider.notifier).updateAvatarColor(colVal);
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              color: Color(colVal),
-                              shape: BoxShape.circle,
-                              border: isSelected
-                                  ? Border.all(
-                                      color: sheetColors.textPrimary,
-                                      width: 3.5,
-                                    )
-                                  : null,
-                            ),
-                            child: isSelected
-                                ? const Icon(
-                                    Icons.check_rounded,
-                                    size: 18,
-                                    color: Colors.white,
-                                  )
-                                : null,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
   void _showStatisticsSheet(BuildContext context) {
     HapticFeedback.lightImpact();
     final theme = context.appTheme;
@@ -314,7 +174,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final tasks = ref.read(tasksProvider);
     final tasksCount = tasks.length;
     final stats = ref.read(plannerStatsProvider);
-    final scoreData = ref.read(unifiedScoreProvider);
+    final scoreData = ref.read(todayStatsProvider);
 
     showModalBottomSheet(
       context: context,
@@ -379,7 +239,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   ),
                   _StatItemCard(
                     title: 'Productivity',
-                    value: scoreData.score,
+                    value: scoreData.productivityScore.round(),
                     icon: Icons.speed_rounded,
                     color: Colors.teal,
                   ),
@@ -399,8 +259,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final theme = context.appTheme;
     final colors = context.colors;
 
-    final avatarBgColor = Color(profile.avatarColor).withValues(alpha: 0.12);
-    final avatarTextColor = Color(profile.avatarColor);
+    final profileColors = context.appTheme.profile;
+    final avatarBgColor = profileColors.avatarBackground;
+    final borderColor = profileColors.avatarBorder;
+    final avatarTextColor = profileColors.avatarText;
 
     return Scaffold(
       backgroundColor: theme.surfaceDim,
@@ -437,7 +299,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   color: avatarBgColor,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: avatarTextColor.withValues(alpha: 0.3),
+                    color: borderColor,
                     width: 3.5,
                   ),
                 ),
@@ -485,12 +347,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   leading: Icons.edit_rounded,
                   title: 'Edit Profile',
                   onTap: () => _showEditProfileSheet(context),
-                ),
-                _buildMenuItem(
-                  context: context,
-                  leading: Icons.palette_rounded,
-                  title: 'Avatar Customization',
-                  onTap: () => _showAvatarSheet(context),
                 ),
               ],
             ),

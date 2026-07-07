@@ -13,6 +13,8 @@ import '../../domain/models/notes_filter.dart';
 import '../../domain/models/notes_home_state.dart';
 import '../../domain/models/smart_filter.dart';
 import '../../domain/models/sort_option.dart';
+import '../../domain/models/notes_view_mode.dart';
+import '../../domain/models/notes_group_by.dart';
 import '../../domain/repositories/notes_home_repository.dart';
 
 class NotesHomeController extends StateNotifier<NotesHomeState> {
@@ -34,7 +36,70 @@ class NotesHomeController extends StateNotifier<NotesHomeState> {
 
   Future<void> initialize() async {
     _loadRecentSearches();
+    _loadViewMode();
+    _loadGroupBy();
+    _loadSortOption();
+    _loadFilters();
     await loadNotes();
+  }
+
+  void _loadViewMode() {
+    final settingsBox = Hive.box<String>(AppStrings.settingsBoxName);
+    final name = settingsBox.get('notes_view_mode');
+    if (name != null) {
+      final mode = NotesViewMode.values.firstWhere(
+        (e) => e.name == name,
+        orElse: () => NotesViewMode.grid,
+      );
+      state = state.copyWith(viewMode: mode);
+    }
+  }
+
+  void _loadGroupBy() {
+    final settingsBox = Hive.box<String>(AppStrings.settingsBoxName);
+    final name = settingsBox.get('notes_group_by');
+    if (name != null) {
+      final val = NotesGroupBy.values.firstWhere(
+        (e) => e.name == name,
+        orElse: () => NotesGroupBy.none,
+      );
+      state = state.copyWith(groupBy: val);
+    }
+  }
+
+  void _loadSortOption() {
+    final settingsBox = Hive.box<String>(AppStrings.settingsBoxName);
+    final name = settingsBox.get('notes_sort_option');
+    if (name != null) {
+      final opt = SortOption.values.firstWhere(
+        (e) => e.name == name,
+        orElse: () => SortOption.recentlyUpdated,
+      );
+      state = state.copyWith(sortOption: opt);
+    }
+  }
+
+  void _loadFilters() {
+    final settingsBox = Hive.box<String>(AppStrings.settingsBoxName);
+    final filterName = settingsBox.get('notes_selected_filter');
+    if (filterName != null) {
+      final filter = NotesFilter.values.firstWhere(
+        (e) => e.name == filterName,
+        orElse: () => NotesFilter.all,
+      );
+      state = state.copyWith(selectedFilter: filter);
+    }
+    
+    final filtersListJson = settingsBox.get('notes_active_filters');
+    if (filtersListJson != null) {
+      try {
+        final List<dynamic> decoded = jsonDecode(filtersListJson);
+        final active = decoded
+            .map((name) => SmartFilter.values.firstWhere((e) => e.name == name))
+            .toSet();
+        state = state.copyWith(activeFilters: active);
+      } catch (_) {}
+    }
   }
 
   Future<void> loadNotes() async {
@@ -92,6 +157,18 @@ class NotesHomeController extends StateNotifier<NotesHomeState> {
     settingsBox.delete('recent_searches');
   }
 
+  void setViewMode(NotesViewMode mode) {
+    state = state.copyWith(viewMode: mode);
+    final settingsBox = Hive.box<String>(AppStrings.settingsBoxName);
+    settingsBox.put('notes_view_mode', mode.name);
+  }
+
+  void setGroupBy(NotesGroupBy value) {
+    state = state.copyWith(groupBy: value);
+    final settingsBox = Hive.box<String>(AppStrings.settingsBoxName);
+    settingsBox.put('notes_group_by', value.name);
+  }
+
   void toggleSmartFilter(SmartFilter filter) {
     final active = Set<SmartFilter>.from(state.activeFilters);
     if (active.contains(filter)) {
@@ -100,11 +177,15 @@ class NotesHomeController extends StateNotifier<NotesHomeState> {
       active.add(filter);
     }
     state = state.copyWith(activeFilters: active);
+    final settingsBox = Hive.box<String>(AppStrings.settingsBoxName);
+    settingsBox.put('notes_active_filters', jsonEncode(active.map((e) => e.name).toList()));
     _applyFilterSortSearch();
   }
 
   void setSortOption(SortOption option) {
     state = state.copyWith(sortOption: option);
+    final settingsBox = Hive.box<String>(AppStrings.settingsBoxName);
+    settingsBox.put('notes_sort_option', option.name);
     _applyFilterSortSearch();
   }
 
@@ -140,6 +221,9 @@ class NotesHomeController extends StateNotifier<NotesHomeState> {
         active.add(SmartFilter.archived);
     }
     state = state.copyWith(activeFilters: active);
+    final settingsBox = Hive.box<String>(AppStrings.settingsBoxName);
+    settingsBox.put('notes_selected_filter', filter.name);
+    settingsBox.put('notes_active_filters', jsonEncode(active.map((e) => e.name).toList()));
     _applyFilterSortSearch();
   }
 

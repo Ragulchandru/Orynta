@@ -36,9 +36,12 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
     state = [...state, task];
   }
 
-  Future<void> quickAddTask(String title, {String category = 'Personal', DateTime? dueDate}) async {
+  Future<void> quickAddTask(String title, {String? category, DateTime? dueDate}) async {
     if (title.trim().isEmpty) return;
     final now = DateTime.now();
+    final box = Hive.box<String>(AppStrings.settingsBoxName);
+    final defaultCat = category ?? box.get('default_category_id') ?? 'Personal';
+
     final task = TaskEntity(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: title.trim(),
@@ -51,7 +54,7 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
       timelineSection: 0,
       estimatedMinutes: 15,
       tagIds: const [],
-      category: category,
+      category: defaultCat,
     );
     await addTask(task);
   }
@@ -173,6 +176,32 @@ class TasksNotifier extends StateNotifier<List<TaskEntity>> {
     ];
   }
 
+  Future<void> archiveTask(String id) async {
+    final index = state.indexWhere((t) => t.id == id);
+    if (index != -1) {
+      final current = state[index];
+      final updated = current.copyWith(isArchived: true, updatedAt: DateTime.now());
+      await _repository.updateTask(updated);
+      state = [
+        for (final t in state)
+          if (t.id == id) updated else t,
+      ];
+    }
+  }
+
+  Future<void> restoreTask(String id) async {
+    final index = state.indexWhere((t) => t.id == id);
+    if (index != -1) {
+      final current = state[index];
+      final updated = current.copyWith(isArchived: false, isCompleted: false, updatedAt: DateTime.now());
+      await _repository.updateTask(updated);
+      state = [
+        for (final t in state)
+          if (t.id == id) updated else t,
+      ];
+    }
+  }
+
   Future<void> bulkMoveTimelineSection(List<String> ids, int targetSection) async {
     final now = DateTime.now();
     state = [
@@ -198,7 +227,7 @@ final tasksNotifierProvider = tasksProvider;
 
 final taskSearchQueryProvider = StateProvider<String>((ref) => '');
 
-final taskFilterProvider = StateProvider<String>((ref) => 'all'); // all, today, tomorrow, week, overdue, completed, favorites, high, nodate, repeating
+final taskFilterProvider = StateProvider<String>((ref) => 'today'); // today, tomorrow, upcoming, completed, archived, all
 
 final taskCategoryFilterProvider = StateProvider<String?>((ref) => null);
 
@@ -284,33 +313,39 @@ final filteredTasksProvider = Provider<List<TaskEntity>>((ref) {
       if (t.category.toLowerCase() != categoryFilter.toLowerCase()) return false;
     }
 
+    // Archived tab shows only archived. Other tabs show only non-archived.
+    if (filter == 'archived') {
+      if (!t.isArchived) return false;
+    } else {
+      if (t.isArchived) return false;
+    }
+
     return switch (filter) {
       'today' => () {
+        if (t.isCompleted) return false;
         if (t.dueDate == null) return true;
         final due = t.dueDate!;
-        return due.year == today.year && due.month == today.month && due.day == today.day;
+        final dueStart = DateTime(due.year, due.month, due.day);
+        return dueStart.isAtSameMomentAs(startOfToday) || dueStart.isBefore(startOfToday);
       }(),
       'tomorrow' => () {
+        if (t.isCompleted) return false;
         if (t.dueDate == null) return false;
         final tomorrow = startOfToday.add(const Duration(days: 1));
         final due = t.dueDate!;
         return due.year == tomorrow.year && due.month == tomorrow.month && due.day == tomorrow.day;
       }(),
-      'week' => () {
+      'upcoming' => () {
+        if (t.isCompleted) return false;
         if (t.dueDate == null) return false;
-        final endOfWeek = startOfToday.add(const Duration(days: 7));
-        return t.dueDate!.isAfter(startOfToday.subtract(const Duration(seconds: 1))) &&
-            t.dueDate!.isBefore(endOfWeek);
-      }(),
-      'overdue' => () {
-        if (t.isCompleted || t.dueDate == null) return false;
-        return t.dueDate!.isBefore(startOfToday);
+        final dayAfterTomorrow = startOfToday.add(const Duration(days: 2));
+        final due = t.dueDate!;
+        final dueStart = DateTime(due.year, due.month, due.day);
+        return dueStart.isAtSameMomentAs(dayAfterTomorrow) || dueStart.isAfter(dayAfterTomorrow);
       }(),
       'completed' => t.isCompleted,
-      'favorites' => t.isFavorite,
-      'high' => t.priority.toLowerCase() == 'high',
-      'nodate' => t.dueDate == null,
-      'repeating' => t.recurrenceRule != null && t.recurrenceRule!.isNotEmpty,
+      'archived' => true,
+      'all' => !t.isCompleted,
       _ => true,
     };
   }).toList();

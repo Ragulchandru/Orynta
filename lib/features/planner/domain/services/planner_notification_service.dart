@@ -26,6 +26,10 @@ class PlannerNotificationService {
     debugPrint('[PlannerNotificationService] Cancelled reminder for taskId: $taskId');
   }
 
+  static Future<void> cancelAllReminders() async {
+    debugPrint('[PlannerNotificationService] Cancelled all scheduled task alarms.');
+  }
+
   static Future<void> snoozeTaskReminder(String taskId, Duration snoozeDuration) async {
     final nextTime = DateTime.now().add(snoozeDuration);
     debugPrint('[PlannerNotificationService] Snoozed taskId $taskId until $nextTime');

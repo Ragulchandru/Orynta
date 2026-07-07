@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/note_summary.dart';
+import '../../domain/models/notes_view_mode.dart';
 import '../providers/note_selection_provider.dart';
 import '../providers/notes_notifier.dart';
 import '../providers/notes_home_providers.dart';
@@ -80,6 +81,10 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
     final theme = context.appTheme;
     final isSelected = ref.watch(noteSelectionProvider.select((s) => s.selectedIds.contains(widget.note.id)));
     final inSelectionMode = ref.watch(noteSelectionProvider.select((s) => s.inSelectionMode));
+    
+    final viewMode = ref.watch(notesHomeControllerProvider).viewMode;
+    final isCompact = viewMode == NotesViewMode.compactGrid;
+    final isComfortable = viewMode == NotesViewMode.comfortableList;
 
     final customColor = _parseColor(widget.note.colorHex, context);
     
@@ -124,9 +129,14 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
             borderRadius: context.radius.borderRadiusLg,
             hoverColor: context.colors.primary.withValues(alpha: 0.04),
             child: Padding(
-              padding: const EdgeInsets.all(24.0),
+              padding: isCompact
+                  ? const EdgeInsets.all(12.0)
+                  : (isComfortable
+                      ? const EdgeInsets.all(24.0)
+                      : const EdgeInsets.all(18.0)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   // Title + Selection indicator + Badges
                   Row(
@@ -148,11 +158,17 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
                         child: SearchHighlightText(
                           text: widget.note.title.isNotEmpty ? widget.note.title : 'Untitled',
                           highlight: widget.searchQuery,
-                          style: context.typography.titleMedium.copyWith(
+                          style: (isComfortable
+                                  ? context.typography.titleLarge
+                                  : context.typography.titleMedium)
+                              .copyWith(
                             fontWeight: FontWeight.w700,
                             color: context.colors.textPrimary,
                           ),
-                          highlightStyle: context.typography.titleMedium.copyWith(
+                          highlightStyle: (isComfortable
+                                  ? context.typography.titleLarge
+                                  : context.typography.titleMedium)
+                              .copyWith(
                             fontWeight: FontWeight.w700,
                             color: context.colors.primary,
                             backgroundColor: primaryContainerColor,
@@ -179,29 +195,32 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
                       ],
                     ],
                   ),
-                  const SizedBox(height: 8),
-
-                  // Preview Content
-                  Expanded(
-                    child: SearchHighlightText(
+                  if (!isCompact) ...[
+                    const SizedBox(height: 8),
+                    SearchHighlightText(
                       text: widget.note.previewText,
                       highlight: widget.searchQuery,
-                      style: context.typography.bodySmall.copyWith(
+                      style: (isComfortable
+                              ? context.typography.bodyMedium
+                              : context.typography.bodySmall)
+                          .copyWith(
                         color: context.colors.textSecondary,
                         height: 1.4,
                       ),
-                      highlightStyle: context.typography.bodySmall.copyWith(
+                      highlightStyle: (isComfortable
+                              ? context.typography.bodyMedium
+                              : context.typography.bodySmall)
+                          .copyWith(
                         color: context.colors.primary,
                         backgroundColor: primaryContainerColor,
                         height: 1.4,
                       ),
-                      maxLines: 4,
+                      maxLines: isComfortable ? 5 : 3,
                       overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-
+                  ],
                   // Tag Chips list
-                  if (widget.note.tagIds.isNotEmpty) ...[
+                  if (widget.note.tagIds.isNotEmpty && !isCompact) ...[
                     const SizedBox(height: 12),
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
@@ -239,9 +258,7 @@ class _NotePreviewCardState extends ConsumerState<NotePreviewCard> {
                       ),
                     ),
                   ],
-
                   const SizedBox(height: 12),
-
                   // Bottom relative time
                   Text(
                     widget.note.relativeTime,

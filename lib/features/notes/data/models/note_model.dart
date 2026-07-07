@@ -111,4 +111,38 @@ class NoteModel {
       isFavorite: entity.isFavorite,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'body': body,
+      'color': color,
+      'isPinned': isPinned,
+      'statusIndex': statusIndex,
+      'createdAtMs': createdAtMs,
+      'updatedAtMs': updatedAtMs,
+      'trashedAtMs': trashedAtMs,
+      'categoryId': categoryId,
+      'tagIds': tagIds,
+      'isFavorite': isFavorite,
+    };
+  }
+
+  factory NoteModel.fromJson(Map<String, dynamic> json) {
+    return NoteModel(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      body: json['body'] as String,
+      color: json['color'] as int?,
+      isPinned: json['isPinned'] as bool? ?? false,
+      statusIndex: json['statusIndex'] as int? ?? 0,
+      createdAtMs: json['createdAtMs'] as int,
+      updatedAtMs: json['updatedAtMs'] as int,
+      trashedAtMs: json['trashedAtMs'] as int?,
+      categoryId: json['categoryId'] as String?,
+      tagIds: List<String>.from(json['tagIds'] ?? const []),
+      isFavorite: json['isFavorite'] as bool? ?? false,
+    );
+  }
 }

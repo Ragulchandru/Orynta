@@ -33,6 +33,7 @@ class TaskEntity {
     this.sortOrder = 0,
     this.linkedNoteIds = const [],
     this.dueTimeMs,
+    this.isArchived = false,
   });
 
   final String id;
@@ -58,6 +59,7 @@ class TaskEntity {
   final int sortOrder;
   final List<String> linkedNoteIds;
   final int? dueTimeMs;
+  final bool isArchived;
 
   TaskEntity copyWith({
     String? id,
@@ -83,6 +85,7 @@ class TaskEntity {
     int? sortOrder,
     List<String>? linkedNoteIds,
     int? dueTimeMs,
+    bool? isArchived,
   }) {
     return TaskEntity(
       id: id ?? this.id,
@@ -108,6 +111,7 @@ class TaskEntity {
       sortOrder: sortOrder ?? this.sortOrder,
       linkedNoteIds: linkedNoteIds ?? this.linkedNoteIds,
       dueTimeMs: dueTimeMs ?? this.dueTimeMs,
+      isArchived: isArchived ?? this.isArchived,
     );
   }
 

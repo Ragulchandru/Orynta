@@ -4,12 +4,28 @@
 
 import 'package:flutter/services.dart';
 import '../../presentation/providers/focus_analytics_provider.dart';
-import '../../presentation/providers/productivity_score_provider.dart';
+import '../../presentation/providers/analytics_provider.dart';
 import '../../../planner/presentation/providers/planner_stats_provider.dart';
 
 class ReportExporter {
+  static String _getScoreLevel(double scoreVal) {
+    final score = scoreVal.round();
+    if (score >= 90) return 'Excellent';
+    if (score >= 70) return 'Good';
+    if (score >= 50) return 'Average';
+    return 'Needs Improvement';
+  }
+
+  static String _getScoreMessage(double scoreVal) {
+    final score = scoreVal.round();
+    if (score >= 90) return 'Incredible! Peak performance today.';
+    if (score >= 70) return 'Great focus and productivity today!';
+    if (score >= 50) return 'Steady progress. Keep it up!';
+    return 'Log some focus time to build momentum.';
+  }
+
   static String generateMarkdownReport({
-    required ProductivityScoreData scoreData,
+    required DailyStats scoreData,
     required FocusAnalyticsData focusData,
     required PlannerStatsData statsData,
     required int totalNotes,
@@ -25,8 +41,8 @@ class ReportExporter {
 ---
 
 ## 1. PRODUCTIVITY SUMMARY
-- **Productivity Score:** ${scoreData.score}/100 (${scoreData.level})
-- **Daily Performance Status:** ${scoreData.message}
+- **Productivity Score:** ${scoreData.productivityScore.round()}/100 (${_getScoreLevel(scoreData.productivityScore)})
+- **Daily Performance Status:** ${_getScoreMessage(scoreData.productivityScore)}
 - **Current Completion Rate:** ${(statsData.todayCompletionRate * 100).toStringAsFixed(1)}%
 
 ## 2. PLANNER ANALYTICS
@@ -50,7 +66,7 @@ class ReportExporter {
 - **Total Notes Captured:** \$totalNotes
 - **Favorite High-priority Notes:** \$favoriteNotes
 - **Archived Inactive Notes:** \$archivedNotes
-- **Notes Captured Today:** ${scoreData.notesCreatedToday}
+- **Notes Captured Today:** ${scoreData.notesCreated}
 
 ---
 *Orynta 2.0 — Private Offline Productivity Vault.*
@@ -58,7 +74,7 @@ class ReportExporter {
   }
 
   static String generateCSVReport({
-    required ProductivityScoreData scoreData,
+    required DailyStats scoreData,
     required FocusAnalyticsData focusData,
     required PlannerStatsData statsData,
     required int totalNotes,
@@ -68,8 +84,8 @@ class ReportExporter {
       ['Orynta Productivity Report', now.toLocal().toString()],
       [],
       ['Metric Category', 'Metric Name', 'Metric Value'],
-      ['Productivity', 'Score', '${scoreData.score}/100'],
-      ['Productivity', 'Level', scoreData.level],
+      ['Productivity', 'Score', '${scoreData.productivityScore.round()}/100'],
+      ['Productivity', 'Level', _getScoreLevel(scoreData.productivityScore)],
       ['Planner', 'Tasks Completed Today', '${statsData.todayCompleted}'],
       ['Planner', 'Tasks Created Today', '${statsData.todayTotal}'],
       ['Planner', 'Weekly Completed', '${statsData.weeklyCompleted}'],
@@ -88,7 +104,7 @@ class ReportExporter {
   }
 
   static String generatePDFPlainReport({
-    required ProductivityScoreData scoreData,
+    required DailyStats scoreData,
     required FocusAnalyticsData focusData,
     required PlannerStatsData statsData,
     required int totalNotes,
@@ -107,8 +123,8 @@ Platform: Orynta Desktop/Mobile offline database
 
 PRODUCTIVITY INDEX SUMMARY
 $thinLine
-* Productivity Score      : ${scoreData.score}/100
-* Performance Rating      : ${scoreData.level}
+* Productivity Score      : ${scoreData.productivityScore.round()}/100
+* Performance Rating      : ${_getScoreLevel(scoreData.productivityScore)}
 * Streak Record           : ${statsData.currentStreak} Days (Max: ${statsData.longestStreak} Days)
 * Rate of Completion      : ${(statsData.todayCompletionRate * 100).toStringAsFixed(1)}%
 
@@ -131,7 +147,7 @@ $thinLine
 * Total Active Notes      : \$totalNotes
 * Starred/Favorites       : \$favoriteNotes
 * Archived Notes          : \$archivedNotes
-* Captured Today          : ${scoreData.notesCreatedToday}
+* Captured Today          : ${scoreData.notesCreated}
 
 $line
                  End of Orynta Insights PDF Report

@@ -16,7 +16,6 @@ import '../providers/activity_timeline_provider.dart';
 import '../providers/analytics_provider.dart';
 import '../providers/focus_analytics_provider.dart';
 import '../providers/insights_time_filter_provider.dart';
-import '../providers/productivity_score_provider.dart';
 import '../widgets/achievements_card.dart';
 import '../widgets/activity_timeline_widget.dart';
 import '../widgets/category_pie_chart.dart';
@@ -39,7 +38,7 @@ class AnalyticsScreen extends ConsumerStatefulWidget {
 
 class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
   void _exportReport(BuildContext context) {
-    final score = ref.read(unifiedScoreProvider);
+    final score = ref.read(todayStatsProvider);
     final focus = ref.read(focusAnalyticsProvider);
     final stats = ref.read(plannerStatsProvider);
     final notes = ref.read(notesProvider).value ?? [];
@@ -142,7 +141,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     final theme = context.appTheme;
     final activeRange = ref.watch(insightsTimeRangeProvider);
 
-    final score = ref.watch(unifiedScoreProvider);
+    final score = ref.watch(todayStatsProvider);
     final focus = ref.watch(focusAnalyticsProvider);
     final stats = ref.watch(plannerStatsProvider);
     final notes = ref.watch(notesProvider).value ?? [];
@@ -163,13 +162,9 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
     final recurringTasksCount = tasks.where((t) => t.recurrenceRule != null && t.recurrenceRule!.isNotEmpty).length;
 
-    // Category & Priority distribution mapping
-    final Map<String, int> categoryCounts = {};
+    // Priority distribution mapping
     final Map<String, int> priorityCounts = {'high': 0, 'medium': 0, 'low': 0};
     for (final t in tasks) {
-      if (t.category.isNotEmpty) {
-        categoryCounts[t.category] = (categoryCounts[t.category] ?? 0) + 1;
-      }
       final p = t.priority.toLowerCase();
       priorityCounts[p] = (priorityCounts[p] ?? 0) + 1;
     }
@@ -229,7 +224,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 children: [
                   StaggeredEntrance(
                     index: 0,
-                    child: ProductivityScoreCard(score: score.score.toDouble()),
+                    child: ProductivityScoreCard(score: score.productivityScore),
                   ),
                   const SizedBox(height: 16),
                   StaggeredEntrance(
@@ -263,7 +258,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     index: 4,
                     child: Row(
                       children: [
-                        Expanded(child: CategoryPieChart(categoryCounts: categoryCounts)),
+                        Expanded(child: CategoryPieChart(tasks: tasks)),
                         const SizedBox(width: 16),
                         Expanded(child: PriorityBarChart(priorityCounts: priorityCounts)),
                       ],
@@ -289,7 +284,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       totalNotes: activeNotesCount,
                       favoriteNotes: favNotesCount,
                       archivedNotes: archivedNotesCount,
-                      notesCreatedToday: score.notesCreatedToday,
+                      notesCreatedToday: score.notesCreated,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -332,7 +327,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 children: [
                   StaggeredEntrance(
                     index: 0,
-                    child: ProductivityScoreCard(score: score.score.toDouble()),
+                    child: ProductivityScoreCard(score: score.productivityScore),
                   ),
                   const SizedBox(height: 16),
                   StaggeredEntrance(
@@ -364,7 +359,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   const SizedBox(height: 16),
                   StaggeredEntrance(
                     index: 4,
-                    child: CategoryPieChart(categoryCounts: categoryCounts),
+                    child: CategoryPieChart(tasks: tasks),
                   ),
                   const SizedBox(height: 16),
                   StaggeredEntrance(
@@ -390,7 +385,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                       totalNotes: activeNotesCount,
                       favoriteNotes: favNotesCount,
                       archivedNotes: archivedNotesCount,
-                      notesCreatedToday: score.notesCreatedToday,
+                      notesCreatedToday: score.notesCreated,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -429,7 +424,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
           children: [
             StaggeredEntrance(
               index: 0,
-              child: ProductivityScoreCard(score: score.score.toDouble()),
+              child: ProductivityScoreCard(score: score.productivityScore),
             ),
             const SizedBox(height: 16),
             StaggeredEntrance(
@@ -461,7 +456,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             const SizedBox(height: 16),
             StaggeredEntrance(
               index: 4,
-              child: CategoryPieChart(categoryCounts: categoryCounts),
+              child: CategoryPieChart(tasks: tasks),
             ),
             const SizedBox(height: 16),
             StaggeredEntrance(
@@ -480,7 +475,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                 totalNotes: activeNotesCount,
                 favoriteNotes: favNotesCount,
                 archivedNotes: archivedNotesCount,
-                notesCreatedToday: score.notesCreatedToday,
+                notesCreatedToday: score.notesCreated,
               ),
             ),
             const SizedBox(height: 16),

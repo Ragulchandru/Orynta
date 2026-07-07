@@ -75,23 +75,61 @@ final plannerStatsProvider = Provider<PlannerStatsData>((ref) {
   final totalCreated = tasks.length;
   final totalCompleted = tasks.where((t) => t.isCompleted).length;
 
-  // Simple streak calculation
-  int streak = 0;
-  var checkDate = todayStart;
-  while (true) {
-    final dayDone = tasks.any((t) =>
-        t.isCompleted &&
-        t.updatedAt.isAfter(checkDate) &&
-        t.updatedAt.isBefore(checkDate.add(const Duration(days: 1))),);
-    if (dayDone) {
-      streak++;
-      checkDate = checkDate.subtract(const Duration(days: 1));
+  // Dynamic streak calculation
+  final completionDates = tasks
+      .where((t) => t.isCompleted)
+      .map((t) => DateTime(t.updatedAt.year, t.updatedAt.month, t.updatedAt.day))
+      .toSet()
+      .toList();
+  
+  completionDates.sort((a, b) => a.compareTo(b));
+
+  int currentStreak = 0;
+  int longestStreak = 0;
+
+  if (completionDates.isNotEmpty) {
+    int tempStreak = 1;
+    longestStreak = 1;
+    for (int i = 1; i < completionDates.length; i++) {
+      final prev = completionDates[i - 1];
+      final curr = completionDates[i];
+      final difference = curr.difference(prev).inDays;
+      if (difference == 1) {
+        tempStreak++;
+      } else if (difference > 1) {
+        if (tempStreak > longestStreak) {
+          longestStreak = tempStreak;
+        }
+        tempStreak = 1;
+      }
+    }
+    if (tempStreak > longestStreak) {
+      longestStreak = tempStreak;
+    }
+
+    final todayMidnight = DateTime(now.year, now.month, now.day);
+    final yesterdayMidnight = todayMidnight.subtract(const Duration(days: 1));
+
+    bool completedToday = completionDates.contains(todayMidnight);
+    bool completedYesterday = completionDates.contains(yesterdayMidnight);
+
+    if (completedToday || completedYesterday) {
+      currentStreak = 1;
+      var checkDay = completedToday ? todayMidnight : yesterdayMidnight;
+      while (true) {
+        checkDay = checkDay.subtract(const Duration(days: 1));
+        if (completionDates.contains(checkDay)) {
+          currentStreak++;
+        } else {
+          break;
+        }
+      }
     } else {
-      break;
+      currentStreak = 0;
     }
   }
 
-  final score = (todayRate * 40 + weeklyRate * 40 + (streak > 0 ? 20 : 0)).round().clamp(0, 100);
+  final score = (todayRate * 40 + weeklyRate * 40 + (currentStreak > 0 ? 20 : 0)).round().clamp(0, 100);
 
   return PlannerStatsData(
     todayCompleted: todayDone,
@@ -103,11 +141,11 @@ final plannerStatsProvider = Provider<PlannerStatsData>((ref) {
     monthlyCompleted: monthlyDone,
     monthlyTotal: monthlyTasks.length,
     monthlyCompletionRate: monthlyRate,
-    currentStreak: streak,
-    longestStreak: streak > 5 ? streak : 5,
+    currentStreak: currentStreak,
+    longestStreak: longestStreak,
     tasksCreated: totalCreated,
     tasksCompleted: totalCompleted,
-    averageDailyTasks: (totalCompleted / 7).clamp(0.0, 50.0),
+    averageDailyTasks: totalCreated == 0 ? 0.0 : (totalCompleted / 7).clamp(0.0, 50.0),
     productivityScore: score,
   );
 });

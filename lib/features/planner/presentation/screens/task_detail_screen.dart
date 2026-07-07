@@ -10,7 +10,7 @@ import 'package:intl/intl.dart';
 import '../../../../core/design_system/design_system.dart';
 import '../../domain/entities/subtask_entity.dart';
 import '../../domain/entities/task_entity.dart';
-import '../../domain/models/category_model.dart';
+import '../providers/categories_notifier.dart';
 import '../providers/tasks_notifier.dart';
 
 class TaskDetailScreen extends ConsumerStatefulWidget {
@@ -150,6 +150,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = context.appTheme;
+    final categories = ref.watch(categoriesProvider);
 
     return Scaffold(
       backgroundColor: theme.surfaceDim,
@@ -243,7 +244,7 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
-                        items: PlannerCategory.builtInCategories
+                        items: categories
                             .map((c) => DropdownMenuItem(value: c.name, child: Text(c.name)))
                             .toList(),
                         onChanged: (val) {
@@ -401,7 +402,6 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
             ),
 
             const SizedBox(height: 24),
-
             // Linked Notes Section
             if (_linkedNoteIds.isNotEmpty) ...[
               Text('Linked Orynta Notes', style: context.typography.titleMedium.copyWith(fontWeight: FontWeight.bold)),
@@ -418,7 +418,81 @@ class _TaskDetailScreenState extends ConsumerState<TaskDetailScreen> {
                   ),
                 );
               }),
+              const SizedBox(height: 24),
             ],
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                if (_workingTask.isArchived)
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await ref.read(tasksNotifierProvider.notifier).restoreTask(_workingTask.id);
+                      if (!context.mounted) return;
+                      context.pop();
+                    },
+                    icon: const Icon(Icons.settings_backup_restore_rounded),
+                    label: const Text('Restore'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.success,
+                      side: BorderSide(color: theme.success),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  )
+                else
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await ref.read(tasksNotifierProvider.notifier).archiveTask(_workingTask.id);
+                      if (!context.mounted) return;
+                      context.pop();
+                    },
+                    icon: const Icon(Icons.archive_outlined),
+                    label: const Text('Archive'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.secondary,
+                      side: BorderSide(color: theme.secondary),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        backgroundColor: theme.surface,
+                        title: Text('Delete Task', style: TextStyle(color: theme.isDark ? Colors.white : Colors.black)),
+                        content: Text('Are you sure you want to permanently delete this task?', style: TextStyle(color: theme.secondary)),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            style: TextButton.styleFrom(foregroundColor: theme.error),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                    if (!context.mounted) return;
+                    if (confirm == true) {
+                      await ref.read(tasksNotifierProvider.notifier).deleteTask(_workingTask.id);
+                      if (!context.mounted) return;
+                      context.pop();
+                    }
+                  },
+                  icon: const Icon(Icons.delete_forever_rounded),
+                  label: const Text('Delete'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: theme.error,
+                    side: BorderSide(color: theme.error),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
           ],
         ),
       ),

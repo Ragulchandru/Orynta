@@ -61,6 +61,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
   # ─── Lint Rules ──────────────────────────────────────────────────────────────
   # flutter_lints: official Flutter lint ruleset.

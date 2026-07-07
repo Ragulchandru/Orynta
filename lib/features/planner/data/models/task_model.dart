@@ -31,6 +31,7 @@ class TaskModel {
     this.sortOrder = 0,
     this.linkedNoteIds = const [],
     this.dueTimeMs,
+    this.isArchived = false,
   });
 
   final String id;
@@ -56,6 +57,7 @@ class TaskModel {
   final int sortOrder;
   final List<String> linkedNoteIds;
   final int? dueTimeMs;
+  final bool isArchived;
 
   factory TaskModel.fromEntity(TaskEntity entity) {
     return TaskModel(
@@ -96,6 +98,7 @@ class TaskModel {
       sortOrder: entity.sortOrder,
       linkedNoteIds: entity.linkedNoteIds,
       dueTimeMs: entity.dueTimeMs,
+      isArchived: entity.isArchived,
     );
   }
 
@@ -140,6 +143,7 @@ class TaskModel {
           ? linkedNoteIds
           : (linkedNoteId != null ? [linkedNoteId!] : const []),
       dueTimeMs: dueTimeMs,
+      isArchived: isArchived,
     );
   }
 }

@@ -9,10 +9,12 @@ class EditorAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.onBack,
     this.onShowOptions,
+    this.onSave,
   });
 
   final VoidCallback onBack;
   final VoidCallback? onShowOptions;
+  final VoidCallback? onSave;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +26,12 @@ class EditorAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       backgroundColor: Colors.transparent,
       actions: [
+        if (onSave != null)
+          IconButton(
+            icon: const Icon(Icons.check_rounded),
+            onPressed: onSave,
+            tooltip: 'Save Note',
+          ),
         if (onShowOptions != null)
           IconButton(
             icon: const Icon(Icons.more_vert_rounded),

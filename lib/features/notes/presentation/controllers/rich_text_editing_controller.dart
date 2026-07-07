@@ -3,7 +3,9 @@
 // Orynta 2.0 — Custom Rich Text Editing Controller (Premium Markdown Aware with Live Preview Hiding)
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/design_system/design_tokens.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
 
 class RichTextEditingController extends TextEditingController {
   RichTextEditingController({super.text});
@@ -87,7 +89,9 @@ class RichTextEditingController extends TextEditingController {
     if (isBackspacePressed) {
       final pos = newValue.selection.baseOffset;
       int lineStart = pos;
-      while (lineStart > 0 && newValue.text[newValue.selection.baseOffset] != '\n' && newValue.text[lineStart - 1] != '\n') {
+      while (lineStart > 0 &&
+          (pos >= newValue.text.length || newValue.text[pos] != '\n') &&
+          newValue.text[lineStart - 1] != '\n') {
         lineStart--;
       }
       int lineEnd = pos;
@@ -121,9 +125,18 @@ class RichTextEditingController extends TextEditingController {
     TextStyle? style,
     required bool withComposing,
   }) {
+    final settings = ProviderScope.containerOf(context).read(settingsStateProvider);
     final defaultStyle = style ?? context.typography.bodyMedium.copyWith(
       color: context.colors.textPrimary,
+      fontSize: settings.defaultFontSize,
+      fontFamily: settings.defaultFontFamily,
+      height: settings.lineSpacing,
     );
+
+    if (!settings.markdownEnabled || !settings.richFormattingEnabled) {
+      return TextSpan(text: text, style: defaultStyle);
+    }
+
     final cursorPosition = selection.isValid && selection.isCollapsed
         ? selection.baseOffset
         : -1;
@@ -271,7 +284,7 @@ class RichTextEditingController extends TextEditingController {
           ),
         );
 
-        if (isCursorOnLine) {
+        if (isCursorOnLine || !settings.previewModeEnabled) {
           children.add(
             TextSpan(
               text: '> ',
@@ -331,7 +344,7 @@ class RichTextEditingController extends TextEditingController {
           );
         }
       } else if (line.startsWith('- ') && !isCodeBlockLine) {
-        if (isCursorOnLine) {
+        if (isCursorOnLine || !settings.previewModeEnabled) {
           children.add(
             TextSpan(
               text: '- ',
@@ -398,7 +411,7 @@ class RichTextEditingController extends TextEditingController {
         final markerText = line.substring(0, markerLength);
         final contentText = line.substring(markerLength);
 
-        if (isCursorOnLine) {
+        if (isCursorOnLine || !settings.previewModeEnabled) {
           children.add(
             TextSpan(
               text: markerText,
@@ -429,7 +442,7 @@ class RichTextEditingController extends TextEditingController {
           ),
         );
       } else if (line.startsWith('```')) {
-        if (isCursorOnLine) {
+        if (isCursorOnLine || !settings.previewModeEnabled) {
           children.add(
             TextSpan(
               text: line,
@@ -549,14 +562,17 @@ class RichTextEditingController extends TextEditingController {
           final isCursorOnEnd = cursorPosition >= lineStartOffset + contentEnd &&
               cursorPosition <= lineStartOffset + i + mLen;
 
-          if (!isCursorOnStart) {
-            for (int k = openStart; k < contentStart; k++) {
-              faded[k] = 1;
+          final settings = ProviderScope.containerOf(context).read(settingsStateProvider);
+          if (settings.previewModeEnabled) {
+            if (!isCursorOnStart) {
+              for (int k = openStart; k < contentStart; k++) {
+                faded[k] = 1;
+              }
             }
-          }
-          if (!isCursorOnEnd) {
-            for (int k = i; k < i + mLen; k++) {
-              faded[k] = 1;
+            if (!isCursorOnEnd) {
+              for (int k = i; k < i + mLen; k++) {
+                faded[k] = 1;
+              }
             }
           }
 

@@ -1,14 +1,12 @@
-// lib/features/notes/presentation/pages/note_editor_page.dart
-//
-// Orynta 2.0 — Note Editor Page (Markdown Rich Editor with Metadata Options)
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../core/design_system/design_tokens.dart';
 import '../../domain/models/note_color.dart';
 import '../../domain/models/note_attachment.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
 import '../controllers/rich_text_editing_controller.dart';
 import '../providers/note_editor_providers.dart';
 import '../providers/note_attachment_providers.dart';
@@ -134,6 +132,20 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         appBar: EditorAppBar(
           onBack: _handlePop,
           onShowOptions: () => _showMetadataSheet(context),
+          onSave: !ref.watch(settingsStateProvider).autosaveEnabled
+              ? () async {
+                  HapticFeedback.mediumImpact();
+                  await ref.read(noteEditorControllerProvider(widget.noteId).notifier).save();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Note saved successfully!'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  }
+                }
+              : null,
         ),
         body: SafeArea(
           child: Column(

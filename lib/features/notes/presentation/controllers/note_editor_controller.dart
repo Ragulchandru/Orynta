@@ -1,13 +1,10 @@
-// lib/features/notes/presentation/controllers/note_editor_controller.dart
-//
-// Orynta 2.0 — Note Editor Controller
-
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/entities/note_status.dart';
 import '../../domain/models/note_color.dart';
 import '../../domain/models/note_editor_state.dart';
 import '../../domain/repositories/note_editor_repository.dart';
+import '../../../settings/presentation/providers/settings_provider.dart';
 import '../providers/notes_home_providers.dart';
 
 class NoteEditorController extends StateNotifier<NoteEditorState> {
@@ -103,6 +100,8 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
   }
 
   void _triggerAutosave() {
+    final settings = _ref.read(settingsStateProvider);
+    if (!settings.autosaveEnabled) return;
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 800), () {
       autosave();
@@ -125,9 +124,18 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
     return tags;
   }
 
+  Future<void> save() async {
+    await _persist();
+  }
+
   Future<void> autosave() async {
+    if (!state.dirty) return;
+    await _persist();
+  }
+
+  Future<void> _persist() async {
     final currentId = state.noteId;
-    if (currentId == null || !state.dirty) return;
+    if (currentId == null) return;
 
     state = state.copyWith(saving: true);
     final tags = _extractHashtags(state.title, state.content);
@@ -163,8 +171,11 @@ class NoteEditorController extends StateNotifier<NoteEditorState> {
 
   Future<void> finishEditing() async {
     _debounceTimer?.cancel();
-    if (state.dirty) {
-      await autosave();
+    final settings = _ref.read(settingsStateProvider);
+    if (settings.autosaveEnabled) {
+      if (state.dirty) {
+        await autosave();
+      }
     }
     await discardEmptyDraft();
   }

@@ -19,6 +19,39 @@ class PlannerCategory {
   final Color color;
   final int taskCount;
 
+  PlannerCategory copyWith({
+    String? id,
+    String? name,
+    IconData? icon,
+    Color? color,
+    int? taskCount,
+  }) {
+    return PlannerCategory(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      icon: icon ?? this.icon,
+      color: color ?? this.color,
+      taskCount: taskCount ?? this.taskCount,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'icon': icon.codePoint,
+        'color': color.toARGB32(),
+      };
+
+  factory PlannerCategory.fromJson(Map<String, dynamic> json) {
+    return PlannerCategory(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      // ignore: non_const_argument_for_const_parameter
+      icon: IconData(json['icon'] as int, fontFamily: 'MaterialIcons'),
+      color: Color(json['color'] as int),
+    );
+  }
+
   static List<PlannerCategory> get builtInCategories => const [
         PlannerCategory(
           id: 'Work',

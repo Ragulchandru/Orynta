@@ -7,6 +7,8 @@ import 'note_summary.dart';
 import 'notes_filter.dart';
 import 'smart_filter.dart';
 import 'sort_option.dart';
+import 'notes_view_mode.dart';
+import 'notes_group_by.dart';
 
 @immutable
 class NotesHomeState {
@@ -22,6 +24,8 @@ class NotesHomeState {
     this.selectedTag,
     this.isSearchFocused = false,
     this.recentSearches = const [],
+    this.viewMode = NotesViewMode.grid,
+    this.groupBy = NotesGroupBy.none,
   });
 
   final List<NoteSummary> notes;
@@ -35,6 +39,8 @@ class NotesHomeState {
   final String? selectedTag;
   final bool isSearchFocused;
   final List<String> recentSearches;
+  final NotesViewMode viewMode;
+  final NotesGroupBy groupBy;
 
   NotesHomeState copyWith({
     List<NoteSummary>? notes,
@@ -48,6 +54,8 @@ class NotesHomeState {
     String? selectedTag,
     bool? isSearchFocused,
     List<String>? recentSearches,
+    NotesViewMode? viewMode,
+    NotesGroupBy? groupBy,
   }) {
     return NotesHomeState(
       notes: notes ?? this.notes,
@@ -61,6 +69,8 @@ class NotesHomeState {
       selectedTag: selectedTag ?? this.selectedTag,
       isSearchFocused: isSearchFocused ?? this.isSearchFocused,
       recentSearches: recentSearches ?? this.recentSearches,
+      viewMode: viewMode ?? this.viewMode,
+      groupBy: groupBy ?? this.groupBy,
     );
   }
 }

@@ -5,6 +5,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
 import '../../../../core/constants/app_strings.dart';
+import '../../../planner/domain/services/planner_notification_service.dart';
 
 class SettingsState {
   const SettingsState({
@@ -25,6 +26,10 @@ class SettingsState {
     required this.quietHoursEnabled,
     required this.appLockEnabled,
     required this.biometricsEnabled,
+    required this.richFormattingEnabled,
+    required this.lineSpacing,
+    required this.editorAnimationsEnabled,
+    required this.previewModeEnabled,
   });
 
   final String accentColor;
@@ -44,6 +49,10 @@ class SettingsState {
   final bool quietHoursEnabled;
   final bool appLockEnabled;
   final bool biometricsEnabled;
+  final bool richFormattingEnabled;
+  final double lineSpacing;
+  final bool editorAnimationsEnabled;
+  final bool previewModeEnabled;
 
   factory SettingsState.initial() {
     return const SettingsState(
@@ -64,6 +73,10 @@ class SettingsState {
       quietHoursEnabled: false,
       appLockEnabled: false,
       biometricsEnabled: false,
+      richFormattingEnabled: true,
+      lineSpacing: 1.5,
+      editorAnimationsEnabled: true,
+      previewModeEnabled: true,
     );
   }
 
@@ -85,6 +98,10 @@ class SettingsState {
     bool? quietHoursEnabled,
     bool? appLockEnabled,
     bool? biometricsEnabled,
+    bool? richFormattingEnabled,
+    double? lineSpacing,
+    bool? editorAnimationsEnabled,
+    bool? previewModeEnabled,
   }) {
     return SettingsState(
       accentColor: accentColor ?? this.accentColor,
@@ -104,6 +121,10 @@ class SettingsState {
       quietHoursEnabled: quietHoursEnabled ?? this.quietHoursEnabled,
       appLockEnabled: appLockEnabled ?? this.appLockEnabled,
       biometricsEnabled: biometricsEnabled ?? this.biometricsEnabled,
+      richFormattingEnabled: richFormattingEnabled ?? this.richFormattingEnabled,
+      lineSpacing: lineSpacing ?? this.lineSpacing,
+      editorAnimationsEnabled: editorAnimationsEnabled ?? this.editorAnimationsEnabled,
+      previewModeEnabled: previewModeEnabled ?? this.previewModeEnabled,
     );
   }
 }
@@ -134,6 +155,10 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
       quietHoursEnabled: _box.get('setting_quietHoursEnabled') == 'true',
       appLockEnabled: _box.get('app_lock_enabled') == 'true',
       biometricsEnabled: _box.get('app_lock_biometrics_enabled') == 'true',
+      richFormattingEnabled: _box.get('setting_richFormattingEnabled') != 'false',
+      lineSpacing: double.tryParse(_box.get('setting_lineSpacing') ?? '1.5') ?? 1.5,
+      editorAnimationsEnabled: _box.get('setting_editorAnimationsEnabled') != 'false',
+      previewModeEnabled: _box.get('setting_previewModeEnabled') != 'false',
     );
   }
 
@@ -200,6 +225,9 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
   Future<void> updateDailyReminderEnabled(bool value) async {
     state = state.copyWith(dailyReminderEnabled: value);
     await _box.put('setting_dailyReminderEnabled', value.toString());
+    if (!value) {
+      await PlannerNotificationService.cancelAllReminders();
+    }
   }
 
   Future<void> updateDailyReminderTime(String value) async {
@@ -228,16 +256,44 @@ class SettingsNotifier extends StateNotifier<SettingsState> {
     await _box.put('app_lock_biometrics_enabled', value.toString());
   }
 
+  Future<void> updateRichFormattingEnabled(bool value) async {
+    state = state.copyWith(richFormattingEnabled: value);
+    await _box.put('setting_richFormattingEnabled', value.toString());
+  }
+
+  Future<void> updateLineSpacing(double value) async {
+    state = state.copyWith(lineSpacing: value);
+    await _box.put('setting_lineSpacing', value.toString());
+  }
+
+  Future<void> updateEditorAnimationsEnabled(bool value) async {
+    state = state.copyWith(editorAnimationsEnabled: value);
+    await _box.put('setting_editorAnimationsEnabled', value.toString());
+  }
+
+  Future<void> updatePreviewModeEnabled(bool value) async {
+    state = state.copyWith(previewModeEnabled: value);
+    await _box.put('setting_previewModeEnabled', value.toString());
+  }
+
   Future<void> resetAppearance() async {
     // Restores default settings state values
     state = state.copyWith(
       accentColor: 'Default',
       cornerRadius: 16.0,
       animationSpeed: 1.0,
+      richFormattingEnabled: true,
+      lineSpacing: 1.5,
+      editorAnimationsEnabled: true,
+      previewModeEnabled: true,
     );
     await _box.put('setting_accentColor', 'Default');
     await _box.put('setting_cornerRadius', '16.0');
     await _box.put('setting_animationSpeed', '1.0');
+    await _box.put('setting_richFormattingEnabled', 'true');
+    await _box.put('setting_lineSpacing', '1.5');
+    await _box.put('setting_editorAnimationsEnabled', 'true');
+    await _box.put('setting_previewModeEnabled', 'true');
   }
 }
 

@@ -12,7 +12,7 @@ import '../../../../core/design_system/design_tokens.dart';
 import '../../../planner/domain/entities/task_entity.dart';
 import '../../../planner/presentation/providers/tasks_notifier.dart';
 import '../../../planner/presentation/providers/planner_stats_provider.dart';
-import '../../../analytics/presentation/providers/productivity_score_provider.dart';
+import '../../../analytics/presentation/providers/analytics_provider.dart';
 import '../providers/dashboard_providers.dart';
 import '../widgets/dashboard_error_view.dart';
 import '../widgets/dashboard_loading_view.dart';
@@ -35,7 +35,7 @@ class DashboardPage extends ConsumerWidget {
 
     final tasks = ref.watch(tasksProvider);
     final stats = ref.watch(plannerStatsProvider);
-    final scoreData = ref.watch(unifiedScoreProvider);
+    final scoreData = ref.watch(todayStatsProvider);
 
     return Scaffold(
       backgroundColor: theme.surfaceDim,
@@ -288,13 +288,44 @@ class DashboardPage extends ConsumerWidget {
 
     final upcomingReminders = tasks.where((t) {
       final reminderMs = t.reminderMs;
-      if (t.isCompleted || reminderMs == null) return false;
+      if (t.isCompleted || t.isArchived || reminderMs == null) return false;
       if (reminderMs < nowMs) return false;
-      return _isToday(DateTime.fromMillisecondsSinceEpoch(reminderMs));
+      return true;
     }).toList()
       ..sort((a, b) => (a.reminderMs ?? 0).compareTo(b.reminderMs ?? 0));
 
-    final hasReminder = upcomingReminders.isNotEmpty;
+    if (upcomingReminders.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final task = upcomingReminders.first;
+    final reminderDateTime = DateTime.fromMillisecondsSinceEpoch(task.reminderMs ?? 0);
+    final remainingMs = (task.reminderMs ?? 0) - nowMs;
+    final remaining = Duration(milliseconds: remainingMs);
+
+    String dateHeader = 'Today';
+    final today = DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
+    final reminderDateOnly = DateTime(reminderDateTime.year, reminderDateTime.month, reminderDateTime.day);
+
+    if (reminderDateOnly.isAtSameMomentAs(startOfToday.add(const Duration(days: 1)))) {
+      dateHeader = 'Tomorrow';
+    } else if (reminderDateOnly.isAfter(startOfToday.add(const Duration(days: 1)))) {
+      dateHeader = DateFormat('MMM d').format(reminderDateTime);
+    }
+
+    final timeStr = DateFormat('h:mm a').format(reminderDateTime);
+
+    String remainingStr;
+    if (remaining.inDays > 0) {
+      final hours = remaining.inHours % 24;
+      remainingStr = hours > 0 ? '${remaining.inDays}d ${hours}h left' : '${remaining.inDays}d left';
+    } else if (remaining.inHours > 0) {
+      final minutes = remaining.inMinutes % 60;
+      remainingStr = '${remaining.inHours}h ${minutes}m left';
+    } else {
+      remainingStr = '${remaining.inMinutes}m left';
+    }
 
     return Card(
       margin: EdgeInsets.zero,
@@ -322,72 +353,40 @@ class DashboardPage extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: 12),
-            if (hasReminder) ...[
-              Builder(
-                builder: (context) {
-                  final task = upcomingReminders.first;
-                  final remainingMs = (task.reminderMs ?? 0) - nowMs;
-                  final remaining = Duration(milliseconds: remainingMs);
-                  final hours = remaining.inHours;
-                  final minutes = remaining.inMinutes % 60;
-                  final timeStr = DateFormat('h:mm a')
-                      .format(DateTime.fromMillisecondsSinceEpoch(task.reminderMs ?? 0));
-                  final remainingStr = hours > 0
-                      ? '${hours}h ${minutes}m remaining'
-                      : '${minutes}m remaining';
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        task.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: context.typography.titleMedium.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: colors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Today • $timeStr',
-                            style: context.typography.bodySmall.copyWith(
-                              color: colors.textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          Text(
-                            remainingStr,
-                            style: context.typography.bodySmall.copyWith(
-                              color: theme.primary,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ] else ...[
-              Text(
-                'No reminders scheduled today.',
-                style: context.typography.titleMedium.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: colors.textSecondary,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  task.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.typography.titleMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: colors.textPrimary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                "You're all caught up.",
-                style: context.typography.bodyMedium.copyWith(
-                  color: colors.textSecondary,
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '$dateHeader • $timeStr',
+                      style: context.typography.bodySmall.copyWith(
+                        color: colors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text(
+                      remainingStr,
+                      style: context.typography.bodySmall.copyWith(
+                        color: theme.primary,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ],
         ),
       ),
@@ -396,7 +395,7 @@ class DashboardPage extends ConsumerWidget {
 
   Widget _buildTodayAtAGlance(
     BuildContext context,
-    ProductivityScoreData scoreData,
+    DailyStats scoreData,
     PlannerStatsData stats,
   ) {
     final theme = context.appTheme;
@@ -431,13 +430,13 @@ class DashboardPage extends ConsumerWidget {
           children: [
             _GlanceCard(
               title: 'Tasks',
-              value: scoreData.tasksCompletedToday,
+              value: scoreData.tasksCompleted,
               icon: Icons.check_circle_outline_rounded,
               color: theme.primary,
             ),
             _GlanceCard(
               title: 'Notes',
-              value: scoreData.notesCreatedToday,
+              value: scoreData.notesCreated,
               icon: Icons.article_outlined,
               color: Colors.blue,
             ),
@@ -449,7 +448,7 @@ class DashboardPage extends ConsumerWidget {
             ),
             _GlanceCard(
               title: 'Score',
-              value: scoreData.score,
+              value: scoreData.productivityScore.round(),
               icon: Icons.speed_rounded,
               color: Colors.teal,
             ),
